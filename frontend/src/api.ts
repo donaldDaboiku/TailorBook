@@ -549,6 +549,39 @@ export async function archiveExpense(id: string): Promise<void> {
   })
 }
 
+export type FinancePeriod = {
+  label: string
+  from: string
+  to: string
+  income: string
+  income_label: string
+  expenses: string
+  expenses_label: string
+  net: string
+  net_label: string
+}
+
+export type FinanceSummary = {
+  currency: string
+  outstanding: string
+  outstanding_label: string
+  periods: {
+    today: FinancePeriod
+    week: FinancePeriod
+    month: FinancePeriod
+  }
+}
+
+export async function fetchFinanceSummary(): Promise<FinanceSummary> {
+  const data = await apiJson<{ data: FinanceSummary }>('/api/finance/summary')
+
+  if (!data.data?.periods?.today) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
 export function currentMonth(): string {
   const now = new Date()
   const month = String(now.getMonth() + 1).padStart(2, '0')

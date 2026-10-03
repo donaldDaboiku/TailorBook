@@ -448,6 +448,17 @@ a.primary {
   color: #9f1239;
 }
 
+.outstanding-total {
+  margin-top: 0.35rem;
+  font-size: 1.55rem;
+  font-weight: 650;
+  color: #9f1239;
+}
+
+.period-grid {
+  margin-top: 0.65rem;
+}
+
 .stack-item {
   display: grid;
   gap: 0.4rem;

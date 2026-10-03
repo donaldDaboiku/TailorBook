@@ -111,3 +111,110 @@ p {
 .tabbar button:disabled {
   opacity: 0.45;
 }
+
+.lede {
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+}
+
+.form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.form label,
+.unit-field {
+  display: grid;
+  gap: 0.35rem;
+  text-align: left;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.form input[type='email'],
+.form input[type='password'],
+.form input[type='tel'],
+.form input[type='text'],
+.form input:not([type]) {
+  min-height: 48px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  font: inherit;
+  background: #fff;
+  color: var(--ink);
+}
+
+.unit-field {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.85rem;
+  margin: 0;
+}
+
+.unit-field legend {
+  padding: 0 0.25rem;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  font-weight: 500;
+}
+
+.primary,
+.secondary {
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 650;
+  padding: 0.75rem 1rem;
+}
+
+.primary {
+  background: var(--accent);
+  color: #f7f4ef;
+}
+
+.primary:disabled,
+.secondary:disabled {
+  opacity: 0.55;
+}
+
+.secondary {
+  margin-top: 0.85rem;
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.form-error {
+  color: #9f1239;
+  font-size: 0.92rem;
+}
+
+.switch {
+  margin-top: 1rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.link {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 650;
+  min-height: 44px;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.muted-card {
+  margin-top: 0.85rem;
+}

@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Enums\MeasurementUnit;
+use Database\Factories\BusinessFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,7 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['user_id', 'name', 'phone', 'whatsapp_phone', 'country', 'measurement_unit', 'currency'])]
 class Business extends Model
 {
-    use HasUuids;
+    /** @use HasFactory<BusinessFactory> */
+    use HasFactory, HasUuids;
 
     /**
      * @return array<string, string>

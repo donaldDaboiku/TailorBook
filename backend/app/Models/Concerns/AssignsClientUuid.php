@@ -4,7 +4,9 @@ namespace App\Models\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
 
-
+/**
+ * @mixin Model
+ */
 trait AssignsClientUuid
 {
     protected static function bootAssignsClientUuid(): void

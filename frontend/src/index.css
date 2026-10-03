@@ -218,3 +218,124 @@ p {
 .muted-card {
   margin-top: 0.85rem;
 }
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.row-between h1 {
+  margin: 0;
+}
+
+.compact {
+  min-height: 44px;
+  padding-inline: 1rem;
+  width: auto;
+}
+
+.search-label {
+  display: grid;
+  gap: 0.35rem;
+  text-align: left;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.search-label input,
+.form select,
+.form textarea {
+  min-height: 48px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  font: inherit;
+  background: #fff;
+  color: var(--ink);
+}
+
+.form textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.list {
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.list-item {
+  width: 100%;
+  min-height: 56px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  padding: 0.85rem 1rem;
+  display: grid;
+  gap: 0.15rem;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.list-title {
+  font-weight: 650;
+}
+
+.list-meta {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.action-row a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.back-link {
+  margin-bottom: 0.75rem;
+}
+
+.details {
+  margin: 0 0 0.5rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.details div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.details dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.details dd {
+  margin: 0;
+}
+
+.secondary.danger {
+  color: #9f1239;
+  border-color: #fecdd3;
+}
+
+a.primary {
+  color: #f7f4ef;
+}

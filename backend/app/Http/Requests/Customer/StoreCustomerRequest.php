@@ -2,28 +2,51 @@
 
 namespace App\Http\Requests\Customer;
 
-use Illuminate\Contracts\Validation\ValidationRule;
+use App\Enums\Gender;
+use App\Models\Customer;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCustomerRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return $this->user()?->can('create', Customer::class) ?? false;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
+        $businessId = $this->user()?->business?->id;
+
         return [
-            //
+            'name' => ['required', 'string', 'max:120'],
+            'phone' => [
+                'required',
+                'string',
+                'max:32',
+                Rule::unique('customers', 'phone')
+                    ->where(fn ($query) => $query->where('business_id', $businessId)->whereNull('deleted_at')),
+            ],
+            'whatsapp_phone' => ['nullable', 'string', 'max:32'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'gender' => ['nullable', Rule::enum(Gender::class)],
+            'address' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Enter the customer name.',
+            'phone.required' => 'Enter the customer phone number.',
+            'phone.unique' => 'That phone number is already saved for a customer.',
         ];
     }
 }

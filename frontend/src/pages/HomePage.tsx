@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../auth'
 
-export default function HomePage() {
+export default function HomePage({ onAddCustomer }: { onAddCustomer: () => void }) {
   const { user, logout } = useAuth()
   const [busy, setBusy] = useState(false)
   const shop = user?.business?.name ?? 'your shop'
@@ -19,7 +19,10 @@ export default function HomePage() {
     <>
       <section className="card">
         <h1>Good day, {user?.name}</h1>
-        <p className="lede">{shop} is ready. Customers come next.</p>
+        <p className="lede">{shop} is ready.</p>
+        <button type="button" className="primary" onClick={onAddCustomer}>
+          New customer
+        </button>
       </section>
 
       <section className="card muted-card">

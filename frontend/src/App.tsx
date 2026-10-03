@@ -1,11 +1,21 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { fetchHealth } from './api'
+import { fetchHealth, type Customer } from './api'
 import { AuthProvider, useAuth } from './auth'
+import CustomerDetailPage from './pages/CustomerDetailPage'
+import CustomerFormPage from './pages/CustomerFormPage'
+import CustomersPage from './pages/CustomersPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 
 type Gate = 'loading' | 'ready' | 'offline'
+type Tab = 'home' | 'customers'
+type Screen =
+  | { name: 'home' }
+  | { name: 'customers' }
+  | { name: 'customer-create' }
+  | { name: 'customer-detail'; id: string }
+  | { name: 'customer-edit'; customer: Customer }
 
 export default function App() {
   const [gate, setGate] = useState<Gate>('loading')
@@ -63,7 +73,8 @@ export default function App() {
 
 function AuthenticatedApp() {
   const { user, loading, appName } = useAuth()
-  const [screen, setScreen] = useState<'login' | 'register'>('login')
+  const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login')
+  const [screen, setScreen] = useState<Screen>({ name: 'home' })
 
   if (loading) {
     return (
@@ -76,18 +87,66 @@ function AuthenticatedApp() {
   if (!user) {
     return (
       <Shell appName={appName} signedOut>
-        {screen === 'login' ? (
-          <LoginPage onShowRegister={() => setScreen('register')} />
+        {authScreen === 'login' ? (
+          <LoginPage onShowRegister={() => setAuthScreen('register')} />
         ) : (
-          <RegisterPage onShowLogin={() => setScreen('login')} />
+          <RegisterPage onShowLogin={() => setAuthScreen('login')} />
         )}
       </Shell>
     )
   }
 
+  const tab: Tab =
+    screen.name === 'home' ? 'home' : 'customers'
+
   return (
-    <Shell appName={appName}>
-      <HomePage />
+    <Shell
+      appName={appName}
+      tab={tab}
+      onTabChange={(next) => {
+        setScreen(next === 'home' ? { name: 'home' } : { name: 'customers' })
+      }}
+    >
+      {screen.name === 'home' && (
+        <HomePage onAddCustomer={() => setScreen({ name: 'customer-create' })} />
+      )}
+
+      {screen.name === 'customers' && (
+        <CustomersPage
+          onOpen={(id) => setScreen({ name: 'customer-detail', id })}
+          onCreate={() => setScreen({ name: 'customer-create' })}
+        />
+      )}
+
+      {screen.name === 'customer-create' && (
+        <CustomerFormPage
+          onCancel={() => setScreen({ name: 'customers' })}
+          onSaved={(customer) =>
+            setScreen({ name: 'customer-detail', id: customer.id })
+          }
+        />
+      )}
+
+      {screen.name === 'customer-detail' && (
+        <CustomerDetailPage
+          id={screen.id}
+          onBack={() => setScreen({ name: 'customers' })}
+          onEdit={(customer) => setScreen({ name: 'customer-edit', customer })}
+          onArchived={() => setScreen({ name: 'customers' })}
+        />
+      )}
+
+      {screen.name === 'customer-edit' && (
+        <CustomerFormPage
+          customer={screen.customer}
+          onCancel={() =>
+            setScreen({ name: 'customer-detail', id: screen.customer.id })
+          }
+          onSaved={(customer) =>
+            setScreen({ name: 'customer-detail', id: customer.id })
+          }
+        />
+      )}
     </Shell>
   )
 }
@@ -96,10 +155,14 @@ function Shell({
   appName,
   children,
   signedOut = false,
+  tab = 'home',
+  onTabChange,
 }: {
   appName: string
   children: ReactNode
   signedOut?: boolean
+  tab?: Tab
+  onTabChange?: (tab: Tab) => void
 }) {
   return (
     <div className="app">
@@ -111,10 +174,18 @@ function Shell({
 
       {!signedOut && (
         <nav className="tabbar" aria-label="Main">
-          <button type="button" aria-current="page">
+          <button
+            type="button"
+            aria-current={tab === 'home' ? 'page' : undefined}
+            onClick={() => onTabChange?.('home')}
+          >
             Home
           </button>
-          <button type="button" disabled>
+          <button
+            type="button"
+            aria-current={tab === 'customers' ? 'page' : undefined}
+            onClick={() => onTabChange?.('customers')}
+          >
             Customers
           </button>
           <button type="button" disabled>

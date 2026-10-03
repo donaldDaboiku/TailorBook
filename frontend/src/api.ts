@@ -31,6 +31,30 @@ export type ApiError = {
   errors?: Record<string, string[]>
 }
 
+export type Customer = {
+  id: string
+  name: string
+  phone: string
+  whatsapp_phone: string
+  email: string | null
+  gender: 'male' | 'female' | null
+  address: string | null
+  notes: string | null
+  whatsapp_url: string
+  created_at: string | null
+  updated_at: string | null
+}
+
+export type CustomerInput = {
+  name: string
+  phone: string
+  whatsapp_phone?: string
+  email?: string
+  gender?: 'male' | 'female' | ''
+  address?: string
+  notes?: string
+}
+
 const TOKEN_KEY = 'tailormate_token'
 
 export function getToken(): string | null {
@@ -131,6 +155,62 @@ export async function logout(): Promise<void> {
   setToken(null)
 }
 
+export async function listCustomers(q = ''): Promise<Customer[]> {
+  const query = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''
+  const data = await apiJson<{ data: Customer[] }>(`/api/customers${query}`)
+
+  if (!Array.isArray(data.data) || !data.data.every(isCustomer)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function getCustomer(id: string): Promise<Customer> {
+  const data = await apiJson<{ data: Customer }>(`/api/customers/${id}`)
+
+  if (!isCustomer(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function createCustomer(payload: CustomerInput): Promise<Customer> {
+  const data = await apiJson<{ data: Customer }>('/api/customers', {
+    method: 'POST',
+    body: JSON.stringify(cleanCustomerPayload(payload)),
+  })
+
+  if (!isCustomer(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function updateCustomer(
+  id: string,
+  payload: CustomerInput,
+): Promise<Customer> {
+  const data = await apiJson<{ data: Customer }>(`/api/customers/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(cleanCustomerPayload(payload)),
+  })
+
+  if (!isCustomer(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function archiveCustomer(id: string): Promise<void> {
+  await apiJson<{ message: string }>(`/api/customers/${id}`, {
+    method: 'DELETE',
+  })
+}
+
 async function authRequest(
   path: string,
   body: Record<string, string>,
@@ -158,13 +238,64 @@ async function authRequest(
   return data
 }
 
-function authHeaders(): HeadersInit {
+function authHeaders(json = false): HeadersInit {
   const token = getToken()
 
   return {
     Accept: 'application/json',
+    ...(json ? { 'Content-Type': 'application/json' } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
+}
+
+async function apiJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await fetch(apiUrl(path), {
+    ...init,
+    headers: {
+      ...authHeaders(Boolean(init.body)),
+      ...(init.headers ?? {}),
+    },
+  })
+
+  if (response.status === 401) {
+    setToken(null)
+    throw new Error('unauthorized')
+  }
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+
+  return (await parseJson(response)) as T
+}
+
+function cleanCustomerPayload(payload: CustomerInput): Record<string, string> {
+  const body: Record<string, string> = {
+    name: payload.name.trim(),
+    phone: payload.phone.trim(),
+  }
+
+  if (payload.whatsapp_phone?.trim()) {
+    body.whatsapp_phone = payload.whatsapp_phone.trim()
+  }
+
+  if (payload.email?.trim()) {
+    body.email = payload.email.trim()
+  }
+
+  if (payload.gender) {
+    body.gender = payload.gender
+  }
+
+  if (payload.address?.trim()) {
+    body.address = payload.address.trim()
+  }
+
+  if (payload.notes?.trim()) {
+    body.notes = payload.notes.trim()
+  }
+
+  return body
 }
 
 async function toApiError(response: Response): Promise<ApiError> {
@@ -229,6 +360,21 @@ function isUser(data: unknown): data is User {
     'email' in data &&
     typeof data.name === 'string' &&
     typeof data.email === 'string'
+  )
+}
+
+function isCustomer(data: unknown): data is Customer {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'id' in data &&
+    'name' in data &&
+    'phone' in data &&
+    'whatsapp_url' in data &&
+    typeof data.id === 'string' &&
+    typeof data.name === 'string' &&
+    typeof data.phone === 'string' &&
+    typeof data.whatsapp_url === 'string'
   )
 }
 

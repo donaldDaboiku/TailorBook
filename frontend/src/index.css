@@ -460,3 +460,24 @@ a.primary {
 .stack-item .secondary {
   margin-top: 0;
 }
+
+.home-actions {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.home-actions .secondary {
+  margin-top: 0;
+}
+
+.form input[type='month'],
+.search-label input[type='month'] {
+  min-height: 48px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  font: inherit;
+  background: #fff;
+  color: var(--ink);
+}

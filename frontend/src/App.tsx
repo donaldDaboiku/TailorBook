@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './auth'
 import CustomerDetailPage from './pages/CustomerDetailPage'
 import CustomerFormPage from './pages/CustomerFormPage'
 import CustomersPage from './pages/CustomersPage'
+import ExpenseFormPage from './pages/ExpenseFormPage'
+import ExpensesPage from './pages/ExpensesPage'
 import HomePage from './pages/HomePage'
 import JobFormPage from './pages/JobFormPage'
 import LoginPage from './pages/LoginPage'
@@ -13,7 +15,7 @@ import PaymentFormPage from './pages/PaymentFormPage'
 import RegisterPage from './pages/RegisterPage'
 
 type Gate = 'loading' | 'ready' | 'offline'
-type Tab = 'home' | 'customers'
+type Tab = 'home' | 'customers' | 'finance'
 type Screen =
   | { name: 'home' }
   | { name: 'customers' }
@@ -24,6 +26,8 @@ type Screen =
   | { name: 'measurement-detail'; customer: Customer; measurementId: string }
   | { name: 'job-create'; customer: Customer }
   | { name: 'payment-create'; customer: Customer; jobId?: string }
+  | { name: 'expenses' }
+  | { name: 'expense-create' }
 
 export default function App() {
   const [gate, setGate] = useState<Gate>('loading')
@@ -104,18 +108,32 @@ function AuthenticatedApp() {
     )
   }
 
-  const tab: Tab = screen.name === 'home' ? 'home' : 'customers'
+  const tab: Tab =
+    screen.name === 'home'
+      ? 'home'
+      : screen.name === 'expenses' || screen.name === 'expense-create'
+        ? 'finance'
+        : 'customers'
 
   return (
     <Shell
       appName={appName}
       tab={tab}
       onTabChange={(next) => {
-        setScreen(next === 'home' ? { name: 'home' } : { name: 'customers' })
+        if (next === 'home') {
+          setScreen({ name: 'home' })
+        } else if (next === 'finance') {
+          setScreen({ name: 'expenses' })
+        } else {
+          setScreen({ name: 'customers' })
+        }
       }}
     >
       {screen.name === 'home' && (
-        <HomePage onAddCustomer={() => setScreen({ name: 'customer-create' })} />
+        <HomePage
+          onAddCustomer={() => setScreen({ name: 'customer-create' })}
+          onAddExpense={() => setScreen({ name: 'expense-create' })}
+        />
       )}
 
       {screen.name === 'customers' && (
@@ -230,6 +248,17 @@ function AuthenticatedApp() {
           }
         />
       )}
+
+      {screen.name === 'expenses' && (
+        <ExpensesPage onCreate={() => setScreen({ name: 'expense-create' })} />
+      )}
+
+      {screen.name === 'expense-create' && (
+        <ExpenseFormPage
+          onCancel={() => setScreen({ name: 'expenses' })}
+          onSaved={() => setScreen({ name: 'expenses' })}
+        />
+      )}
     </Shell>
   )
 }
@@ -271,7 +300,11 @@ function Shell({
           >
             Customers
           </button>
-          <button type="button" disabled>
+          <button
+            type="button"
+            aria-current={tab === 'finance' ? 'page' : undefined}
+            onClick={() => onTabChange?.('finance')}
+          >
             Finance
           </button>
           <button type="button" disabled>

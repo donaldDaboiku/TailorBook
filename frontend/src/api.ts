@@ -465,6 +465,97 @@ export async function archivePayment(
   )
 }
 
+export type ExpenseCategory = {
+  id: string
+  slug: string
+  name: string
+  sort_order: number
+}
+
+export type Expense = {
+  id: string
+  amount: string
+  amount_label: string
+  spent_on: string
+  description: string | null
+  method: PaymentMethod
+  method_label: string
+  note: string | null
+  category: {
+    id: string
+    slug: string
+    name: string
+  }
+  created_at: string | null
+}
+
+export async function listExpenseCategories(): Promise<ExpenseCategory[]> {
+  const data = await apiJson<{ data: ExpenseCategory[] }>(
+    '/api/expense-categories',
+  )
+
+  if (!Array.isArray(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function listExpenses(month?: string): Promise<Expense[]> {
+  const query = month ? `?month=${encodeURIComponent(month)}` : ''
+  const data = await apiJson<{ data: Expense[] }>(`/api/expenses${query}`)
+
+  if (!Array.isArray(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function createExpense(payload: {
+  amount: string
+  spent_on: string
+  expense_category_id: string
+  method: PaymentMethod
+  description?: string
+  note?: string
+}): Promise<Expense> {
+  const body: Record<string, string> = {
+    amount: payload.amount,
+    spent_on: payload.spent_on,
+    expense_category_id: payload.expense_category_id,
+    method: payload.method,
+  }
+
+  if (payload.description?.trim()) {
+    body.description = payload.description.trim()
+  }
+
+  if (payload.note?.trim()) {
+    body.note = payload.note.trim()
+  }
+
+  const data = await apiJson<{ data: Expense }>('/api/expenses', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+
+  return data.data
+}
+
+export async function archiveExpense(id: string): Promise<void> {
+  await apiJson<{ message: string }>(`/api/expenses/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+export function currentMonth(): string {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+
+  return `${now.getFullYear()}-${month}`
+}
+
 async function authRequest(
   path: string,
   body: Record<string, string>,

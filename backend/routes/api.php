@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerJobController;
+use App\Http\Controllers\Api\ExpenseCategoryController;
+use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\MeasurementController;
 use App\Http\Controllers\Api\MeasurementTemplateController;
 use App\Http\Controllers\Api\PaymentController;
@@ -43,4 +45,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/customers/{customer}/payments', [PaymentController::class, 'index']);
     Route::post('/customers/{customer}/payments', [PaymentController::class, 'store']);
     Route::delete('/customers/{customer}/payments/{payment}', [PaymentController::class, 'destroy']);
+
+    Route::get('/expense-categories', [ExpenseCategoryController::class, 'index']);
+    Route::get('/expenses', [ExpenseController::class, 'index']);
+    Route::post('/expenses', [ExpenseController::class, 'store']);
+    Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy']);
 });

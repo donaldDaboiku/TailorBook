@@ -55,6 +55,46 @@ export type CustomerInput = {
   notes?: string
 }
 
+export type MeasurementUnit = 'cm' | 'in'
+
+export type MeasurementField = {
+  id: string
+  key: string
+  label: string
+  sort_order: number
+}
+
+export type MeasurementTemplate = {
+  id: string
+  slug: string
+  name: string
+  fields: MeasurementField[]
+}
+
+export type MeasurementValue = {
+  field_id: string
+  key: string
+  label: string
+  value_cm: string
+  value: string
+  previous_value?: string
+  change?: string
+}
+
+export type Measurement = {
+  id: string
+  customer_id: string
+  taken_on: string
+  unit: MeasurementUnit
+  template: {
+    id: string
+    slug: string
+    name: string
+  }
+  values: MeasurementValue[]
+  created_at: string | null
+}
+
 const TOKEN_KEY = 'tailormate_token'
 
 export function getToken(): string | null {
@@ -209,6 +249,75 @@ export async function archiveCustomer(id: string): Promise<void> {
   await apiJson<{ message: string }>(`/api/customers/${id}`, {
     method: 'DELETE',
   })
+}
+
+export async function listMeasurementTemplates(): Promise<MeasurementTemplate[]> {
+  const data = await apiJson<{ data: MeasurementTemplate[] }>(
+    '/api/measurement-templates',
+  )
+
+  if (!Array.isArray(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function listMeasurements(
+  customerId: string,
+  unit?: MeasurementUnit,
+): Promise<Measurement[]> {
+  const query = unit ? `?unit=${unit}` : ''
+  const data = await apiJson<{ data: Measurement[] }>(
+    `/api/customers/${customerId}/measurements${query}`,
+  )
+
+  if (!Array.isArray(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function getMeasurement(
+  customerId: string,
+  measurementId: string,
+  unit?: MeasurementUnit,
+): Promise<Measurement> {
+  const query = unit ? `?unit=${unit}` : ''
+  const data = await apiJson<{ data: Measurement }>(
+    `/api/customers/${customerId}/measurements/${measurementId}${query}`,
+  )
+
+  if (!isMeasurement(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function createMeasurement(
+  customerId: string,
+  payload: {
+    template_slug: string
+    taken_on: string
+    unit: MeasurementUnit
+    values: Record<string, number>
+  },
+): Promise<Measurement> {
+  const data = await apiJson<{ data: Measurement }>(
+    `/api/customers/${customerId}/measurements`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  )
+
+  if (!isMeasurement(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
 }
 
 async function authRequest(
@@ -376,6 +485,31 @@ function isCustomer(data: unknown): data is Customer {
     typeof data.phone === 'string' &&
     typeof data.whatsapp_url === 'string'
   )
+}
+
+function isMeasurement(data: unknown): data is Measurement {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'id' in data &&
+    'customer_id' in data &&
+    'taken_on' in data &&
+    'values' in data &&
+    typeof data.id === 'string' &&
+    Array.isArray(data.values)
+  )
+}
+
+export function todayDate(): string {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+
+  return `${now.getFullYear()}-${month}-${day}`
+}
+
+export function stepForUnit(unit: MeasurementUnit): number {
+  return unit === 'in' ? 0.25 : 0.5
 }
 
 export function firstError(error: unknown): string {

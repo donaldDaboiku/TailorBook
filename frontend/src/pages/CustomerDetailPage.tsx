@@ -3,31 +3,44 @@ import {
   archiveCustomer,
   firstError,
   getCustomer,
+  listMeasurements,
   type Customer,
+  type Measurement,
 } from '../api'
+import { useAuth } from '../auth'
 
 export default function CustomerDetailPage({
   id,
   onBack,
   onEdit,
   onArchived,
+  onTakeMeasurements,
+  onOpenMeasurement,
+  onDuplicateMeasurement,
 }: {
   id: string
   onBack: () => void
   onEdit: (customer: Customer) => void
   onArchived: () => void
+  onTakeMeasurements: (customer: Customer) => void
+  onOpenMeasurement: (customer: Customer, measurementId: string) => void
+  onDuplicateMeasurement: (customer: Customer, measurement: Measurement) => void
 }) {
+  const { user } = useAuth()
+  const unit = user?.business?.measurement_unit ?? 'in'
   const [customer, setCustomer] = useState<Customer | null>(null)
+  const [measurements, setMeasurements] = useState<Measurement[]>([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     let cancelled = false
 
-    getCustomer(id)
-      .then((row) => {
+    Promise.all([getCustomer(id), listMeasurements(id, unit)])
+      .then(([row, history]) => {
         if (!cancelled) {
           setCustomer(row)
+          setMeasurements(history)
         }
       })
       .catch((err) => {
@@ -39,7 +52,7 @@ export default function CustomerDetailPage({
     return () => {
       cancelled = true
     }
-  }, [id])
+  }, [id, unit])
 
   async function onArchive() {
     if (!customer) {
@@ -77,6 +90,8 @@ export default function CustomerDetailPage({
     return <p className="status">Loading customer…</p>
   }
 
+  const latest = measurements[0] ?? null
+
   return (
     <>
       <section className="card">
@@ -99,6 +114,60 @@ export default function CustomerDetailPage({
             WhatsApp
           </a>
         </div>
+      </section>
+
+      <section className="card muted-card">
+        <div className="row-between">
+          <h2 className="section-title">Measurements</h2>
+          <button
+            type="button"
+            className="primary compact"
+            onClick={() => onTakeMeasurements(customer)}
+          >
+            Take
+          </button>
+        </div>
+
+        {latest ? (
+          <>
+            <p className="status">Latest: {latest.taken_on}</p>
+            <div className="action-row tight">
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => onOpenMeasurement(customer, latest.id)}
+              >
+                View latest
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => onDuplicateMeasurement(customer, latest)}
+              >
+                Duplicate
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="status">No measurements yet.</p>
+        )}
+
+        {measurements.length > 0 && (
+          <ul className="list compact-list">
+            {measurements.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className="list-item"
+                  onClick={() => onOpenMeasurement(customer, item.id)}
+                >
+                  <span className="list-title">{item.taken_on}</span>
+                  <span className="list-meta">{item.template.name}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="card muted-card">

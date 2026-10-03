@@ -1,11 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { fetchHealth, type Customer } from './api'
+import { fetchHealth, type Customer, type Measurement } from './api'
 import { AuthProvider, useAuth } from './auth'
 import CustomerDetailPage from './pages/CustomerDetailPage'
 import CustomerFormPage from './pages/CustomerFormPage'
 import CustomersPage from './pages/CustomersPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
+import MeasurementDetailPage from './pages/MeasurementDetailPage'
+import MeasurementFormPage from './pages/MeasurementFormPage'
 import RegisterPage from './pages/RegisterPage'
 
 type Gate = 'loading' | 'ready' | 'offline'
@@ -16,6 +18,8 @@ type Screen =
   | { name: 'customer-create' }
   | { name: 'customer-detail'; id: string }
   | { name: 'customer-edit'; customer: Customer }
+  | { name: 'measurement-create'; customer: Customer; seed?: Measurement | null }
+  | { name: 'measurement-detail'; customer: Customer; measurementId: string }
 
 export default function App() {
   const [gate, setGate] = useState<Gate>('loading')
@@ -96,8 +100,7 @@ function AuthenticatedApp() {
     )
   }
 
-  const tab: Tab =
-    screen.name === 'home' ? 'home' : 'customers'
+  const tab: Tab = screen.name === 'home' ? 'home' : 'customers'
 
   return (
     <Shell
@@ -133,6 +136,19 @@ function AuthenticatedApp() {
           onBack={() => setScreen({ name: 'customers' })}
           onEdit={(customer) => setScreen({ name: 'customer-edit', customer })}
           onArchived={() => setScreen({ name: 'customers' })}
+          onTakeMeasurements={(customer) =>
+            setScreen({ name: 'measurement-create', customer })
+          }
+          onOpenMeasurement={(customer, measurementId) =>
+            setScreen({ name: 'measurement-detail', customer, measurementId })
+          }
+          onDuplicateMeasurement={(customer, measurement) =>
+            setScreen({
+              name: 'measurement-create',
+              customer,
+              seed: measurement,
+            })
+          }
         />
       )}
 
@@ -144,6 +160,40 @@ function AuthenticatedApp() {
           }
           onSaved={(customer) =>
             setScreen({ name: 'customer-detail', id: customer.id })
+          }
+        />
+      )}
+
+      {screen.name === 'measurement-create' && (
+        <MeasurementFormPage
+          customer={screen.customer}
+          seed={screen.seed}
+          onCancel={() =>
+            setScreen({ name: 'customer-detail', id: screen.customer.id })
+          }
+          onSaved={(measurement) =>
+            setScreen({
+              name: 'measurement-detail',
+              customer: screen.customer,
+              measurementId: measurement.id,
+            })
+          }
+        />
+      )}
+
+      {screen.name === 'measurement-detail' && (
+        <MeasurementDetailPage
+          customer={screen.customer}
+          measurementId={screen.measurementId}
+          onBack={() =>
+            setScreen({ name: 'customer-detail', id: screen.customer.id })
+          }
+          onDuplicate={(measurement) =>
+            setScreen({
+              name: 'measurement-create',
+              customer: screen.customer,
+              seed: measurement,
+            })
           }
         />
       )}

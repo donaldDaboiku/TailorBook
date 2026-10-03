@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\MeasurementController;
+use App\Http\Controllers\Api\MeasurementTemplateController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -25,4 +27,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/customers/{customer}', [CustomerController::class, 'show']);
     Route::put('/customers/{customer}', [CustomerController::class, 'update']);
     Route::delete('/customers/{customer}', [CustomerController::class, 'destroy']);
+
+    Route::get('/measurement-templates', [MeasurementTemplateController::class, 'index']);
+    Route::get('/customers/{customer}/measurements', [MeasurementController::class, 'index']);
+    Route::post('/customers/{customer}/measurements', [MeasurementController::class, 'store']);
+    Route::get('/customers/{customer}/measurements/{measurement}', [MeasurementController::class, 'show']);
 });

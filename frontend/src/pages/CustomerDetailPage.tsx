@@ -25,6 +25,7 @@ export default function CustomerDetailPage({
   onDuplicateMeasurement,
   onAddJob,
   onAddPayment,
+  onWhatsApp,
 }: {
   id: string
   onBack: () => void
@@ -35,6 +36,7 @@ export default function CustomerDetailPage({
   onDuplicateMeasurement: (customer: Customer, measurement: Measurement) => void
   onAddJob: (customer: Customer) => void
   onAddPayment: (customer: Customer, jobId?: string) => void
+  onWhatsApp: (customer: Customer) => void
 }) {
   const { user } = useAuth()
   const unit = user?.business?.measurement_unit ?? 'in'
@@ -152,14 +154,13 @@ export default function CustomerDetailPage({
           <a className="primary compact" href={`tel:${customer.phone}`}>
             Call
           </a>
-          <a
+          <button
+            type="button"
             className="primary compact"
-            href={customer.whatsapp_url}
-            target="_blank"
-            rel="noreferrer"
+            onClick={() => onWhatsApp(customer)}
           >
             WhatsApp
-          </a>
+          </button>
         </div>
       </section>
 

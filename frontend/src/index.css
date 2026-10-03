@@ -481,6 +481,29 @@ a.primary {
   margin-top: 0;
 }
 
+.template-picks {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+
+.template-pick {
+  margin-top: 0;
+}
+
+.template-pick.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, #fff);
+  font-weight: 650;
+}
+
+.action-row .primary.compact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
 .form input[type='month'],
 .search-label input[type='month'] {
   min-height: 48px;

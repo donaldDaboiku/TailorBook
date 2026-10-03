@@ -258,6 +258,45 @@ export async function getCustomer(id: string): Promise<Customer> {
   return data.data
 }
 
+export type WhatsAppTemplateKey = 'hello' | 'balance_reminder' | 'outfit_ready'
+
+export type WhatsAppTemplate = {
+  key: WhatsAppTemplateKey
+  label: string
+  body: string
+  url: string
+}
+
+export type WhatsAppTemplates = {
+  phone: string
+  whatsapp_number: string
+  whatsapp_url: string
+  templates: WhatsAppTemplate[]
+}
+
+export async function fetchWhatsAppTemplates(
+  customerId: string,
+): Promise<WhatsAppTemplates> {
+  const data = await apiJson<{ data: WhatsAppTemplates }>(
+    `/api/customers/${customerId}/whatsapp-templates`,
+  )
+
+  if (!data.data?.whatsapp_number || !Array.isArray(data.data.templates)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export function whatsappUrlWithText(number: string, text: string): string {
+  const base = `https://wa.me/${number}`
+  const trimmed = text.trim()
+
+  return trimmed === ''
+    ? base
+    : `${base}?text=${encodeURIComponent(trimmed)}`
+}
+
 export async function createCustomer(payload: CustomerInput): Promise<Customer> {
   const data = await apiJson<{ data: Customer }>('/api/customers', {
     method: 'POST',

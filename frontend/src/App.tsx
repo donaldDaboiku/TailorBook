@@ -13,6 +13,7 @@ import MeasurementDetailPage from './pages/MeasurementDetailPage'
 import MeasurementFormPage from './pages/MeasurementFormPage'
 import PaymentFormPage from './pages/PaymentFormPage'
 import RegisterPage from './pages/RegisterPage'
+import WhatsAppComposePage from './pages/WhatsAppComposePage'
 
 type Gate = 'loading' | 'ready' | 'offline'
 type Tab = 'home' | 'customers' | 'finance'
@@ -26,6 +27,7 @@ type Screen =
   | { name: 'measurement-detail'; customer: Customer; measurementId: string }
   | { name: 'job-create'; customer: Customer }
   | { name: 'payment-create'; customer: Customer; jobId?: string }
+  | { name: 'whatsapp'; customer: Customer }
   | { name: 'expenses' }
   | { name: 'expense-create' }
 
@@ -174,6 +176,16 @@ function AuthenticatedApp() {
           onAddJob={(customer) => setScreen({ name: 'job-create', customer })}
           onAddPayment={(customer, jobId) =>
             setScreen({ name: 'payment-create', customer, jobId })
+          }
+          onWhatsApp={(customer) => setScreen({ name: 'whatsapp', customer })}
+        />
+      )}
+
+      {screen.name === 'whatsapp' && (
+        <WhatsAppComposePage
+          customer={screen.customer}
+          onBack={() =>
+            setScreen({ name: 'customer-detail', id: screen.customer.id })
           }
         />
       )}

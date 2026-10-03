@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\MeasurementController;
 use App\Http\Controllers\Api\MeasurementTemplateController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\WhatsAppController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -32,6 +33,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/customers/{customer}', [CustomerController::class, 'show']);
     Route::put('/customers/{customer}', [CustomerController::class, 'update']);
     Route::delete('/customers/{customer}', [CustomerController::class, 'destroy']);
+    Route::get('/customers/{customer}/whatsapp-templates', [WhatsAppController::class, 'templates']);
 
     Route::get('/measurement-templates', [MeasurementTemplateController::class, 'index']);
     Route::get('/customers/{customer}/measurements', [MeasurementController::class, 'index']);

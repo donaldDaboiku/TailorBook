@@ -31,6 +31,16 @@ export type ApiError = {
   errors?: Record<string, string[]>
 }
 
+export type CustomerFinance = {
+  currency: string
+  total_agreed: string
+  total_paid: string
+  outstanding: string
+  total_agreed_label: string
+  total_paid_label: string
+  outstanding_label: string
+}
+
 export type Customer = {
   id: string
   name: string
@@ -41,8 +51,40 @@ export type Customer = {
   address: string | null
   notes: string | null
   whatsapp_url: string
+  finance?: CustomerFinance
   created_at: string | null
   updated_at: string | null
+}
+
+export type PaymentMethod = 'cash' | 'bank_transfer' | 'pos' | 'other'
+
+export type CustomerJob = {
+  id: string
+  customer_id: string
+  title: string
+  agreed_amount: string
+  agreed_amount_label: string
+  paid_amount: string
+  paid_amount_label: string
+  outstanding: string
+  outstanding_label: string
+  service_date: string
+  created_at: string | null
+}
+
+export type Payment = {
+  id: string
+  customer_id: string
+  customer_job_id: string | null
+  job_title?: string | null
+  amount: string
+  amount_label: string
+  paid_on: string
+  method: PaymentMethod
+  method_label: string
+  reference: string | null
+  note: string | null
+  created_at: string | null
 }
 
 export type CustomerInput = {
@@ -318,6 +360,109 @@ export async function createMeasurement(
   }
 
   return data.data
+}
+
+export async function listJobs(customerId: string): Promise<CustomerJob[]> {
+  const data = await apiJson<{ data: CustomerJob[] }>(
+    `/api/customers/${customerId}/jobs`,
+  )
+
+  if (!Array.isArray(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function createJob(
+  customerId: string,
+  payload: {
+    title: string
+    agreed_amount: string
+    service_date: string
+  },
+): Promise<CustomerJob> {
+  const data = await apiJson<{ data: CustomerJob }>(
+    `/api/customers/${customerId}/jobs`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  )
+
+  return data.data
+}
+
+export async function archiveJob(
+  customerId: string,
+  jobId: string,
+): Promise<void> {
+  await apiJson<{ message: string }>(
+    `/api/customers/${customerId}/jobs/${jobId}`,
+    { method: 'DELETE' },
+  )
+}
+
+export async function listPayments(customerId: string): Promise<Payment[]> {
+  const data = await apiJson<{ data: Payment[] }>(
+    `/api/customers/${customerId}/payments`,
+  )
+
+  if (!Array.isArray(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function createPayment(
+  customerId: string,
+  payload: {
+    amount: string
+    paid_on: string
+    method: PaymentMethod
+    customer_job_id?: string
+    reference?: string
+    note?: string
+  },
+): Promise<Payment> {
+  const body: Record<string, string> = {
+    amount: payload.amount,
+    paid_on: payload.paid_on,
+    method: payload.method,
+  }
+
+  if (payload.customer_job_id) {
+    body.customer_job_id = payload.customer_job_id
+  }
+
+  if (payload.reference?.trim()) {
+    body.reference = payload.reference.trim()
+  }
+
+  if (payload.note?.trim()) {
+    body.note = payload.note.trim()
+  }
+
+  const data = await apiJson<{ data: Payment }>(
+    `/api/customers/${customerId}/payments`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  )
+
+  return data.data
+}
+
+export async function archivePayment(
+  customerId: string,
+  paymentId: string,
+): Promise<void> {
+  await apiJson<{ message: string }>(
+    `/api/customers/${customerId}/payments/${paymentId}`,
+    { method: 'DELETE' },
+  )
 }
 
 async function authRequest(

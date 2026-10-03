@@ -22,6 +22,14 @@ class Balance
     /**
      * @param  array<int, mixed>  $amounts
      */
+    public static function total(array $amounts): string
+    {
+        return (string) self::sum($amounts)->toScale(2, RoundingMode::Unnecessary);
+    }
+
+    /**
+     * @param  array<int, mixed>  $amounts
+     */
     private static function sum(array $amounts): BigDecimal
     {
         $total = BigDecimal::zero();

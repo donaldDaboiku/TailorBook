@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react'
 import {
   archiveCustomer,
+  archiveJob,
+  archivePayment,
   firstError,
   getCustomer,
+  listJobs,
   listMeasurements,
+  listPayments,
   type Customer,
+  type CustomerJob,
   type Measurement,
+  type Payment,
 } from '../api'
 import { useAuth } from '../auth'
 
@@ -17,6 +23,8 @@ export default function CustomerDetailPage({
   onTakeMeasurements,
   onOpenMeasurement,
   onDuplicateMeasurement,
+  onAddJob,
+  onAddPayment,
 }: {
   id: string
   onBack: () => void
@@ -25,24 +33,36 @@ export default function CustomerDetailPage({
   onTakeMeasurements: (customer: Customer) => void
   onOpenMeasurement: (customer: Customer, measurementId: string) => void
   onDuplicateMeasurement: (customer: Customer, measurement: Measurement) => void
+  onAddJob: (customer: Customer) => void
+  onAddPayment: (customer: Customer, jobId?: string) => void
 }) {
   const { user } = useAuth()
   const unit = user?.business?.measurement_unit ?? 'in'
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [measurements, setMeasurements] = useState<Measurement[]>([])
+  const [jobs, setJobs] = useState<CustomerJob[]>([])
+  const [payments, setPayments] = useState<Payment[]>([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  async function reload() {
+    const [row, history, jobRows, paymentRows] = await Promise.all([
+      getCustomer(id),
+      listMeasurements(id, unit),
+      listJobs(id),
+      listPayments(id),
+    ])
+
+    setCustomer(row)
+    setMeasurements(history)
+    setJobs(jobRows)
+    setPayments(paymentRows)
+  }
 
   useEffect(() => {
     let cancelled = false
 
-    Promise.all([getCustomer(id), listMeasurements(id, unit)])
-      .then(([row, history]) => {
-        if (!cancelled) {
-          setCustomer(row)
-          setMeasurements(history)
-        }
-      })
+    reload()
       .catch((err) => {
         if (!cancelled) {
           setError(firstError(err))
@@ -73,6 +93,32 @@ export default function CustomerDetailPage({
     }
   }
 
+  async function onArchiveJob(job: CustomerJob) {
+    if (!window.confirm(`Archive job “${job.title}”?`)) {
+      return
+    }
+
+    try {
+      await archiveJob(id, job.id)
+      await reload()
+    } catch (err) {
+      setError(firstError(err))
+    }
+  }
+
+  async function onArchivePayment(payment: Payment) {
+    if (!window.confirm(`Archive payment ${payment.amount_label}?`)) {
+      return
+    }
+
+    try {
+      await archivePayment(id, payment.id)
+      await reload()
+    } catch (err) {
+      setError(firstError(err))
+    }
+  }
+
   if (error && !customer) {
     return (
       <section className="card">
@@ -91,6 +137,7 @@ export default function CustomerDetailPage({
   }
 
   const latest = measurements[0] ?? null
+  const finance = customer.finance
 
   return (
     <>
@@ -114,6 +161,126 @@ export default function CustomerDetailPage({
             WhatsApp
           </a>
         </div>
+      </section>
+
+      {finance && (
+        <section className="card muted-card">
+          <h2 className="section-title">Money</h2>
+          <dl className="finance-grid">
+            <div>
+              <dt>Agreed</dt>
+              <dd>{finance.total_agreed_label}</dd>
+            </div>
+            <div>
+              <dt>Paid</dt>
+              <dd>{finance.total_paid_label}</dd>
+            </div>
+            <div>
+              <dt>Outstanding</dt>
+              <dd className="outstanding">{finance.outstanding_label}</dd>
+            </div>
+          </dl>
+          <div className="action-row tight">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => onAddJob(customer)}
+            >
+              Add job
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => onAddPayment(customer)}
+            >
+              Record payment
+            </button>
+          </div>
+        </section>
+      )}
+
+      <section className="card muted-card">
+        <div className="row-between">
+          <h2 className="section-title">Jobs</h2>
+          <button
+            type="button"
+            className="primary compact"
+            onClick={() => onAddJob(customer)}
+          >
+            Add
+          </button>
+        </div>
+
+        {jobs.length === 0 ? (
+          <p className="status">No jobs yet.</p>
+        ) : (
+          <ul className="list compact-list">
+            {jobs.map((job) => (
+              <li key={job.id} className="stack-item">
+                <div className="list-item static">
+                  <span className="list-title">{job.title}</span>
+                  <span className="list-meta">
+                    {job.agreed_amount_label} · owes {job.outstanding_label}
+                  </span>
+                </div>
+                <div className="action-row tight">
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => onAddPayment(customer, job.id)}
+                  >
+                    Pay
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary danger"
+                    onClick={() => onArchiveJob(job)}
+                  >
+                    Archive
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="card muted-card">
+        <div className="row-between">
+          <h2 className="section-title">Payments</h2>
+          <button
+            type="button"
+            className="primary compact"
+            onClick={() => onAddPayment(customer)}
+          >
+            Add
+          </button>
+        </div>
+
+        {payments.length === 0 ? (
+          <p className="status">No payments yet.</p>
+        ) : (
+          <ul className="list compact-list">
+            {payments.map((payment) => (
+              <li key={payment.id} className="stack-item">
+                <div className="list-item static">
+                  <span className="list-title">{payment.amount_label}</span>
+                  <span className="list-meta">
+                    {payment.paid_on} · {payment.method_label}
+                    {payment.job_title ? ` · ${payment.job_title}` : ''}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="secondary danger"
+                  onClick={() => onArchivePayment(payment)}
+                >
+                  Archive
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="card muted-card">

@@ -61,16 +61,31 @@ class Customer extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function totalAgreed(): string
+    {
+        return Balance::total($this->jobs()->pluck('agreed_amount')->all());
+    }
+
+    public function totalPaid(): string
+    {
+        return Balance::total($this->countablePayments()->pluck('amount')->all());
+    }
+
     public function outstandingAmount(): string
     {
         return Balance::outstanding(
             $this->jobs()->pluck('agreed_amount')->all(),
-            $this->payments()
-                ->where(function ($query) {
-                    $query->whereNull('customer_job_id')->orWhereHas('job');
-                })
-                ->pluck('amount')
-                ->all(),
+            $this->countablePayments()->pluck('amount')->all(),
         );
+    }
+
+    /**
+     * @return HasMany<Payment, $this>
+     */
+    public function countablePayments(): HasMany
+    {
+        return $this->payments()->where(function ($query) {
+            $query->whereNull('customer_job_id')->orWhereHas('job');
+        });
     }
 }

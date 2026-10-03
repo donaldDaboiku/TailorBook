@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\CustomerJobController;
 use App\Http\Controllers\Api\MeasurementController;
 use App\Http\Controllers\Api\MeasurementTemplateController;
+use App\Http\Controllers\Api\PaymentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -32,4 +34,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/customers/{customer}/measurements', [MeasurementController::class, 'index']);
     Route::post('/customers/{customer}/measurements', [MeasurementController::class, 'store']);
     Route::get('/customers/{customer}/measurements/{measurement}', [MeasurementController::class, 'show']);
+
+    Route::get('/customers/{customer}/jobs', [CustomerJobController::class, 'index']);
+    Route::post('/customers/{customer}/jobs', [CustomerJobController::class, 'store']);
+    Route::get('/customers/{customer}/jobs/{job}', [CustomerJobController::class, 'show']);
+    Route::delete('/customers/{customer}/jobs/{job}', [CustomerJobController::class, 'destroy']);
+
+    Route::get('/customers/{customer}/payments', [PaymentController::class, 'index']);
+    Route::post('/customers/{customer}/payments', [PaymentController::class, 'store']);
+    Route::delete('/customers/{customer}/payments/{payment}', [PaymentController::class, 'destroy']);
 });

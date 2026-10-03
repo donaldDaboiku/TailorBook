@@ -57,7 +57,10 @@ class CustomerController extends Controller
     {
         $this->authorize('view', $customer);
 
-        return CustomerResource::make($customer);
+        $resource = CustomerResource::make($customer);
+        $resource->includeFinance = true;
+
+        return $resource;
     }
 
     public function update(UpdateCustomerRequest $request, Customer $customer): CustomerResource

@@ -5,9 +5,11 @@ import CustomerDetailPage from './pages/CustomerDetailPage'
 import CustomerFormPage from './pages/CustomerFormPage'
 import CustomersPage from './pages/CustomersPage'
 import HomePage from './pages/HomePage'
+import JobFormPage from './pages/JobFormPage'
 import LoginPage from './pages/LoginPage'
 import MeasurementDetailPage from './pages/MeasurementDetailPage'
 import MeasurementFormPage from './pages/MeasurementFormPage'
+import PaymentFormPage from './pages/PaymentFormPage'
 import RegisterPage from './pages/RegisterPage'
 
 type Gate = 'loading' | 'ready' | 'offline'
@@ -20,6 +22,8 @@ type Screen =
   | { name: 'customer-edit'; customer: Customer }
   | { name: 'measurement-create'; customer: Customer; seed?: Measurement | null }
   | { name: 'measurement-detail'; customer: Customer; measurementId: string }
+  | { name: 'job-create'; customer: Customer }
+  | { name: 'payment-create'; customer: Customer; jobId?: string }
 
 export default function App() {
   const [gate, setGate] = useState<Gate>('loading')
@@ -149,6 +153,10 @@ function AuthenticatedApp() {
               seed: measurement,
             })
           }
+          onAddJob={(customer) => setScreen({ name: 'job-create', customer })}
+          onAddPayment={(customer, jobId) =>
+            setScreen({ name: 'payment-create', customer, jobId })
+          }
         />
       )}
 
@@ -194,6 +202,31 @@ function AuthenticatedApp() {
               customer: screen.customer,
               seed: measurement,
             })
+          }
+        />
+      )}
+
+      {screen.name === 'job-create' && (
+        <JobFormPage
+          customer={screen.customer}
+          onCancel={() =>
+            setScreen({ name: 'customer-detail', id: screen.customer.id })
+          }
+          onSaved={() =>
+            setScreen({ name: 'customer-detail', id: screen.customer.id })
+          }
+        />
+      )}
+
+      {screen.name === 'payment-create' && (
+        <PaymentFormPage
+          customer={screen.customer}
+          preferredJobId={screen.jobId}
+          onCancel={() =>
+            setScreen({ name: 'customer-detail', id: screen.customer.id })
+          }
+          onSaved={() =>
+            setScreen({ name: 'customer-detail', id: screen.customer.id })
           }
         />
       )}

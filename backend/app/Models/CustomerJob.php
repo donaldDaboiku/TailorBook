@@ -4,8 +4,10 @@ namespace App\Models;
 
 use App\Models\Concerns\AssignsClientUuid;
 use App\Services\Balance;
+use Database\Factories\CustomerJobFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,7 +24,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 ])]
 class CustomerJob extends Model
 {
-    use AssignsClientUuid, HasUuids, SoftDeletes;
+    /** @use HasFactory<CustomerJobFactory> */
+    use AssignsClientUuid, HasFactory, HasUuids, SoftDeletes;
 
     /**
      * @return array<string, string>

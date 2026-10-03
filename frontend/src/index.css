@@ -414,7 +414,8 @@ a.primary {
   font-size: 0.9rem;
 }
 
-.form input[type='date'] {
+.form input[type='date'],
+.form input[type='number'] {
   min-height: 48px;
   width: 100%;
   border: 1px solid var(--line);
@@ -423,4 +424,39 @@ a.primary {
   font: inherit;
   background: #fff;
   color: var(--ink);
+}
+
+.finance-grid {
+  margin: 0.75rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.finance-grid dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.finance-grid dd {
+  margin: 0.15rem 0 0;
+  font-weight: 650;
+  font-size: 0.95rem;
+}
+
+.finance-grid .outstanding {
+  color: #9f1239;
+}
+
+.stack-item {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.list-item.static {
+  cursor: default;
+}
+
+.stack-item .secondary {
+  margin-top: 0;
 }

@@ -1,0 +1,113 @@
+:root {
+  color-scheme: light;
+  --paper: #f4f1eb;
+  --ink: #1c1917;
+  --muted: #57534e;
+  --card: #fffcf8;
+  --line: #e6dfd4;
+  --accent: #1f3d34;
+  --font: "Segoe UI", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.app {
+  min-height: 100svh;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+}
+
+.topbar {
+  padding: 1rem 1.25rem 0.5rem;
+}
+
+.app-name {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+main {
+  flex: 1;
+  padding: 0.5rem 1.25rem 1.5rem;
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.status {
+  color: var(--muted);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1.25rem;
+}
+
+.tabbar {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  width: min(480px, 100%);
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.25rem;
+  padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+
+.tabbar button {
+  min-height: 44px;
+  min-width: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.tabbar button[aria-current='page'] {
+  background: var(--accent);
+  color: #f7f4ef;
+  font-weight: 650;
+}
+
+.tabbar button:disabled {
+  opacity: 0.45;
+}

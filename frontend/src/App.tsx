@@ -11,12 +11,13 @@ import JobFormPage from './pages/JobFormPage'
 import LoginPage from './pages/LoginPage'
 import MeasurementDetailPage from './pages/MeasurementDetailPage'
 import MeasurementFormPage from './pages/MeasurementFormPage'
+import MorePage from './pages/MorePage'
 import PaymentFormPage from './pages/PaymentFormPage'
 import RegisterPage from './pages/RegisterPage'
 import WhatsAppComposePage from './pages/WhatsAppComposePage'
 
 type Gate = 'loading' | 'ready' | 'offline'
-type Tab = 'home' | 'customers' | 'finance'
+type Tab = 'home' | 'customers' | 'finance' | 'more'
 type Screen =
   | { name: 'home' }
   | { name: 'customers' }
@@ -30,6 +31,7 @@ type Screen =
   | { name: 'whatsapp'; customer: Customer }
   | { name: 'expenses' }
   | { name: 'expense-create' }
+  | { name: 'more' }
 
 export default function App() {
   const [gate, setGate] = useState<Gate>('loading')
@@ -115,7 +117,9 @@ function AuthenticatedApp() {
       ? 'home'
       : screen.name === 'expenses' || screen.name === 'expense-create'
         ? 'finance'
-        : 'customers'
+        : screen.name === 'more'
+          ? 'more'
+          : 'customers'
 
   return (
     <Shell
@@ -126,6 +130,8 @@ function AuthenticatedApp() {
           setScreen({ name: 'home' })
         } else if (next === 'finance') {
           setScreen({ name: 'expenses' })
+        } else if (next === 'more') {
+          setScreen({ name: 'more' })
         } else {
           setScreen({ name: 'customers' })
         }
@@ -271,6 +277,8 @@ function AuthenticatedApp() {
           onSaved={() => setScreen({ name: 'expenses' })}
         />
       )}
+
+      {screen.name === 'more' && <MorePage />}
     </Shell>
   )
 }
@@ -319,7 +327,11 @@ function Shell({
           >
             Finance
           </button>
-          <button type="button" disabled>
+          <button
+            type="button"
+            aria-current={tab === 'more' ? 'page' : undefined}
+            onClick={() => onTabChange?.('more')}
+          >
             More
           </button>
         </nav>

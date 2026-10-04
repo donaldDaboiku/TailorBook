@@ -6,6 +6,7 @@ use App\Enums\MeasurementUnit;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Business;
 use App\Models\User;
@@ -77,6 +78,19 @@ class AuthController extends Controller
     public function me(Request $request): UserResource
     {
         return UserResource::make($request->user()->load('business'));
+    }
+
+    public function updateProfile(UpdateProfileRequest $request): UserResource
+    {
+        $user = $request->user();
+        $data = $request->validated();
+
+        $user->update([
+            'name' => $data['name'],
+            'email' => $data['email'],
+        ]);
+
+        return UserResource::make($user->fresh()->load('business'));
     }
 
     public function logout(Request $request): JsonResponse

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useAuth } from '../auth'
 
 export default function HomePage({
@@ -8,45 +7,21 @@ export default function HomePage({
   onAddCustomer: () => void
   onAddExpense: () => void
 }) {
-  const { user, logout } = useAuth()
-  const [busy, setBusy] = useState(false)
+  const { user } = useAuth()
   const shop = user?.business?.name ?? 'your shop'
 
-  async function onLogout() {
-    setBusy(true)
-    try {
-      await logout()
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
-    <>
-      <section className="card">
-        <h1>Good day, {user?.name}</h1>
-        <p className="lede">{shop} is ready.</p>
-        <div className="home-actions">
-          <button type="button" className="primary" onClick={onAddCustomer}>
-            New customer
-          </button>
-          <button type="button" className="secondary" onClick={onAddExpense}>
-            Add expense
-          </button>
-        </div>
-      </section>
-
-      <section className="card muted-card">
-        <p className="status">Signed in as {user?.email}</p>
-        <button
-          type="button"
-          className="secondary"
-          onClick={onLogout}
-          disabled={busy}
-        >
-          {busy ? 'Signing out…' : 'Sign out'}
+    <section className="card">
+      <h1>Good day, {user?.name}</h1>
+      <p className="lede">{shop} is ready.</p>
+      <div className="home-actions">
+        <button type="button" className="primary" onClick={onAddCustomer}>
+          New customer
         </button>
-      </section>
-    </>
+        <button type="button" className="secondary" onClick={onAddExpense}>
+          Add expense
+        </button>
+      </div>
+    </section>
   )
 }

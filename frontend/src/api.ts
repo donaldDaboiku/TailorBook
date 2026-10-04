@@ -222,6 +222,54 @@ export async function fetchMe(): Promise<User> {
   return data.data
 }
 
+export async function updateProfile(payload: {
+  name: string
+  email: string
+}): Promise<User> {
+  const data = await apiJson<{ data: User }>('/api/auth/profile', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+
+  if (!isWrappedUser(data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function updateBusiness(payload: {
+  name: string
+  phone: string
+  whatsapp_phone?: string
+  country: string
+  measurement_unit: 'cm' | 'in'
+  currency: string
+}): Promise<User> {
+  const body: Record<string, string> = {
+    name: payload.name,
+    phone: payload.phone,
+    country: payload.country,
+    measurement_unit: payload.measurement_unit,
+    currency: payload.currency,
+  }
+
+  if (payload.whatsapp_phone?.trim()) {
+    body.whatsapp_phone = payload.whatsapp_phone.trim()
+  }
+
+  const data = await apiJson<{ data: User }>('/api/business', {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+
+  if (!isWrappedUser(data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
 export async function logout(): Promise<void> {
   const token = getToken()
 

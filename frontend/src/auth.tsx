@@ -32,6 +32,7 @@ type AuthContextValue = {
     measurement_unit: 'cm' | 'in'
     currency: string
   }) => Promise<void>
+  setUser: (user: User) => void
   logout: () => Promise<void>
 }
 
@@ -111,7 +112,16 @@ export function AuthProvider({
 
   return (
     <AuthContext.Provider
-      value={{ user, appName, loading, offline, login, register, logout }}
+      value={{
+        user,
+        appName,
+        loading,
+        offline,
+        login,
+        register,
+        setUser,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -1,0 +1,83 @@
+# Deploy: Render Dashboard → New → Blueprint → connect this GitHub repo.
+#
+# After the API is live:
+# 1. Set VITE_API_URL on tailormate-web to https://YOUR-API.onrender.com (no trailing slash)
+# 2. Redeploy tailormate-web
+# 3. Set FRONTEND_URL on tailormate-api to https://YOUR-WEB.onrender.com
+# 4. Set APP_URL on tailormate-api to https://YOUR-API.onrender.com
+# 5. Generate APP_KEY locally: cd backend && php artisan key:generate --show
+
+databases:
+  - name: tailormate-db
+    plan: free
+    databaseName: tailormate
+    user: tailormate
+
+services:
+  - type: web
+    name: tailormate-api
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_NAME
+        value: TailorMate
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: info
+      - key: SESSION_DRIVER
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: tailormate-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: tailormate-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: tailormate-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: tailormate-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: tailormate-db
+          property: password
+
+  - type: web
+    name: tailormate-web
+    runtime: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false

@@ -164,7 +164,15 @@ Update your name or email. Tap **Save account**.
 
 ### Sign out
 
-Use **Sign out** at the bottom of **More**.
+Use **Sign out** near the bottom of **More**.
+
+### Delete account
+
+1. Scroll to **Delete account**.
+2. Enter your password.
+3. Tap **Delete my account** and confirm.
+
+This permanently removes your login, shop, customers, measurements, jobs, payments, and expenses. It cannot be undone. You need the correct password.
 
 ### Install on your phone (optional)
 

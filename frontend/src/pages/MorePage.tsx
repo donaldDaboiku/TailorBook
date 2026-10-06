@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import {
+  deleteAccount,
   firstError,
   updateBusiness,
   updateProfile,
@@ -7,7 +8,7 @@ import {
 import { useAuth } from '../auth'
 
 export default function MorePage() {
-  const { user, setUser, logout, appName } = useAuth()
+  const { user, setUser, clearUser, logout, appName } = useAuth()
   const business = user?.business
 
   const [name, setName] = useState(user?.name ?? '')
@@ -30,6 +31,9 @@ export default function MorePage() {
   const [accountBusy, setAccountBusy] = useState(false)
   const [shopBusy, setShopBusy] = useState(false)
   const [logoutBusy, setLogoutBusy] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteError, setDeleteError] = useState('')
+  const [deleteBusy, setDeleteBusy] = useState(false)
 
   async function onSaveAccount(event: FormEvent) {
     event.preventDefault()
@@ -81,6 +85,29 @@ export default function MorePage() {
       await logout()
     } finally {
       setLogoutBusy(false)
+    }
+  }
+
+  async function onDeleteAccount(event: FormEvent) {
+    event.preventDefault()
+    setDeleteError('')
+
+    const ok = window.confirm(
+      'Delete your account and all shop data forever? This cannot be undone.',
+    )
+
+    if (!ok) {
+      return
+    }
+
+    setDeleteBusy(true)
+
+    try {
+      await deleteAccount(deletePassword)
+      clearUser()
+    } catch (err) {
+      setDeleteError(firstError(err))
+      setDeleteBusy(false)
     }
   }
 
@@ -220,10 +247,44 @@ export default function MorePage() {
           type="button"
           className="secondary danger"
           onClick={onLogout}
-          disabled={logoutBusy}
+          disabled={logoutBusy || deleteBusy}
         >
           {logoutBusy ? 'Signing out…' : 'Sign out'}
         </button>
+      </section>
+
+      <section className="card muted-card">
+        <h2 className="section-title">Delete account</h2>
+        <p className="lede">
+          This permanently removes your login, shop, customers, measurements,
+          jobs, payments, and expenses.
+        </p>
+        <form className="form" onSubmit={onDeleteAccount}>
+          <label>
+            Confirm with your password
+            <input
+              type="password"
+              value={deletePassword}
+              onChange={(event) => setDeletePassword(event.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </label>
+
+          {deleteError && (
+            <p className="form-error" role="alert">
+              {deleteError}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="secondary danger"
+            disabled={deleteBusy || !deletePassword}
+          >
+            {deleteBusy ? 'Deleting…' : 'Delete my account'}
+          </button>
+        </form>
       </section>
     </>
   )

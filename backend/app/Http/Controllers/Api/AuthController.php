@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\MeasurementUnit;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\DeleteAccountRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Business;
 use App\Models\User;
+use App\Services\DeleteAccount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -103,6 +105,15 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Signed out.',
+        ]);
+    }
+
+    public function destroy(DeleteAccountRequest $request): JsonResponse
+    {
+        DeleteAccount::run($request->user());
+
+        return response()->json([
+            'message' => 'Account deleted.',
         ]);
     }
 }

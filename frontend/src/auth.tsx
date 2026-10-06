@@ -33,6 +33,7 @@ type AuthContextValue = {
     currency: string
   }) => Promise<void>
   setUser: (user: User) => void
+  clearUser: () => void
   logout: () => Promise<void>
 }
 
@@ -110,6 +111,11 @@ export function AuthProvider({
     setUser(null)
   }
 
+  function clearUser() {
+    setToken(null)
+    setUser(null)
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -120,6 +126,7 @@ export function AuthProvider({
         login,
         register,
         setUser,
+        clearUser,
         logout,
       }}
     >

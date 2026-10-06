@@ -270,6 +270,15 @@ export async function updateBusiness(payload: {
   return data.data
 }
 
+export async function deleteAccount(password: string): Promise<void> {
+  await apiJson<{ message: string }>('/api/auth/account', {
+    method: 'DELETE',
+    body: JSON.stringify({ password }),
+  })
+
+  setToken(null)
+}
+
 export async function logout(): Promise<void> {
   const token = getToken()
 

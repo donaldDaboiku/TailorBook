@@ -517,6 +517,27 @@ a.primary {
   line-height: 1.4;
 }
 
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.badge.ok {
+  background: color-mix(in srgb, var(--accent) 14%, #fff);
+  color: var(--accent);
+}
+
+.badge.danger {
+  background: #ffe4e6;
+  color: #9f1239;
+}
+
 .action-row .primary.compact {
   display: inline-flex;
   align-items: center;

@@ -33,6 +33,8 @@ export type AdminShop = {
   country: string | null
   created_at: string | null
   last_login_at: string | null
+  suspended: boolean
+  suspended_at: string | null
 }
 
 export type AuthResponse = {
@@ -246,6 +248,24 @@ export async function listAdminShops(q = ''): Promise<AdminShop[]> {
   if (!Array.isArray(data.data)) {
     throw new Error('bad response')
   }
+
+  return data.data
+}
+
+export async function suspendAdminShop(userId: number): Promise<AdminShop> {
+  const data = await apiJson<{ data: AdminShop; message: string }>(
+    `/api/admin/shops/${userId}/suspend`,
+    { method: 'POST' },
+  )
+
+  return data.data
+}
+
+export async function unsuspendAdminShop(userId: number): Promise<AdminShop> {
+  const data = await apiJson<{ data: AdminShop; message: string }>(
+    `/api/admin/shops/${userId}/unsuspend`,
+    { method: 'POST' },
+  )
 
   return data.data
 }

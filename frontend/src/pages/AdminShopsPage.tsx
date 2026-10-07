@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { firstError, listAdminShops, type AdminShop } from '../api'
+import {
+  firstError,
+  listAdminShops,
+  suspendAdminShop,
+  unsuspendAdminShop,
+  type AdminShop,
+} from '../api'
 import { useAuth } from '../auth'
 
 export default function AdminShopsPage() {
@@ -9,6 +15,7 @@ export default function AdminShopsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [actionId, setActionId] = useState<number | null>(null)
 
   async function reload(search = q) {
     setLoading(true)
@@ -33,6 +40,37 @@ export default function AdminShopsPage() {
       await logout()
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function onToggleSuspend(shop: AdminShop) {
+    const nextAction = shop.suspended ? 'activate' : 'suspend'
+    if (
+      !window.confirm(
+        shop.suspended
+          ? `Activate ${shop.shop_name ?? shop.email}? They can sign in again.`
+          : `Suspend ${shop.shop_name ?? shop.email}? They will be signed out and cannot log in.`,
+      )
+    ) {
+      return
+    }
+
+    setActionId(shop.id)
+    setError('')
+
+    try {
+      const updated =
+        nextAction === 'suspend'
+          ? await suspendAdminShop(shop.id)
+          : await unsuspendAdminShop(shop.id)
+
+      setShops((current) =>
+        current.map((row) => (row.id === updated.id ? updated : row)),
+      )
+    } catch (err) {
+      setError(firstError(err))
+    } finally {
+      setActionId(null)
     }
   }
 
@@ -82,7 +120,12 @@ export default function AdminShopsPage() {
 
       {shops.map((shop) => (
         <section key={shop.id} className="card muted-card">
-          <h2 className="section-title">{shop.shop_name ?? 'No shop name'}</h2>
+          <div className="row-between">
+            <h2 className="section-title">{shop.shop_name ?? 'No shop name'}</h2>
+            <span className={shop.suspended ? 'badge danger' : 'badge ok'}>
+              {shop.suspended ? 'Suspended' : 'Active'}
+            </span>
+          </div>
           <dl className="details">
             <div>
               <dt>Owner</dt>
@@ -105,6 +148,18 @@ export default function AdminShopsPage() {
               <dd>{formatWhen(shop.last_login_at)}</dd>
             </div>
           </dl>
+          <button
+            type="button"
+            className={shop.suspended ? 'primary' : 'secondary danger'}
+            onClick={() => void onToggleSuspend(shop)}
+            disabled={actionId === shop.id}
+          >
+            {actionId === shop.id
+              ? 'Updating…'
+              : shop.suspended
+                ? 'Activate shop'
+                : 'Suspend shop'}
+          </button>
         </section>
       ))}
 

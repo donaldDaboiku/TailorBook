@@ -242,14 +242,15 @@ cd backend
 php artisan admin:create --email=you@example.com --password=secret123 --name=Admin
 ```
 
-### What admins see (step 1)
+### What admins see
 
 - List of registered shops
 - Owner name, email, phone
 - Joined date and last login
 - Search by shop, owner, email, or phone
+- **Suspend** / **Activate** a shop (suspended shops cannot sign in; open sessions end)
 
-Suspend / subscriptions come in later steps.
+Subscriptions / payments come in later steps.
 
 ---
 

@@ -72,4 +72,42 @@ class AdminShopTest extends TestCase
 
         $this->assertNotNull($user->fresh()->last_login_at);
     }
+
+    public function test_admin_can_suspend_and_activate_a_shop(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $tailor = User::factory()->create([
+            'email' => 'ada@example.com',
+            'password' => 'password',
+        ]);
+        Business::factory()->create([
+            'user_id' => $tailor->id,
+            'name' => 'Ada Atelier',
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $this->postJson("/api/admin/shops/{$tailor->id}/suspend")
+            ->assertOk()
+            ->assertJsonPath('data.suspended', true)
+            ->assertJsonPath('message', 'Shop suspended.');
+
+        $this->assertNotNull($tailor->fresh()->suspended_at);
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'ada@example.com',
+            'password' => 'password',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.email.0', 'This account is suspended. Contact support.');
+
+        $this->postJson("/api/admin/shops/{$tailor->id}/unsuspend")
+            ->assertOk()
+            ->assertJsonPath('data.suspended', false);
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'ada@example.com',
+            'password' => 'password',
+        ])->assertOk();
+    }
 }

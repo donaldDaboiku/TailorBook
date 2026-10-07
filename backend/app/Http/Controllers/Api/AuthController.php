@@ -70,6 +70,12 @@ class AuthController extends Controller
             ]);
         }
 
+        if ($user->isSuspended()) {
+            throw ValidationException::withMessages([
+                'email' => ['This account is suspended. Contact support.'],
+            ]);
+        }
+
         $user->forceFill(['last_login_at' => now()])->save();
         $user->load('business');
         $token = $user->createToken('phone')->plainTextToken;

@@ -26,7 +26,7 @@ Route::middleware('throttle:20,1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -64,5 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('admin')->prefix('admin')->group(function () {
         Route::get('/shops', [AdminShopController::class, 'index']);
+        Route::post('/shops/{user}/suspend', [AdminShopController::class, 'suspend']);
+        Route::post('/shops/{user}/unsuspend', [AdminShopController::class, 'unsuspend']);
     });
 });

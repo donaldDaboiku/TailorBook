@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import {
   firstError,
   listAdminShops,
+  resetAdminShopPassword,
   suspendAdminShop,
   unsuspendAdminShop,
   updateAdminShopSubscription,
@@ -98,6 +99,29 @@ export default function AdminShopsPage() {
     }
   }
 
+  async function onResetPassword(
+    shop: AdminShop,
+    password: string,
+    passwordConfirmation: string,
+  ) {
+    setActionId(shop.id)
+    setError('')
+
+    try {
+      await resetAdminShopPassword(shop.id, {
+        password,
+        password_confirmation: passwordConfirmation,
+      })
+      window.alert(
+        `Password updated for ${shop.email}. Tell the owner the new password securely (not by public chat if you can avoid it).`,
+      )
+    } catch (err) {
+      setError(firstError(err))
+    } finally {
+      setActionId(null)
+    }
+  }
+
   return (
     <>
       <section className="card">
@@ -151,6 +175,9 @@ export default function AdminShopsPage() {
           onSaveSubscription={(status, until) =>
             void onSaveSubscription(shop, status, until)
           }
+          onResetPassword={(password, confirmation) =>
+            void onResetPassword(shop, password, confirmation)
+          }
         />
       ))}
 
@@ -173,16 +200,20 @@ function ShopCard({
   busy,
   onToggleSuspend,
   onSaveSubscription,
+  onResetPassword,
 }: {
   shop: AdminShop
   busy: boolean
   onToggleSuspend: () => void
   onSaveSubscription: (status: SubscriptionStatus, until: string) => void
+  onResetPassword: (password: string, confirmation: string) => void
 }) {
   const [status, setStatus] = useState<SubscriptionStatus>(
     shop.subscription_status === 'subscribed' ? 'subscribed' : 'free',
   )
   const [until, setUntil] = useState(shop.subscribed_until ?? defaultUntil())
+  const [newPassword, setNewPassword] = useState('')
+  const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('')
 
   useEffect(() => {
     setStatus(shop.subscription_status === 'subscribed' ? 'subscribed' : 'free')
@@ -192,6 +223,13 @@ function ShopCard({
   function onSubmit(event: FormEvent) {
     event.preventDefault()
     onSaveSubscription(status, until)
+  }
+
+  function onSubmitPassword(event: FormEvent) {
+    event.preventDefault()
+    onResetPassword(newPassword, newPasswordConfirmation)
+    setNewPassword('')
+    setNewPasswordConfirmation('')
   }
 
   return (
@@ -271,6 +309,38 @@ function ShopCard({
 
         <button type="submit" className="primary" disabled={busy}>
           {busy ? 'Saving…' : 'Save subscription'}
+        </button>
+      </form>
+
+      <form className="form" onSubmit={onSubmitPassword}>
+        <h3 className="section-title">Reset password</h3>
+        <p className="status">
+          Set a temporary password, then tell the owner privately.
+        </p>
+        <label>
+          New password
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+            required
+            minLength={8}
+          />
+        </label>
+        <label>
+          Confirm password
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={newPasswordConfirmation}
+            onChange={(event) => setNewPasswordConfirmation(event.target.value)}
+            required
+            minLength={8}
+          />
+        </label>
+        <button type="submit" className="secondary" disabled={busy}>
+          {busy ? 'Saving…' : 'Set new password'}
         </button>
       </form>
 

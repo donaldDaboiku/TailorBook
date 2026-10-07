@@ -15,12 +15,14 @@ import ExpenseFormPage from './pages/ExpenseFormPage'
 import ExpensesPage from './pages/ExpensesPage'
 import HomePage from './pages/HomePage'
 import JobFormPage from './pages/JobFormPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import LoginPage from './pages/LoginPage'
 import MeasurementDetailPage from './pages/MeasurementDetailPage'
 import MeasurementFormPage from './pages/MeasurementFormPage'
 import MorePage from './pages/MorePage'
 import PaymentFormPage from './pages/PaymentFormPage'
 import RegisterPage from './pages/RegisterPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import SubscriptionBillingCard from './pages/SubscriptionBillingCard'
 import WhatsAppComposePage from './pages/WhatsAppComposePage'
 
@@ -97,11 +99,36 @@ export default function App() {
 
 function AuthenticatedApp() {
   const { user, loading, appName, setUser, logout } = useAuth()
-  const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login')
+  const [authScreen, setAuthScreen] = useState<
+    'login' | 'register' | 'forgot' | 'reset'
+  >(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('reset') === '1' ? 'reset' : 'login'
+  })
+  const [resetEmail, setResetEmail] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('email') ?? ''
+  })
+  const [resetToken, setResetToken] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('token') ?? ''
+  })
   const [screen, setScreen] = useState<Screen>({ name: 'home' })
   const [billingMessage, setBillingMessage] = useState('')
   const [billingError, setBillingError] = useState('')
   const [billingBusy, setBillingBusy] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('reset') !== '1') {
+      return
+    }
+
+    setResetEmail(params.get('email') ?? '')
+    setResetToken(params.get('token') ?? '')
+    setAuthScreen('reset')
+    window.history.replaceState({}, '', window.location.pathname)
+  }, [])
 
   useEffect(() => {
     if (!user || user.role === 'admin') {
@@ -162,10 +189,21 @@ function AuthenticatedApp() {
   if (!user) {
     return (
       <Shell appName={appName} signedOut>
-        {authScreen === 'login' ? (
-          <LoginPage onShowRegister={() => setAuthScreen('register')} />
-        ) : (
+        {authScreen === 'register' ? (
           <RegisterPage onShowLogin={() => setAuthScreen('login')} />
+        ) : authScreen === 'forgot' ? (
+          <ForgotPasswordPage onShowLogin={() => setAuthScreen('login')} />
+        ) : authScreen === 'reset' && resetEmail && resetToken ? (
+          <ResetPasswordPage
+            email={resetEmail}
+            token={resetToken}
+            onDone={() => setAuthScreen('login')}
+          />
+        ) : (
+          <LoginPage
+            onShowRegister={() => setAuthScreen('register')}
+            onShowForgot={() => setAuthScreen('forgot')}
+          />
         )}
       </Shell>
     )

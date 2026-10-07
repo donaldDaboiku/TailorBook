@@ -4,8 +4,10 @@ import { useAuth } from '../auth'
 
 export default function LoginPage({
   onShowRegister,
+  onShowForgot,
 }: {
   onShowRegister: () => void
+  onShowForgot: () => void
 }) {
   const { login, appName } = useAuth()
   const [email, setEmail] = useState('')
@@ -61,6 +63,12 @@ export default function LoginPage({
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
+
+      <p className="switch">
+        <button type="button" className="link" onClick={onShowForgot}>
+          Forgot password?
+        </button>
+      </p>
 
       <p className="switch">
         New shop?{' '}

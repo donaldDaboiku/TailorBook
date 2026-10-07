@@ -219,6 +219,29 @@ After install it opens full-screen like an app. Saving still needs internet.
 
 ---
 
+## 10b. Forgot password
+
+### Shop owner (self-serve)
+
+1. On **Sign in**, tap **Forgot password?**  
+2. Enter the shop email and tap **Send reset link**  
+3. Open the email link (opens the app)  
+4. Set a new password, then sign in  
+
+This needs working mail on the API (`MAIL_MAILER`, SMTP or Resend, etc.). Until mail is configured, use the admin reset below.
+
+### Admin (manual)
+
+1. Sign in as admin  
+2. Open the shop card  
+3. Under **Reset password**, enter a temporary password twice  
+4. Tap **Set new password**  
+5. Tell the owner that password privately (call / WhatsApp), and ask them to change it after login if you want  
+
+Admin reset also signs the shop out of other devices.
+
+---
+
 ## 11. Admin (platform owner)
 
 Admins are not shop accounts. They see a shops list after login.

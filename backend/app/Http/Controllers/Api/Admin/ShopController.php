@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ResetShopPasswordRequest;
 use App\Http\Requests\Admin\UpdateShopSubscriptionRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -85,6 +86,23 @@ class ShopController extends Controller
 
         return response()->json([
             'message' => 'Subscription updated.',
+            'data' => $this->shopPayload($user->fresh()->load('business')),
+        ]);
+    }
+
+    public function resetPassword(
+        ResetShopPasswordRequest $request,
+        User $user,
+    ): JsonResponse {
+        abort_unless($user->role === UserRole::Tailor, 404);
+
+        $user->forceFill([
+            'password' => $request->validated('password'),
+        ])->save();
+        $user->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Password reset. Tell the shop owner the new password securely.',
             'data' => $this->shopPayload($user->fresh()->load('business')),
         ]);
     }

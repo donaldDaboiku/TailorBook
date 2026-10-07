@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
+use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,10 +26,10 @@ use Laravel\Sanctum\HasApiTokens;
     'subscribed_until',
 ])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements CanResetPasswordContract
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use CanResetPassword, HasApiTokens, HasFactory, Notifiable;
 
     /**
      * @return array<string, string>

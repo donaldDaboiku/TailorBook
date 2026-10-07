@@ -236,6 +236,44 @@ export async function login(payload: {
   return authRequest('/api/auth/login', payload)
 }
 
+export async function forgotPassword(email: string): Promise<string> {
+  const data = await publicJson<{ message: string }>(
+    '/api/auth/forgot-password',
+    { email },
+  )
+
+  return data.message
+}
+
+export async function resetPassword(payload: {
+  email: string
+  token: string
+  password: string
+  password_confirmation: string
+}): Promise<string> {
+  const data = await publicJson<{ message: string }>(
+    '/api/auth/reset-password',
+    payload,
+  )
+
+  return data.message
+}
+
+export async function resetAdminShopPassword(
+  userId: number,
+  payload: { password: string; password_confirmation: string },
+): Promise<AdminShop> {
+  const data = await apiJson<{ data: AdminShop; message: string }>(
+    `/api/admin/shops/${userId}/password`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    },
+  )
+
+  return data.data
+}
+
 export async function fetchMe(): Promise<User> {
   const response = await fetch(apiUrl('/api/auth/me'), {
     headers: authHeaders(),
@@ -868,6 +906,26 @@ async function authRequest(
 
   setToken(data.token)
   return data
+}
+
+async function publicJson<T>(
+  path: string,
+  body: Record<string, string>,
+): Promise<T> {
+  const response = await fetch(apiUrl(path), {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+
+  return (await parseJson(response)) as T
 }
 
 function authHeaders(json = false): HeadersInit {

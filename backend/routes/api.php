@@ -25,6 +25,8 @@ Route::get('/health', function () {
 Route::middleware('throttle:20,1')->group(function () {
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 });
 
 Route::post('/billing/webhook', [BillingController::class, 'webhook'])
@@ -77,5 +79,6 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/shops/{user}/suspend', [AdminShopController::class, 'suspend']);
         Route::post('/shops/{user}/unsuspend', [AdminShopController::class, 'unsuspend']);
         Route::put('/shops/{user}/subscription', [AdminShopController::class, 'updateSubscription']);
+        Route::put('/shops/{user}/password', [AdminShopController::class, 'resetPassword']);
     });
 });

@@ -24,6 +24,9 @@ export type User = {
   business?: Business | null
 }
 
+export type SubscriptionStatus = 'free' | 'subscribed'
+export type SubscriptionAccess = 'free' | 'subscribed' | 'expired' | 'admin'
+
 export type AdminShop = {
   id: number
   owner_name: string
@@ -35,6 +38,9 @@ export type AdminShop = {
   last_login_at: string | null
   suspended: boolean
   suspended_at: string | null
+  subscription_status: SubscriptionStatus
+  subscription_access: SubscriptionAccess
+  subscribed_until: string | null
 }
 
 export type AuthResponse = {
@@ -265,6 +271,35 @@ export async function unsuspendAdminShop(userId: number): Promise<AdminShop> {
   const data = await apiJson<{ data: AdminShop; message: string }>(
     `/api/admin/shops/${userId}/unsuspend`,
     { method: 'POST' },
+  )
+
+  return data.data
+}
+
+export async function updateAdminShopSubscription(
+  userId: number,
+  payload: {
+    subscription_status: SubscriptionStatus
+    subscribed_until?: string | null
+  },
+): Promise<AdminShop> {
+  const body: Record<string, string> = {
+    subscription_status: payload.subscription_status,
+  }
+
+  if (
+    payload.subscription_status === 'subscribed' &&
+    payload.subscribed_until
+  ) {
+    body.subscribed_until = payload.subscribed_until
+  }
+
+  const data = await apiJson<{ data: AdminShop; message: string }>(
+    `/api/admin/shops/${userId}/subscription`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    },
   )
 
   return data.data

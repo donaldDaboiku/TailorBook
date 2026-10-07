@@ -249,8 +249,16 @@ php artisan admin:create --email=you@example.com --password=secret123 --name=Adm
 - Joined date and last login
 - Search by shop, owner, email, or phone
 - **Suspend** / **Activate** a shop (suspended shops cannot sign in; open sessions end)
+- **Subscription**: Free, or Subscribed with an until-date  
+  - Expired subscriptions cannot sign in  
+  - Set manually for now (payments come later)
 
-Subscriptions / payments come in later steps.
+### Set a shop subscription
+
+1. Open a shop card in Admin  
+2. Choose **Free** or **Subscribed**  
+3. If subscribed, pick **Subscribed until**  
+4. Tap **Save subscription**
 
 ---
 

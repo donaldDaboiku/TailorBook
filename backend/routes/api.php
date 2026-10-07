@@ -66,5 +66,6 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/shops', [AdminShopController::class, 'index']);
         Route::post('/shops/{user}/suspend', [AdminShopController::class, 'suspend']);
         Route::post('/shops/{user}/unsuspend', [AdminShopController::class, 'unsuspend']);
+        Route::put('/shops/{user}/subscription', [AdminShopController::class, 'updateSubscription']);
     });
 });

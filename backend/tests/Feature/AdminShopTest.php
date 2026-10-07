@@ -110,4 +110,57 @@ class AdminShopTest extends TestCase
             'password' => 'password',
         ])->assertOk();
     }
+
+    public function test_admin_can_set_subscription_and_expired_shops_cannot_login(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $tailor = User::factory()->create([
+            'email' => 'ada@example.com',
+            'password' => 'password',
+        ]);
+        Business::factory()->create([
+            'user_id' => $tailor->id,
+            'name' => 'Ada Atelier',
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $this->putJson("/api/admin/shops/{$tailor->id}/subscription", [
+            'subscription_status' => 'subscribed',
+            'subscribed_until' => '2026-12-31',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.subscription_status', 'subscribed')
+            ->assertJsonPath('data.subscription_access', 'subscribed')
+            ->assertJsonPath('data.subscribed_until', '2026-12-31');
+
+        $this->putJson("/api/admin/shops/{$tailor->id}/subscription", [
+            'subscription_status' => 'subscribed',
+            'subscribed_until' => '2020-01-01',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.subscription_access', 'expired');
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'ada@example.com',
+            'password' => 'password',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'errors.email.0',
+                'This subscription has expired. Contact support to renew.',
+            );
+
+        $this->putJson("/api/admin/shops/{$tailor->id}/subscription", [
+            'subscription_status' => 'free',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.subscription_access', 'free')
+            ->assertJsonPath('data.subscribed_until', null);
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'ada@example.com',
+            'password' => 'password',
+        ])->assertOk();
+    }
 }

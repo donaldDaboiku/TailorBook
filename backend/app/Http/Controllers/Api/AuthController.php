@@ -76,6 +76,12 @@ class AuthController extends Controller
             ]);
         }
 
+        if (! $user->hasSubscriptionAccess()) {
+            throw ValidationException::withMessages([
+                'email' => ['This subscription has expired. Contact support to renew.'],
+            ]);
+        }
+
         $user->forceFill(['last_login_at' => now()])->save();
         $user->load('business');
         $token = $user->createToken('phone')->plainTextToken;

@@ -538,6 +538,11 @@ a.primary {
   color: #9f1239;
 }
 
+.badge:not(.ok):not(.danger) {
+  background: #f5f5f4;
+  color: var(--muted);
+}
+
 .action-row .primary.compact {
   display: inline-flex;
   align-items: center;

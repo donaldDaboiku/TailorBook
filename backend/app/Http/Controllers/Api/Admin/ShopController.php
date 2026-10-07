@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateShopSubscriptionRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -63,6 +65,30 @@ class ShopController extends Controller
         ]);
     }
 
+    public function updateSubscription(
+        UpdateShopSubscriptionRequest $request,
+        User $user,
+    ): JsonResponse {
+        abort_unless($user->role === UserRole::Tailor, 404);
+
+        $status = SubscriptionStatus::from($request->validated('subscription_status'));
+        $until = $request->validated('subscribed_until');
+
+        $user->forceFill([
+            'subscription_status' => $status,
+            'subscribed_until' => $status === SubscriptionStatus::Free ? null : $until,
+        ])->save();
+
+        if (! $user->fresh()->hasSubscriptionAccess()) {
+            $user->tokens()->delete();
+        }
+
+        return response()->json([
+            'message' => 'Subscription updated.',
+            'data' => $this->shopPayload($user->fresh()->load('business')),
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -79,6 +105,9 @@ class ShopController extends Controller
             'last_login_at' => $user->last_login_at?->toIso8601String(),
             'suspended' => $user->isSuspended(),
             'suspended_at' => $user->suspended_at?->toIso8601String(),
+            'subscription_status' => $user->subscription_status?->value ?? 'free',
+            'subscription_access' => $user->subscriptionAccessStatus(),
+            'subscribed_until' => $user->subscribed_until?->toDateString(),
         ];
     }
 }

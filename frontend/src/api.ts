@@ -20,8 +20,20 @@ export type User = {
   name: string
   email: string
   role: UserRole
+  subscription_status?: SubscriptionStatus
+  subscription_access?: SubscriptionAccess
+  subscribed_until?: string | null
   last_login_at?: string | null
   business?: Business | null
+}
+
+export type BillingPlan = {
+  label: string
+  amount: number
+  amount_label: string
+  currency: string
+  days: number
+  enabled: boolean
 }
 
 export type SubscriptionStatus = 'free' | 'subscribed'
@@ -272,6 +284,47 @@ export async function unsuspendAdminShop(userId: number): Promise<AdminShop> {
     `/api/admin/shops/${userId}/unsuspend`,
     { method: 'POST' },
   )
+
+  return data.data
+}
+
+export async function fetchBillingPlan(): Promise<BillingPlan> {
+  const data = await apiJson<{ data: BillingPlan }>('/api/billing/plan')
+
+  if (!data.data || typeof data.data.amount !== 'number') {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function startBillingCheckout(): Promise<{
+  authorization_url: string
+  reference: string
+}> {
+  const data = await apiJson<{
+    data: { authorization_url: string; reference: string }
+  }>('/api/billing/checkout', { method: 'POST' })
+
+  if (!data.data?.authorization_url || !data.data.reference) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function verifyBillingPayment(reference: string): Promise<User> {
+  const data = await apiJson<{ data: User; message: string }>(
+    '/api/billing/verify',
+    {
+      method: 'POST',
+      body: JSON.stringify({ reference }),
+    },
+  )
+
+  if (!isUser(data.data)) {
+    throw new Error('bad response')
+  }
 
   return data.data
 }

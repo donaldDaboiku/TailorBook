@@ -1,5 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { fetchHealth, type Customer, type Measurement } from './api'
+import {
+  fetchHealth,
+  firstError,
+  verifyBillingPayment,
+  type Customer,
+  type Measurement,
+} from './api'
 import { AuthProvider, useAuth } from './auth'
 import AdminShopsPage from './pages/AdminShopsPage'
 import CustomerDetailPage from './pages/CustomerDetailPage'
@@ -15,6 +21,7 @@ import MeasurementFormPage from './pages/MeasurementFormPage'
 import MorePage from './pages/MorePage'
 import PaymentFormPage from './pages/PaymentFormPage'
 import RegisterPage from './pages/RegisterPage'
+import SubscriptionBillingCard from './pages/SubscriptionBillingCard'
 import WhatsAppComposePage from './pages/WhatsAppComposePage'
 
 type Gate = 'loading' | 'ready' | 'offline'
@@ -89,9 +96,60 @@ export default function App() {
 }
 
 function AuthenticatedApp() {
-  const { user, loading, appName } = useAuth()
+  const { user, loading, appName, setUser, logout } = useAuth()
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login')
   const [screen, setScreen] = useState<Screen>({ name: 'home' })
+  const [billingMessage, setBillingMessage] = useState('')
+  const [billingError, setBillingError] = useState('')
+  const [billingBusy, setBillingBusy] = useState(false)
+
+  useEffect(() => {
+    if (!user || user.role === 'admin') {
+      return
+    }
+
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('billing') !== '1') {
+      return
+    }
+
+    const reference = params.get('reference') || params.get('trxref')
+    window.history.replaceState({}, '', window.location.pathname)
+
+    if (!reference) {
+      return
+    }
+
+    let cancelled = false
+    setBillingBusy(true)
+    setBillingError('')
+    setBillingMessage('Confirming Paystack payment…')
+
+    verifyBillingPayment(reference)
+      .then((next) => {
+        if (cancelled) {
+          return
+        }
+        setUser(next)
+        setBillingMessage('Subscription activated. Thank you.')
+        setScreen({ name: 'more' })
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setBillingError(firstError(err))
+          setBillingMessage('')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setBillingBusy(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id, user?.role, setUser])
 
   if (loading) {
     return (
@@ -121,6 +179,34 @@ function AuthenticatedApp() {
     )
   }
 
+  if (user.subscription_access === 'expired') {
+    return (
+      <Shell appName={appName} signedOut>
+        <section className="card">
+          <h1>Subscription expired</h1>
+          <p className="lede">
+            Renew your shop plan to open customers, jobs, and expenses again.
+          </p>
+          {billingBusy && <p className="status">{billingMessage}</p>}
+          {billingMessage && !billingBusy && (
+            <p className="status">{billingMessage}</p>
+          )}
+          {billingError && (
+            <p className="form-error" role="alert">
+              {billingError}
+            </p>
+          )}
+        </section>
+        <SubscriptionBillingCard title="Renew plan" />
+        <section className="card muted-card">
+          <button type="button" className="secondary" onClick={() => logout()}>
+            Sign out
+          </button>
+        </section>
+      </Shell>
+    )
+  }
+
   const tab: Tab =
     screen.name === 'home'
       ? 'home'
@@ -146,6 +232,20 @@ function AuthenticatedApp() {
         }
       }}
     >
+      {(billingBusy || billingMessage || billingError) && (
+        <section className="card muted-card">
+          {billingBusy && <p className="status">{billingMessage}</p>}
+          {billingMessage && !billingBusy && (
+            <p className="status">{billingMessage}</p>
+          )}
+          {billingError && (
+            <p className="form-error" role="alert">
+              {billingError}
+            </p>
+          )}
+        </section>
+      )}
+
       {screen.name === 'home' && (
         <HomePage
           onAddCustomer={() => setScreen({ name: 'customer-create' })}

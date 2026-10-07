@@ -66,6 +66,16 @@ services:
         fromDatabase:
           name: tailormate-db
           property: password
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
+      - key: PAYSTACK_PLAN_AMOUNT
+        value: "500000"
+      - key: PAYSTACK_PLAN_DAYS
+        value: "30"
+      - key: PAYSTACK_PLAN_LABEL
+        value: Monthly shop plan
 
   # Static sites have no compute plan — do not set `plan` here.
   - type: web

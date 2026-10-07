@@ -111,7 +111,7 @@ class AdminShopTest extends TestCase
         ])->assertOk();
     }
 
-    public function test_admin_can_set_subscription_and_expired_shops_cannot_login(): void
+    public function test_admin_can_set_subscription_and_expired_shops_are_blocked_from_shop_apis(): void
     {
         $admin = User::factory()->admin()->create();
         $tailor = User::factory()->create([
@@ -145,12 +145,13 @@ class AdminShopTest extends TestCase
             'email' => 'ada@example.com',
             'password' => 'password',
         ])
-            ->assertUnprocessable()
-            ->assertJsonPath(
-                'errors.email.0',
-                'This subscription has expired. Contact support to renew.',
-            );
+            ->assertOk()
+            ->assertJsonPath('user.subscription_access', 'expired');
 
+        Sanctum::actingAs($tailor->fresh());
+        $this->getJson('/api/customers')->assertForbidden();
+
+        Sanctum::actingAs($admin);
         $this->putJson("/api/admin/shops/{$tailor->id}/subscription", [
             'subscription_status' => 'free',
         ])

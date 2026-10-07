@@ -250,15 +250,39 @@ php artisan admin:create --email=you@example.com --password=secret123 --name=Adm
 - Search by shop, owner, email, or phone
 - **Suspend** / **Activate** a shop (suspended shops cannot sign in; open sessions end)
 - **Subscription**: Free, or Subscribed with an until-date  
-  - Expired subscriptions cannot sign in  
-  - Set manually for now (payments come later)
+  - Expired shops can still sign in to renew  
+  - Shop APIs stay locked until they pay or you set Free/Subscribed again  
+  - Shops can also pay themselves with Paystack (More → Subscription)
 
-### Set a shop subscription
+### Set a shop subscription (manual)
 
 1. Open a shop card in Admin  
 2. Choose **Free** or **Subscribed**  
 3. If subscribed, pick **Subscribed until**  
 4. Tap **Save subscription**
+
+### Paystack (shop self-serve)
+
+On the API service, set:
+
+```text
+PAYSTACK_SECRET_KEY=sk_live_...
+PAYSTACK_PUBLIC_KEY=pk_live_...
+PAYSTACK_PLAN_AMOUNT=500000
+PAYSTACK_PLAN_DAYS=30
+PAYSTACK_PLAN_LABEL=Monthly shop plan
+FRONTEND_URL=https://your-web.onrender.com
+```
+
+`PAYSTACK_PLAN_AMOUNT` is in **kobo** (500000 = ₦5,000).
+
+In the Paystack dashboard, set the webhook URL to:
+
+```text
+https://YOUR-API.onrender.com/api/billing/webhook
+```
+
+Then a tailor opens **More → Subscription → Pay with Paystack**, pays, and returns to the app. The app verifies the payment (webhook also activates it).
 
 ---
 

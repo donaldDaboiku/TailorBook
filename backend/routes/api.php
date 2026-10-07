@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\ShopController as AdminShopController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BillingController;
 use App\Http\Controllers\Api\BusinessController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerJobController;
@@ -26,12 +27,21 @@ Route::middleware('throttle:20,1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
 });
 
+Route::post('/billing/webhook', [BillingController::class, 'webhook'])
+    ->middleware('throttle:60,1');
+
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::delete('/auth/account', [AuthController::class, 'destroy']);
     Route::put('/business', [BusinessController::class, 'update']);
+
+    Route::get('/billing/plan', [BillingController::class, 'plan']);
+    Route::post('/billing/checkout', [BillingController::class, 'checkout'])
+        ->middleware('throttle:10,1');
+    Route::post('/billing/verify', [BillingController::class, 'verify'])
+        ->middleware('throttle:20,1');
 
     Route::get('/customers', [CustomerController::class, 'index']);
     Route::post('/customers', [CustomerController::class, 'store']);

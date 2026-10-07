@@ -1,5 +1,16 @@
 import { useAuth } from '../auth'
 
+function timeGreeting(now = new Date()): string {
+  const hour = now.getHours()
+  if (hour < 12) {
+    return 'Good morning'
+  }
+  if (hour < 17) {
+    return 'Good afternoon'
+  }
+  return 'Good evening'
+}
+
 export default function HomePage({
   onAddCustomer,
   onAddExpense,
@@ -12,7 +23,9 @@ export default function HomePage({
 
   return (
     <section className="card">
-      <h1>Good day, {user?.name}</h1>
+      <h1>
+        {timeGreeting()}, {user?.name}
+      </h1>
       <p className="lede">{shop} is ready.</p>
       <div className="home-actions">
         <button type="button" className="primary" onClick={onAddCustomer}>

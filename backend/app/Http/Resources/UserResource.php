@@ -21,6 +21,9 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'role' => $this->role?->value ?? 'tailor',
+            'subscription_status' => $this->subscription_status?->value ?? 'free',
+            'subscription_access' => $this->subscriptionAccessStatus(),
+            'subscribed_until' => $this->subscribed_until?->toDateString(),
             'last_login_at' => $this->last_login_at?->toIso8601String(),
             'business' => BusinessResource::make($this->whenLoaded('business')),
         ];

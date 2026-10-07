@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'paystack' => [
+        'secret_key' => env('PAYSTACK_SECRET_KEY'),
+        'public_key' => env('PAYSTACK_PUBLIC_KEY'),
+        'plan_amount' => (int) env('PAYSTACK_PLAN_AMOUNT', 500000),
+        'plan_days' => (int) env('PAYSTACK_PLAN_DAYS', 30),
+        'plan_label' => env('PAYSTACK_PLAN_LABEL', 'Monthly shop plan'),
+        'callback_url' => rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/').'/?billing=1',
+    ],
+
 ];

@@ -24,14 +24,25 @@ class EnsureUserNotSuspended
             ], 403);
         }
 
-        if (! $user->hasSubscriptionAccess()) {
-            $user->tokens()->delete();
-
+        if (! $user->hasSubscriptionAccess() && ! $this->allowsExpiredAccess($request)) {
             return response()->json([
                 'message' => 'This subscription has expired.',
             ], 403);
         }
 
         return $next($request);
+    }
+
+    private function allowsExpiredAccess(Request $request): bool
+    {
+        if ($request->isMethod('GET') && $request->is('api/auth/me')) {
+            return true;
+        }
+
+        if ($request->isMethod('POST') && $request->is('api/auth/logout')) {
+            return true;
+        }
+
+        return $request->is('api/billing/*');
     }
 }

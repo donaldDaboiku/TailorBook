@@ -7,6 +7,7 @@ import {
 } from '../api'
 import { useAuth } from '../auth'
 import MeasurementFieldsSettings from './MeasurementFieldsSettings'
+import SubscriptionBillingCard from './SubscriptionBillingCard'
 
 export default function MorePage() {
   const { user, setUser, clearUser, logout, appName } = useAuth()
@@ -199,6 +200,8 @@ export default function MorePage() {
       </section>
 
       <MeasurementFieldsSettings />
+
+      <SubscriptionBillingCard />
 
       <section className="card muted-card">
         <h2 className="section-title">Account</h2>

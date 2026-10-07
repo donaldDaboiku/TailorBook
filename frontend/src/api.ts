@@ -13,11 +13,26 @@ export type Business = {
   currency: string
 }
 
+export type UserRole = 'tailor' | 'admin'
+
 export type User = {
   id: number
   name: string
   email: string
+  role: UserRole
+  last_login_at?: string | null
   business?: Business | null
+}
+
+export type AdminShop = {
+  id: number
+  owner_name: string
+  email: string
+  shop_name: string | null
+  phone: string | null
+  country: string | null
+  created_at: string | null
+  last_login_at: string | null
 }
 
 export type AuthResponse = {
@@ -103,6 +118,8 @@ export type MeasurementField = {
   id: string
   key: string
   label: string
+  default_label?: string
+  enabled?: boolean
   sort_order: number
 }
 
@@ -216,6 +233,17 @@ export async function fetchMe(): Promise<User> {
   const data = await parseJson(response)
 
   if (!isWrappedUser(data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function listAdminShops(q = ''): Promise<AdminShop[]> {
+  const query = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''
+  const data = await apiJson<{ data: AdminShop[] }>(`/api/admin/shops${query}`)
+
+  if (!Array.isArray(data.data)) {
     throw new Error('bad response')
   }
 
@@ -389,12 +417,34 @@ export async function archiveCustomer(id: string): Promise<void> {
   })
 }
 
-export async function listMeasurementTemplates(): Promise<MeasurementTemplate[]> {
+export async function listMeasurementTemplates(
+  enabledOnly = false,
+): Promise<MeasurementTemplate[]> {
+  const query = enabledOnly ? '?enabled_only=1' : ''
   const data = await apiJson<{ data: MeasurementTemplate[] }>(
-    '/api/measurement-templates',
+    `/api/measurement-templates${query}`,
   )
 
   if (!Array.isArray(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function updateMeasurementTemplateFields(
+  slug: string,
+  fields: Array<{ key: string; label: string; enabled: boolean }>,
+): Promise<MeasurementTemplate> {
+  const data = await apiJson<{ data: MeasurementTemplate }>(
+    `/api/measurement-templates/${slug}/fields`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({ fields }),
+    },
+  )
+
+  if (!data.data?.slug) {
     throw new Error('bad response')
   }
 

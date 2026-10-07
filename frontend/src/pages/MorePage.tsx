@@ -6,6 +6,7 @@ import {
   updateProfile,
 } from '../api'
 import { useAuth } from '../auth'
+import MeasurementFieldsSettings from './MeasurementFieldsSettings'
 
 export default function MorePage() {
   const { user, setUser, clearUser, logout, appName } = useAuth()
@@ -197,6 +198,8 @@ export default function MorePage() {
         </form>
       </section>
 
+      <MeasurementFieldsSettings />
+
       <section className="card muted-card">
         <h2 className="section-title">Account</h2>
         <form className="form" onSubmit={onSaveAccount}>
@@ -235,10 +238,22 @@ export default function MorePage() {
       </section>
 
       <section className="card muted-card">
-        <h2 className="section-title">About</h2>
+        <h2 className="section-title">Install app</h2>
         <p className="status">
-          {appName}. On Android Chrome, use the browser menu → Install app for a
-          home-screen icon.
+          {appName} is a PWA. It does not install by itself — add it from the
+          browser:
+        </p>
+        <ul className="plain-list">
+          <li>
+            <strong>Android Chrome:</strong> menu (⋮) → Install app / Add to
+            Home screen
+          </li>
+          <li>
+            <strong>iPhone Safari:</strong> Share → Add to Home Screen
+          </li>
+        </ul>
+        <p className="status">
+          After that it opens like an app. Saving still needs internet.
         </p>
       </section>
 

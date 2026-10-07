@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\MeasurementUnit;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\DeleteAccountRequest;
 use App\Http\Requests\Auth\LoginRequest;
@@ -31,6 +32,7 @@ class AuthController extends Controller
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'password' => $data['password'],
+                'role' => UserRole::Tailor,
             ]);
 
             Business::query()->create([
@@ -46,12 +48,13 @@ class AuthController extends Controller
             return $user->load('business');
         });
 
+        $user->forceFill(['last_login_at' => now()])->save();
         $token = $user->createToken('phone')->plainTextToken;
 
         return response()->json([
             'token' => $token,
             'token_type' => 'Bearer',
-            'user' => UserResource::make($user),
+            'user' => UserResource::make($user->fresh()->load('business')),
         ], 201);
     }
 
@@ -67,6 +70,7 @@ class AuthController extends Controller
             ]);
         }
 
+        $user->forceFill(['last_login_at' => now()])->save();
         $user->load('business');
         $token = $user->createToken('phone')->plainTextToken;
 

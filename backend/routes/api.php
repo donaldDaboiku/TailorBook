@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\ShopController as AdminShopController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BusinessController;
 use App\Http\Controllers\Api\CustomerController;
@@ -40,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/customers/{customer}/whatsapp-templates', [WhatsAppController::class, 'templates']);
 
     Route::get('/measurement-templates', [MeasurementTemplateController::class, 'index']);
+    Route::put('/measurement-templates/{slug}/fields', [MeasurementTemplateController::class, 'updateFields']);
     Route::get('/customers/{customer}/measurements', [MeasurementController::class, 'index']);
     Route::post('/customers/{customer}/measurements', [MeasurementController::class, 'store']);
     Route::get('/customers/{customer}/measurements/{measurement}', [MeasurementController::class, 'show']);
@@ -59,4 +61,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy']);
 
     Route::get('/finance/summary', [FinanceController::class, 'summary']);
+
+    Route::middleware('admin')->prefix('admin')->group(function () {
+        Route::get('/shops', [AdminShopController::class, 'index']);
+    });
 });

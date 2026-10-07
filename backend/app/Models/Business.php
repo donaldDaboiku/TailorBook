@@ -51,4 +51,9 @@ class Business extends Model
     {
         return $this->hasMany(Expense::class);
     }
+
+    public function measurementFieldPrefs(): HasMany
+    {
+        return $this->hasMany(BusinessMeasurementFieldPref::class);
+    }
 }

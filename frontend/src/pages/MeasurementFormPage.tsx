@@ -42,7 +42,7 @@ export default function MeasurementFormPage({
   useEffect(() => {
     let cancelled = false
 
-    listMeasurementTemplates()
+    listMeasurementTemplates(true)
       .then((rows) => {
         if (cancelled) {
           return

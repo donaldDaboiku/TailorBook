@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Business;
+use App\Models\BusinessMeasurementFieldPref;
 use App\Models\Customer;
 use App\Models\CustomerJob;
 use App\Models\Expense;
@@ -39,6 +40,7 @@ class DeleteAccount
         Expense::withTrashed()->where('business_id', $businessId)->forceDelete();
         Customer::withTrashed()->where('business_id', $businessId)->forceDelete();
 
+        BusinessMeasurementFieldPref::query()->where('business_id', $businessId)->delete();
         MeasurementTemplate::query()->where('business_id', $businessId)->delete();
         ExpenseCategory::query()->where('business_id', $businessId)->delete();
 

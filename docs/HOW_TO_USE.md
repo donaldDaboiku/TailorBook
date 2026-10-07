@@ -158,6 +158,18 @@ Update:
 
 Tap **Save shop**.
 
+### Measurement fields
+
+Each shop can customise Female / Male / Child templates:
+
+1. Open **More** → **Measurement fields**
+2. Pick a template
+3. Untick fields you do not need
+4. Rename any field label (e.g. “Bust” → “Chest”)
+5. Tap **Save fields**
+
+Only enabled fields show when you take measurements.
+
 ### Account
 
 Update your name or email. Tap **Save account**.
@@ -174,10 +186,14 @@ Use **Sign out** near the bottom of **More**.
 
 This permanently removes your login, shop, customers, measurements, jobs, payments, and expenses. It cannot be undone. You need the correct password.
 
-### Install on your phone (optional)
+### Install on your phone (PWA)
 
-On Android Chrome: browser menu → **Install app** (or **Add to Home screen**).  
-The app shell can open offline, but saving still needs internet.
+TailorMate is installable, but phones do not auto-install it:
+
+- **Android Chrome:** menu (⋮) → **Install app** or **Add to Home screen**
+- **iPhone Safari:** Share → **Add to Home Screen**
+
+After install it opens full-screen like an app. Saving still needs internet.
 
 ---
 
@@ -200,6 +216,40 @@ The app shell can open offline, but saving still needs internet.
 - Free hosting may sleep; first load can be slow.  
 - No photo gallery, staff logins, inventory, or offline sync queue yet.  
 - Do not share your password. Each tailor should use their own account.
+
+---
+
+## 11. Admin (platform owner)
+
+Admins are not shop accounts. They see a shops list after login.
+
+### Create an admin (Render / server)
+
+Set on the API service:
+
+```text
+ADMIN_EMAIL=you@example.com
+ADMIN_PASSWORD=a-strong-password
+ADMIN_NAME=Admin
+```
+
+Redeploy the API (startup creates/updates that admin), then sign in at the normal app URL with that email/password.
+
+Locally:
+
+```powershell
+cd backend
+php artisan admin:create --email=you@example.com --password=secret123 --name=Admin
+```
+
+### What admins see (step 1)
+
+- List of registered shops
+- Owner name, email, phone
+- Joined date and last login
+- Search by shop, owner, email, or phone
+
+Suspend / subscriptions come in later steps.
 
 ---
 

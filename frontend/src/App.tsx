@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { fetchHealth, type Customer, type Measurement } from './api'
 import { AuthProvider, useAuth } from './auth'
+import AdminShopsPage from './pages/AdminShopsPage'
 import CustomerDetailPage from './pages/CustomerDetailPage'
 import CustomerFormPage from './pages/CustomerFormPage'
 import CustomersPage from './pages/CustomersPage'
@@ -108,6 +109,14 @@ function AuthenticatedApp() {
         ) : (
           <RegisterPage onShowLogin={() => setAuthScreen('login')} />
         )}
+      </Shell>
+    )
+  }
+
+  if (user.role === 'admin') {
+    return (
+      <Shell appName={appName} signedOut>
+        <AdminShopsPage />
       </Shell>
     )
   }

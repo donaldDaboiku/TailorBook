@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Services\PhoneNormalizer;
 use App\Services\ReceiptText;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
 class ReceiptController extends Controller
@@ -16,21 +17,25 @@ class ReceiptController extends Controller
     {
         $this->guard($customer, $payment);
 
-        $payment->load(['business', 'customer', 'job']);
+        $payment->load(['business.user', 'customer', 'job']);
+        $document = ReceiptText::document($payment);
         $phone = $customer->whatsapp_phone ?: $customer->phone;
         $country = $payment->business?->country ?: 'NG';
-        $text = ReceiptText::for($payment);
 
         return response()->json([
             'data' => [
-                'text' => $text,
+                ...$document,
                 'email' => $customer->email,
-                'whatsapp_url' => PhoneNormalizer::whatsappUrl($phone, $country, $text),
+                'whatsapp_url' => PhoneNormalizer::whatsappUrl(
+                    $phone,
+                    $country,
+                    (string) $document['caption'],
+                ),
             ],
         ]);
     }
 
-    public function email(Customer $customer, Payment $payment): JsonResponse
+    public function email(Request $request, Customer $customer, Payment $payment): JsonResponse
     {
         $this->guard($customer, $payment);
 
@@ -42,13 +47,28 @@ class ReceiptController extends Controller
             ], 422);
         }
 
-        $payment->load(['business', 'customer', 'job']);
-        $shop = $payment->business?->name ?? 'your shop';
-        $text = ReceiptText::for($payment);
+        $data = $request->validate([
+            'image' => ['required', 'string', 'max:1500000'],
+        ]);
+
+        $binary = base64_decode($data['image'], true);
+
+        if ($binary === false || strlen($binary) < 32) {
+            return response()->json([
+                'message' => 'The receipt image could not be read.',
+            ], 422);
+        }
+
+        $payment->load(['business.user', 'customer', 'job']);
+        $document = ReceiptText::document($payment);
+        $shop = $document['shop_name'];
+        $number = $document['receipt_number'];
 
         try {
-            Mail::raw($text, function ($message) use ($email, $shop) {
-                $message->to($email)->subject("Receipt from {$shop}");
+            Mail::raw((string) $document['caption'], function ($message) use ($email, $shop, $number, $binary) {
+                $message->to($email)
+                    ->subject("Receipt {$number} from {$shop}")
+                    ->attachData($binary, "{$number}.png", ['mime' => 'image/png']);
             });
         } catch (\Throwable) {
             return response()->json([

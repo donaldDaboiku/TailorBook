@@ -26,6 +26,8 @@ class BusinessResource extends JsonResource
             'currency' => $this->currency,
             'receipt_header' => $this->receipt_header,
             'receipt_footer' => $this->receipt_footer,
+            'signature_name' => $this->signature_name,
+            'has_logo' => filled($this->logo_path),
         ];
     }
 }

@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'method',
     'reference',
     'note',
+    'receipt_number',
 ])]
 class Payment extends Model
 {

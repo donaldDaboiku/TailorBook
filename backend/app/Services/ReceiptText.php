@@ -2,45 +2,76 @@
 
 namespace App\Services;
 
+use App\Http\Controllers\Api\BusinessController;
 use App\Models\Payment;
+use Illuminate\Support\Facades\DB;
 
 class ReceiptText
 {
-    public static function for(Payment $payment): string
+    /**
+     * @return array<string, mixed>
+     */
+    public static function document(Payment $payment): array
     {
-        $payment->loadMissing(['business', 'customer', 'job']);
+        $payment->loadMissing(['business.user', 'customer', 'job']);
         $business = $payment->business;
         $customer = $payment->customer;
         $currency = $business?->currency ?? 'NGN';
+        $number = self::ensureNumber($payment);
+        $amount = Money::format((string) $payment->amount, $currency);
+        $shop = $business?->name ?? 'Shop';
 
-        $lines = array_values(array_filter([
-            $business?->name,
-            filled($business?->receipt_header) ? $business->receipt_header : null,
-            filled($business?->phone) ? 'Tel: '.$business->phone : null,
-            '',
-            'RECEIPT',
-            'Date: '.($payment->paid_on?->toDateString() ?? ''),
-            'Customer: '.($customer?->name ?? ''),
-            $payment->job ? 'Job: '.$payment->job->title : null,
-            'Amount: '.Money::format((string) $payment->amount, $currency),
-            'Method: '.self::methodLabel($payment->method?->value),
-            filled($payment->reference) ? 'Reference: '.$payment->reference : null,
-            filled($payment->note) ? 'Note: '.$payment->note : null,
-        ], fn ($line) => $line !== null));
+        return [
+            'receipt_number' => $number,
+            'shop_name' => $shop,
+            'shop_phone' => $business?->phone,
+            'header' => $business?->receipt_header,
+            'footer' => $business?->receipt_footer,
+            'logo_data_url' => BusinessController::logoDataUrl($business),
+            'signature_name' => filled($business?->signature_name)
+                ? $business->signature_name
+                : ($business?->user?->name ?? $shop),
+            'date' => $payment->paid_on?->toDateString(),
+            'customer' => $customer?->name,
+            'job' => $payment->job?->title,
+            'amount_label' => $amount,
+            'method_label' => self::methodLabel($payment->method?->value),
+            'reference' => $payment->reference,
+            'note' => $payment->note,
+            'agreed_label' => $customer ? Money::format($customer->totalAgreed(), $currency) : null,
+            'paid_label' => $customer ? Money::format($customer->totalPaid(), $currency) : null,
+            'outstanding_label' => $customer ? Money::format($customer->outstandingAmount(), $currency) : null,
+            'caption' => "Receipt {$number} from {$shop}. Amount {$amount}.",
+        ];
+    }
 
-        if ($customer !== null) {
-            $lines[] = '';
-            $lines[] = 'Agreed: '.Money::format($customer->totalAgreed(), $currency);
-            $lines[] = 'Paid: '.Money::format($customer->totalPaid(), $currency);
-            $lines[] = 'Outstanding: '.Money::format($customer->outstandingAmount(), $currency);
+    public static function ensureNumber(Payment $payment): string
+    {
+        if (filled($payment->receipt_number)) {
+            return (string) $payment->receipt_number;
         }
 
-        if (filled($business?->receipt_footer)) {
-            $lines[] = '';
-            $lines[] = $business->receipt_footer;
-        }
+        return DB::transaction(function () use ($payment) {
+            /** @var Payment $locked */
+            $locked = Payment::query()->whereKey($payment->id)->lockForUpdate()->firstOrFail();
 
-        return implode("\n", $lines);
+            if (filled($locked->receipt_number)) {
+                $payment->receipt_number = $locked->receipt_number;
+
+                return (string) $locked->receipt_number;
+            }
+
+            $next = Payment::query()
+                ->where('business_id', $locked->business_id)
+                ->whereNotNull('receipt_number')
+                ->count() + 1;
+
+            $number = 'RCP-'.str_pad((string) $next, 5, '0', STR_PAD_LEFT);
+            $locked->forceFill(['receipt_number' => $number])->save();
+            $payment->receipt_number = $number;
+
+            return $number;
+        });
     }
 
     private static function methodLabel(?string $method): string

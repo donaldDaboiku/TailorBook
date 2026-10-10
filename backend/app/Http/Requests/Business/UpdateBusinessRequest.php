@@ -27,6 +27,7 @@ class UpdateBusinessRequest extends FormRequest
             'currency' => ['required', 'string', 'size:3'],
             'receipt_header' => ['nullable', 'string', 'max:240'],
             'receipt_footer' => ['nullable', 'string', 'max:240'],
+            'signature_name' => ['nullable', 'string', 'max:80'],
         ];
     }
 

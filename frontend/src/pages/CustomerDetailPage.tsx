@@ -17,6 +17,11 @@ import {
   type PaymentReceipt,
 } from '../api'
 import { useAuth } from '../auth'
+import {
+  blobToBase64,
+  renderReceiptPng,
+  shareOrDownloadReceipt,
+} from '../receiptImage'
 
 export default function CustomerDetailPage({
   id,
@@ -426,18 +431,26 @@ function ReceiptSheet({
   onClose: () => void
 }) {
   const [receipt, setReceipt] = useState<PaymentReceipt | null>(null)
+  const [imageUrl, setImageUrl] = useState('')
+  const [imageBlob, setImageBlob] = useState<Blob | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     let cancelled = false
+    let preview = ''
 
     fetchPaymentReceipt(customerId, payment.id)
-      .then((next) => {
-        if (!cancelled) {
-          setReceipt(next)
+      .then(async (next) => {
+        const blob = await renderReceiptPng(next)
+        if (cancelled) {
+          return
         }
+        preview = URL.createObjectURL(blob)
+        setReceipt(next)
+        setImageBlob(blob)
+        setImageUrl(preview)
       })
       .catch((err) => {
         if (!cancelled) {
@@ -447,16 +460,51 @@ function ReceiptSheet({
 
     return () => {
       cancelled = true
+      if (preview) {
+        URL.revokeObjectURL(preview)
+      }
     }
   }, [customerId, payment.id])
 
+  async function onShare() {
+    if (!receipt || !imageBlob) {
+      return
+    }
+
+    setError('')
+    setNotice('')
+
+    try {
+      const result = await shareOrDownloadReceipt(
+        imageBlob,
+        `${receipt.receipt_number}.png`,
+        receipt.caption,
+      )
+      setNotice(
+        result === 'shared'
+          ? 'Choose WhatsApp to send the receipt image.'
+          : 'Image saved. On a computer, attach that file in WhatsApp.',
+      )
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return
+      }
+      setError(firstError(err))
+    }
+  }
+
   async function onEmail() {
+    if (!imageBlob) {
+      return
+    }
+
     setError('')
     setNotice('')
     setBusy(true)
 
     try {
-      setNotice(await emailPaymentReceipt(customerId, payment.id))
+      const image = await blobToBase64(imageBlob)
+      setNotice(await emailPaymentReceipt(customerId, payment.id, image))
     } catch (err) {
       setError(firstError(err))
     } finally {
@@ -482,9 +530,11 @@ function ReceiptSheet({
           </button>
         </div>
 
-        {!receipt && !error && <p className="status">Preparing receipt…</p>}
+        {!imageUrl && !error && <p className="status">Preparing receipt…</p>}
 
-        {receipt && <pre className="receipt-text">{receipt.text}</pre>}
+        {imageUrl && (
+          <img className="receipt-preview" src={imageUrl} alt="Payment receipt" />
+        )}
 
         {notice && <p className="status">{notice}</p>}
         {error && (
@@ -494,29 +544,27 @@ function ReceiptSheet({
         )}
 
         <div className="home-actions">
-          <a
-            className="primary receipt-link"
-            href={receipt?.whatsapp_url ?? '#'}
-            target="_blank"
-            rel="noreferrer"
-            aria-disabled={!receipt}
-            onClick={(event) => {
-              if (!receipt) {
-                event.preventDefault()
-              }
-            }}
+          <button
+            type="button"
+            className="primary"
+            onClick={() => void onShare()}
+            disabled={!imageBlob}
           >
-            Send on WhatsApp
-          </a>
+            Send image on WhatsApp
+          </button>
           <button
             type="button"
             className="secondary"
             onClick={() => void onEmail()}
-            disabled={busy || !receipt}
+            disabled={busy || !imageBlob}
           >
-            {busy ? 'Sending…' : 'Send by email'}
+            {busy ? 'Sending…' : 'Email receipt image'}
           </button>
         </div>
+        <p className="status">
+          On a phone, WhatsApp opens in the share sheet with the picture
+          attached.
+        </p>
         {receipt && !receipt.email && (
           <p className="status">
             This customer has no email. Add one before sending by email.

@@ -42,19 +42,21 @@ class ReceiptTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $response = $this->getJson("/api/customers/{$customer->id}/payments/{$payment->id}/receipt")
+        $this->getJson("/api/customers/{$customer->id}/payments/{$payment->id}/receipt")
             ->assertOk()
-            ->assertJsonPath('data.email', 'bola@example.com');
+            ->assertJsonPath('data.email', 'bola@example.com')
+            ->assertJsonPath('data.shop_name', 'Ada Atelier')
+            ->assertJsonPath('data.header', 'Thank you for sewing with us')
+            ->assertJsonPath('data.footer', 'No refund after collection')
+            ->assertJsonPath('data.customer', 'Bola')
+            ->assertJsonPath('data.amount_label', '₦15,000.00')
+            ->assertJsonPath('data.receipt_number', 'RCP-00001');
 
-        $text = $response->json('data.text');
+        $png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
-        $this->assertStringContainsString('Ada Atelier', $text);
-        $this->assertStringContainsString('Thank you for sewing with us', $text);
-        $this->assertStringContainsString('No refund after collection', $text);
-        $this->assertStringContainsString('Bola', $text);
-        $this->assertStringContainsString('₦15,000.00', $text);
-
-        $this->postJson("/api/customers/{$customer->id}/payments/{$payment->id}/receipt/email")
+        $this->postJson("/api/customers/{$customer->id}/payments/{$payment->id}/receipt/email", [
+            'image' => $png,
+        ])
             ->assertOk()
             ->assertJsonPath('message', 'Receipt sent to bola@example.com.');
 

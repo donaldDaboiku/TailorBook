@@ -13,6 +13,8 @@ export type Business = {
   currency: string
   receipt_header?: string | null
   receipt_footer?: string | null
+  signature_name?: string | null
+  has_logo?: boolean
 }
 
 export type UserRole = 'tailor' | 'admin'
@@ -487,6 +489,7 @@ export async function updateBusiness(payload: {
   currency: string
   receipt_header?: string
   receipt_footer?: string
+  signature_name?: string
 }): Promise<User> {
   const body: Record<string, string> = {
     name: payload.name,
@@ -496,6 +499,7 @@ export async function updateBusiness(payload: {
     currency: payload.currency,
     receipt_header: payload.receipt_header?.trim() ?? '',
     receipt_footer: payload.receipt_footer?.trim() ?? '',
+    signature_name: payload.signature_name?.trim() ?? '',
   }
 
   if (payload.whatsapp_phone?.trim()) {
@@ -766,7 +770,24 @@ export async function archiveJob(
 }
 
 export type PaymentReceipt = {
-  text: string
+  receipt_number: string
+  shop_name: string
+  shop_phone: string | null
+  header: string | null
+  footer: string | null
+  logo_data_url: string | null
+  signature_name: string
+  date: string | null
+  customer: string | null
+  job: string | null
+  amount_label: string
+  method_label: string
+  reference: string | null
+  note: string | null
+  agreed_label: string | null
+  paid_label: string | null
+  outstanding_label: string | null
+  caption: string
   email: string | null
   whatsapp_url: string
 }
@@ -779,7 +800,7 @@ export async function fetchPaymentReceipt(
     `/api/customers/${customerId}/payments/${paymentId}/receipt`,
   )
 
-  if (!data.data?.text || !data.data.whatsapp_url) {
+  if (!data.data?.receipt_number || !data.data.shop_name) {
     throw new Error('bad response')
   }
 
@@ -789,13 +810,67 @@ export async function fetchPaymentReceipt(
 export async function emailPaymentReceipt(
   customerId: string,
   paymentId: string,
+  image: string,
 ): Promise<string> {
   const data = await apiJson<{ message: string }>(
     `/api/customers/${customerId}/payments/${paymentId}/receipt/email`,
-    { method: 'POST' },
+    {
+      method: 'POST',
+      body: JSON.stringify({ image }),
+    },
   )
 
   return data.message
+}
+
+export async function uploadShopLogo(file: File): Promise<User> {
+  const body = new FormData()
+  body.append('logo', file)
+  const response = await fetch(apiUrl('/api/business/logo'), {
+    method: 'POST',
+    headers: authHeaders(),
+    body,
+  })
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+
+  const data = await parseJson(response)
+  if (!isWrappedUser(data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function fetchShopLogo(): Promise<string | null> {
+  const response = await fetch(apiUrl('/api/business/logo'), {
+    headers: authHeaders(),
+  })
+
+  if (response.status === 404) {
+    return null
+  }
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+
+  const data = await parseJson(response)
+  if (
+    typeof data === 'object' &&
+    data !== null &&
+    'data' in data &&
+    typeof data.data === 'object' &&
+    data.data !== null &&
+    'data_url' in data.data &&
+    typeof data.data.data_url === 'string'
+  ) {
+    return data.data.data_url
+  }
+
+  return null
 }
 
 export async function listPayments(customerId: string): Promise<Payment[]> {

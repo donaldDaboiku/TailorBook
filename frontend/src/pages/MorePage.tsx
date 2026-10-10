@@ -1,9 +1,11 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import {
   deleteAccount,
+  fetchShopLogo,
   firstError,
   updateBusiness,
   updateProfile,
+  uploadShopLogo,
 } from '../api'
 import { useAuth } from '../auth'
 import MeasurementFieldsSettings from './MeasurementFieldsSettings'
@@ -36,6 +38,11 @@ export default function MorePage({
   const [receiptFooter, setReceiptFooter] = useState(
     business?.receipt_footer ?? '',
   )
+  const [signatureName, setSignatureName] = useState(
+    business?.signature_name ?? '',
+  )
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [logoError, setLogoError] = useState('')
   const [accountError, setAccountError] = useState('')
   const [shopError, setShopError] = useState('')
   const [accountSaved, setAccountSaved] = useState(false)
@@ -46,6 +53,44 @@ export default function MorePage({
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteError, setDeleteError] = useState('')
   const [deleteBusy, setDeleteBusy] = useState(false)
+
+  useEffect(() => {
+    if (!business?.has_logo) {
+      return
+    }
+
+    let cancelled = false
+    fetchShopLogo()
+      .then((url) => {
+        if (!cancelled) {
+          setLogoUrl(url)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLogoUrl(null)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [business?.has_logo])
+
+  async function onLogo(file: File | undefined) {
+    if (!file) {
+      return
+    }
+
+    setLogoError('')
+    try {
+      const next = await uploadShopLogo(file)
+      setUser(next)
+      setLogoUrl(await fetchShopLogo())
+    } catch (err) {
+      setLogoError(firstError(err))
+    }
+  }
 
   async function onSaveAccount(event: FormEvent) {
     event.preventDefault()
@@ -83,6 +128,7 @@ export default function MorePage({
         currency: currency.trim().toUpperCase() || 'NGN',
         receipt_header: receiptHeader.trim(),
         receipt_footer: receiptFooter.trim(),
+        signature_name: signatureName.trim(),
       })
       setUser(next)
       setShopSaved(true)
@@ -228,6 +274,33 @@ export default function MorePage({
               placeholder="No refund after collection"
             />
           </label>
+
+          <label>
+            Signature name
+            <input
+              value={signatureName}
+              onChange={(event) => setSignatureName(event.target.value)}
+              maxLength={80}
+              placeholder="Name signed on receipts"
+            />
+          </label>
+
+          <label>
+            Shop logo
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={(event) => void onLogo(event.target.files?.[0])}
+            />
+          </label>
+          {logoUrl && (
+            <img className="shop-logo" src={logoUrl} alt="Shop logo" />
+          )}
+          {logoError && (
+            <p className="form-error" role="alert">
+              {logoError}
+            </p>
+          )}
 
           {shopError && (
             <p className="form-error" role="alert">

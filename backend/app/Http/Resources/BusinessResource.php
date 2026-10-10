@@ -24,6 +24,8 @@ class BusinessResource extends JsonResource
             'country' => $this->country,
             'measurement_unit' => $this->measurement_unit?->value,
             'currency' => $this->currency,
+            'receipt_header' => $this->receipt_header,
+            'receipt_footer' => $this->receipt_footer,
         ];
     }
 }

@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\MeasurementController;
 use App\Http\Controllers\Api\MeasurementTemplateController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\WhatsAppController;
 use Illuminate\Support\Facades\Route;
 
@@ -66,6 +67,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::get('/customers/{customer}/payments', [PaymentController::class, 'index']);
     Route::post('/customers/{customer}/payments', [PaymentController::class, 'store']);
+    Route::get('/customers/{customer}/payments/{payment}/receipt', [ReceiptController::class, 'show']);
+    Route::post('/customers/{customer}/payments/{payment}/receipt/email', [ReceiptController::class, 'email']);
     Route::delete('/customers/{customer}/payments/{payment}', [PaymentController::class, 'destroy']);
 
     Route::get('/expense-categories', [ExpenseCategoryController::class, 'index']);

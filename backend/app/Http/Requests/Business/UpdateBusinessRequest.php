@@ -25,6 +25,8 @@ class UpdateBusinessRequest extends FormRequest
             'country' => ['required', 'string', 'size:2'],
             'measurement_unit' => ['required', Rule::enum(MeasurementUnit::class)],
             'currency' => ['required', 'string', 'size:3'],
+            'receipt_header' => ['nullable', 'string', 'max:240'],
+            'receipt_footer' => ['nullable', 'string', 'max:240'],
         ];
     }
 

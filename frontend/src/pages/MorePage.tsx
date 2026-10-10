@@ -30,6 +30,12 @@ export default function MorePage({
     business?.measurement_unit ?? 'in',
   )
   const [currency, setCurrency] = useState(business?.currency ?? 'NGN')
+  const [receiptHeader, setReceiptHeader] = useState(
+    business?.receipt_header ?? '',
+  )
+  const [receiptFooter, setReceiptFooter] = useState(
+    business?.receipt_footer ?? '',
+  )
   const [accountError, setAccountError] = useState('')
   const [shopError, setShopError] = useState('')
   const [accountSaved, setAccountSaved] = useState(false)
@@ -75,6 +81,8 @@ export default function MorePage({
         country: business?.country ?? 'NG',
         measurement_unit: unit,
         currency: currency.trim().toUpperCase() || 'NGN',
+        receipt_header: receiptHeader.trim(),
+        receipt_footer: receiptFooter.trim(),
       })
       setUser(next)
       setShopSaved(true)
@@ -198,6 +206,26 @@ export default function MorePage({
               onChange={(event) => setCurrency(event.target.value.toUpperCase())}
               maxLength={3}
               required
+            />
+          </label>
+
+          <label>
+            Receipt line (optional)
+            <input
+              value={receiptHeader}
+              onChange={(event) => setReceiptHeader(event.target.value)}
+              maxLength={240}
+              placeholder="Thank you for sewing with us"
+            />
+          </label>
+
+          <label>
+            Receipt footer (optional)
+            <input
+              value={receiptFooter}
+              onChange={(event) => setReceiptFooter(event.target.value)}
+              maxLength={240}
+              placeholder="No refund after collection"
             />
           </label>
 

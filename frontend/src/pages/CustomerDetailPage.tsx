@@ -3,6 +3,8 @@ import {
   archiveCustomer,
   archiveJob,
   archivePayment,
+  emailPaymentReceipt,
+  fetchPaymentReceipt,
   firstError,
   getCustomer,
   listJobs,
@@ -12,6 +14,7 @@ import {
   type CustomerJob,
   type Measurement,
   type Payment,
+  type PaymentReceipt,
 } from '../api'
 import { useAuth } from '../auth'
 
@@ -46,6 +49,7 @@ export default function CustomerDetailPage({
   const [payments, setPayments] = useState<Payment[]>([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [receiptPayment, setReceiptPayment] = useState<Payment | null>(null)
 
   async function reload() {
     const [row, history, jobRows, paymentRows] = await Promise.all([
@@ -271,13 +275,22 @@ export default function CustomerDetailPage({
                     {payment.job_title ? ` · ${payment.job_title}` : ''}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  className="secondary danger"
-                  onClick={() => onArchivePayment(payment)}
-                >
-                  Archive
-                </button>
+                <div className="action-row tight">
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => setReceiptPayment(payment)}
+                  >
+                    Receipt
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary danger"
+                    onClick={() => onArchivePayment(payment)}
+                  >
+                    Archive
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -391,6 +404,125 @@ export default function CustomerDetailPage({
           </p>
         )}
       </section>
+
+      {customer && receiptPayment && (
+        <ReceiptSheet
+          customerId={customer.id}
+          payment={receiptPayment}
+          onClose={() => setReceiptPayment(null)}
+        />
+      )}
     </>
+  )
+}
+
+function ReceiptSheet({
+  customerId,
+  payment,
+  onClose,
+}: {
+  customerId: string
+  payment: Payment
+  onClose: () => void
+}) {
+  const [receipt, setReceipt] = useState<PaymentReceipt | null>(null)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    fetchPaymentReceipt(customerId, payment.id)
+      .then((next) => {
+        if (!cancelled) {
+          setReceipt(next)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(firstError(err))
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [customerId, payment.id])
+
+  async function onEmail() {
+    setError('')
+    setNotice('')
+    setBusy(true)
+
+    try {
+      setNotice(await emailPaymentReceipt(customerId, payment.id))
+    } catch (err) {
+      setError(firstError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose()
+        }
+      }}
+    >
+      <div className="modal-sheet" role="dialog" aria-modal="true">
+        <div className="row-between">
+          <h2 className="section-title">Receipt · {payment.amount_label}</h2>
+          <button type="button" className="secondary" onClick={onClose}>
+            Close
+          </button>
+        </div>
+
+        {!receipt && !error && <p className="status">Preparing receipt…</p>}
+
+        {receipt && <pre className="receipt-text">{receipt.text}</pre>}
+
+        {notice && <p className="status">{notice}</p>}
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+
+        <div className="home-actions">
+          <a
+            className="primary receipt-link"
+            href={receipt?.whatsapp_url ?? '#'}
+            target="_blank"
+            rel="noreferrer"
+            aria-disabled={!receipt}
+            onClick={(event) => {
+              if (!receipt) {
+                event.preventDefault()
+              }
+            }}
+          >
+            Send on WhatsApp
+          </a>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => void onEmail()}
+            disabled={busy || !receipt}
+          >
+            {busy ? 'Sending…' : 'Send by email'}
+          </button>
+        </div>
+        {receipt && !receipt.email && (
+          <p className="status">
+            This customer has no email. Add one before sending by email.
+          </p>
+        )}
+      </div>
+    </div>
   )
 }

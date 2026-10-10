@@ -121,6 +121,29 @@ p {
   margin-top: 0.35rem;
 }
 
+.receipt-text {
+  margin: 0;
+  white-space: pre-wrap;
+  font: inherit;
+  line-height: 1.45;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.85rem;
+}
+
+.receipt-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.receipt-link[aria-disabled='true'] {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 .form {
   display: grid;
   gap: 0.9rem;

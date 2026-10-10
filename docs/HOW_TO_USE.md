@@ -110,6 +110,15 @@ Check **Money** on the customer:
 
 Archive a job or payment if it was entered by mistake. Archived rows stop counting toward the balance.
 
+### Send a receipt
+
+1. **More → Shop settings** — optional **Receipt line** and **Receipt footer** (shown on every receipt for this shop).
+2. Open a customer → **Payments** → **Receipt**.
+3. **Send on WhatsApp** opens WhatsApp with the receipt text.
+4. **Send by email** sends it to the customer's email. Add an email on the customer first.
+
+Email delivery needs mail configured on the API (`MAIL_MAILER` and SMTP or similar). WhatsApp works without that.
+
 ---
 
 ## 6. WhatsApp messages

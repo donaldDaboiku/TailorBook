@@ -24,6 +24,8 @@ class BusinessController extends Controller
             'country' => strtoupper($data['country']),
             'measurement_unit' => MeasurementUnit::from($data['measurement_unit']),
             'currency' => strtoupper($data['currency']),
+            'receipt_header' => filled($data['receipt_header'] ?? null) ? $data['receipt_header'] : null,
+            'receipt_footer' => filled($data['receipt_footer'] ?? null) ? $data['receipt_footer'] : null,
         ]);
 
         return UserResource::make($request->user()->fresh()->load('business'));

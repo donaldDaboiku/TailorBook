@@ -11,6 +11,8 @@ export type Business = {
   country: string
   measurement_unit: 'cm' | 'in'
   currency: string
+  receipt_header?: string | null
+  receipt_footer?: string | null
 }
 
 export type UserRole = 'tailor' | 'admin'
@@ -466,6 +468,8 @@ export async function updateBusiness(payload: {
   country: string
   measurement_unit: 'cm' | 'in'
   currency: string
+  receipt_header?: string
+  receipt_footer?: string
 }): Promise<User> {
   const body: Record<string, string> = {
     name: payload.name,
@@ -473,6 +477,8 @@ export async function updateBusiness(payload: {
     country: payload.country,
     measurement_unit: payload.measurement_unit,
     currency: payload.currency,
+    receipt_header: payload.receipt_header?.trim() ?? '',
+    receipt_footer: payload.receipt_footer?.trim() ?? '',
   }
 
   if (payload.whatsapp_phone?.trim()) {
@@ -740,6 +746,39 @@ export async function archiveJob(
     `/api/customers/${customerId}/jobs/${jobId}`,
     { method: 'DELETE' },
   )
+}
+
+export type PaymentReceipt = {
+  text: string
+  email: string | null
+  whatsapp_url: string
+}
+
+export async function fetchPaymentReceipt(
+  customerId: string,
+  paymentId: string,
+): Promise<PaymentReceipt> {
+  const data = await apiJson<{ data: PaymentReceipt }>(
+    `/api/customers/${customerId}/payments/${paymentId}/receipt`,
+  )
+
+  if (!data.data?.text || !data.data.whatsapp_url) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function emailPaymentReceipt(
+  customerId: string,
+  paymentId: string,
+): Promise<string> {
+  const data = await apiJson<{ message: string }>(
+    `/api/customers/${customerId}/payments/${paymentId}/receipt/email`,
+    { method: 'POST' },
+  )
+
+  return data.message
 }
 
 export async function listPayments(customerId: string): Promise<Payment[]> {

@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\CustomerJobController;
 use App\Http\Controllers\Api\ExpenseCategoryController;
 use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\FinanceController;
+use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\MeasurementController;
 use App\Http\Controllers\Api\MeasurementTemplateController;
 use App\Http\Controllers\Api\PaymentController;
@@ -77,6 +78,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy']);
 
     Route::get('/finance/summary', [FinanceController::class, 'summary']);
+    Route::get('/home', [HomeController::class, 'show']);
+    Route::get('/jobs', [HomeController::class, 'jobs']);
 
     Route::middleware('admin')->prefix('admin')->group(function () {
         Route::get('/shops', [AdminShopController::class, 'index']);

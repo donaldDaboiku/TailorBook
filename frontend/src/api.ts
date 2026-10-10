@@ -119,6 +119,23 @@ export type Customer = {
 
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'pos' | 'other'
 
+export type ShopJob = {
+  id: string
+  customer_id: string
+  customer_name: string | null
+  title: string
+  service_date: string
+  outstanding_label: string
+}
+
+export type HomeDashboard = {
+  outstanding: string
+  outstanding_label: string
+  active_jobs: number
+  due_soon: number
+  upcoming_jobs: ShopJob[]
+}
+
 export type CustomerJob = {
   id: string
   customer_id: string
@@ -925,6 +942,31 @@ export async function archiveExpense(id: string): Promise<void> {
   await apiJson<{ message: string }>(`/api/expenses/${id}`, {
     method: 'DELETE',
   })
+}
+
+export async function fetchHome(): Promise<HomeDashboard> {
+  const data = await apiJson<{ data: HomeDashboard }>('/api/home')
+
+  if (!data.data || typeof data.data.active_jobs !== 'number') {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function listShopJobs(): Promise<{
+  upcoming: ShopJob[]
+  overdue: ShopJob[]
+}> {
+  const data = await apiJson<{
+    data: { upcoming: ShopJob[]; overdue: ShopJob[] }
+  }>('/api/jobs')
+
+  if (!Array.isArray(data.data?.upcoming) || !Array.isArray(data.data?.overdue)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
 }
 
 export type FinancePeriod = {

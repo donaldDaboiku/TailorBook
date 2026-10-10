@@ -15,6 +15,7 @@ import ExpenseFormPage from './pages/ExpenseFormPage'
 import ExpensesPage from './pages/ExpensesPage'
 import HomePage from './pages/HomePage'
 import JobFormPage from './pages/JobFormPage'
+import JobsPage from './pages/JobsPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HowToUseTutorial from './pages/HowToUseTutorial'
 import LandingPage from './pages/LandingPage'
@@ -23,6 +24,7 @@ import MeasurementDetailPage from './pages/MeasurementDetailPage'
 import MeasurementFormPage from './pages/MeasurementFormPage'
 import MorePage from './pages/MorePage'
 import PaymentFormPage from './pages/PaymentFormPage'
+import PickCustomerPage from './pages/PickCustomerPage'
 import RegisterPage from './pages/RegisterPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import SubscriptionBillingCard from './pages/SubscriptionBillingCard'
@@ -30,9 +32,11 @@ import WhatsAppComposePage from './pages/WhatsAppComposePage'
 import { hasSeenTutorial, markTutorialSeen } from './tutorial'
 
 type Gate = 'loading' | 'ready' | 'offline'
-type Tab = 'home' | 'customers' | 'finance' | 'more'
+type Tab = 'home' | 'customers' | 'jobs' | 'finance' | 'more'
 type Screen =
   | { name: 'home' }
+  | { name: 'jobs' }
+  | { name: 'pick-customer'; purpose: 'job' | 'payment' }
   | { name: 'customers' }
   | { name: 'customer-create' }
   | { name: 'customer-detail'; id: string }
@@ -295,21 +299,26 @@ function AuthenticatedApp() {
   }
 
   const tab: Tab =
-    screen.name === 'home'
+    screen.name === 'home' || screen.name === 'pick-customer'
       ? 'home'
-      : screen.name === 'expenses' || screen.name === 'expense-create'
-        ? 'finance'
-        : screen.name === 'more'
-          ? 'more'
-          : 'customers'
+      : screen.name === 'jobs'
+        ? 'jobs'
+        : screen.name === 'expenses' || screen.name === 'expense-create'
+          ? 'finance'
+          : screen.name === 'more'
+            ? 'more'
+            : 'customers'
 
   return (
     <Shell
       appName={appName}
+      hideHeader={screen.name === 'home'}
       tab={tab}
       onTabChange={(next) => {
         if (next === 'home') {
           setScreen({ name: 'home' })
+        } else if (next === 'jobs') {
+          setScreen({ name: 'jobs' })
         } else if (next === 'finance') {
           setScreen({ name: 'expenses' })
         } else if (next === 'more') {
@@ -336,7 +345,40 @@ function AuthenticatedApp() {
       {screen.name === 'home' && (
         <HomePage
           onAddCustomer={() => setScreen({ name: 'customer-create' })}
+          onAddJob={() => setScreen({ name: 'pick-customer', purpose: 'job' })}
+          onAddPayment={() =>
+            setScreen({ name: 'pick-customer', purpose: 'payment' })
+          }
           onAddExpense={() => setScreen({ name: 'expense-create' })}
+          onOpenJobs={() => setScreen({ name: 'jobs' })}
+          onOpenJob={(job) =>
+            setScreen({ name: 'customer-detail', id: job.customer_id })
+          }
+          onOpenMore={() => setScreen({ name: 'more' })}
+        />
+      )}
+
+      {screen.name === 'jobs' && (
+        <JobsPage
+          onBack={() => setScreen({ name: 'home' })}
+          onOpen={(job) =>
+            setScreen({ name: 'customer-detail', id: job.customer_id })
+          }
+        />
+      )}
+
+      {screen.name === 'pick-customer' && (
+        <PickCustomerPage
+          purpose={screen.purpose}
+          onCancel={() => setScreen({ name: 'home' })}
+          onCreate={() => setScreen({ name: 'customer-create' })}
+          onPick={(customer) =>
+            setScreen(
+              screen.purpose === 'job'
+                ? { name: 'job-create', customer }
+                : { name: 'payment-create', customer },
+            )
+          }
         />
       )}
 
@@ -485,55 +527,142 @@ function Shell({
   appName,
   children,
   signedOut = false,
+  hideHeader = false,
   tab = 'home',
   onTabChange,
 }: {
   appName: string
   children: ReactNode
   signedOut?: boolean
+  hideHeader?: boolean
   tab?: Tab
   onTabChange?: (tab: Tab) => void
 }) {
   return (
     <div className="app">
-      <header className="topbar">
-        <p className="app-name">{appName || 'Shop'}</p>
-      </header>
+      {!hideHeader && (
+        <header className="topbar">
+          <p className="app-name">{appName || 'Shop'}</p>
+        </header>
+      )}
 
       <main>{children}</main>
 
       {!signedOut && (
         <nav className="tabbar" aria-label="Main">
-          <button
-            type="button"
-            aria-current={tab === 'home' ? 'page' : undefined}
+          <TabButton
+            label="Home"
+            current={tab === 'home'}
             onClick={() => onTabChange?.('home')}
-          >
-            Home
-          </button>
-          <button
-            type="button"
-            aria-current={tab === 'customers' ? 'page' : undefined}
+            icon="home"
+          />
+          <TabButton
+            label="Clients"
+            current={tab === 'customers'}
             onClick={() => onTabChange?.('customers')}
-          >
-            Customers
-          </button>
-          <button
-            type="button"
-            aria-current={tab === 'finance' ? 'page' : undefined}
+            icon="clients"
+          />
+          <TabButton
+            label="Jobs"
+            current={tab === 'jobs'}
+            onClick={() => onTabChange?.('jobs')}
+            icon="jobs"
+          />
+          <TabButton
+            label="Finance"
+            current={tab === 'finance'}
             onClick={() => onTabChange?.('finance')}
-          >
-            Finance
-          </button>
-          <button
-            type="button"
-            aria-current={tab === 'more' ? 'page' : undefined}
+            icon="finance"
+          />
+          <TabButton
+            label="More"
+            current={tab === 'more'}
             onClick={() => onTabChange?.('more')}
-          >
-            More
-          </button>
+            icon="more"
+          />
         </nav>
       )}
     </div>
+  )
+}
+
+function TabButton({
+  label,
+  current,
+  onClick,
+  icon,
+}: {
+  label: string
+  current: boolean
+  onClick: () => void
+  icon: 'home' | 'clients' | 'jobs' | 'finance' | 'more'
+}) {
+  return (
+    <button
+      type="button"
+      aria-current={current ? 'page' : undefined}
+      onClick={onClick}
+    >
+      <TabIcon name={icon} />
+      {label}
+    </button>
+  )
+}
+
+function TabIcon({
+  name,
+}: {
+  name: 'home' | 'clients' | 'jobs' | 'finance' | 'more'
+}) {
+  const common = {
+    width: 20,
+    height: 20,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.8,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  }
+
+  if (name === 'home') {
+    return (
+      <svg {...common}>
+        <path d="M4 11.5 12 4l8 7.5" />
+        <path d="M7 10.5V20h10v-9.5" />
+      </svg>
+    )
+  }
+  if (name === 'clients') {
+    return (
+      <svg {...common}>
+        <circle cx="9" cy="8" r="2.5" />
+        <circle cx="16" cy="9" r="2" />
+        <path d="M4.5 18c.8-2.4 2.4-3.5 4.5-3.5s3.7 1.1 4.5 3.5" />
+        <path d="M14 14.6c1.3-.4 2.5-.2 3.6.7 1 1 1.6 2 1.9 2.7" />
+      </svg>
+    )
+  }
+  if (name === 'jobs') {
+    return (
+      <svg {...common}>
+        <path d="M8 7V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" />
+        <path d="M4 7h16v12H4z" />
+      </svg>
+    )
+  }
+  if (name === 'finance') {
+    return (
+      <svg {...common}>
+        <rect x="3" y="6" width="18" height="12" rx="2" />
+        <path d="M3 10h18" />
+      </svg>
+    )
+  }
+  return (
+    <svg {...common}>
+      <path d="M6 7h12M6 12h12M6 17h12" />
+    </svg>
   )
 }

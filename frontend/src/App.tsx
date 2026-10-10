@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   fetchHealth,
   firstError,
@@ -17,6 +17,7 @@ import HomePage from './pages/HomePage'
 import JobFormPage from './pages/JobFormPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HowToUseTutorial from './pages/HowToUseTutorial'
+import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import MeasurementDetailPage from './pages/MeasurementDetailPage'
 import MeasurementFormPage from './pages/MeasurementFormPage'
@@ -102,10 +103,10 @@ export default function App() {
 function AuthenticatedApp() {
   const { user, loading, appName, setUser, logout } = useAuth()
   const [authScreen, setAuthScreen] = useState<
-    'login' | 'register' | 'forgot' | 'reset'
+    'landing' | 'login' | 'register' | 'forgot' | 'reset'
   >(() => {
     const params = new URLSearchParams(window.location.search)
-    return params.get('reset') === '1' ? 'reset' : 'login'
+    return params.get('reset') === '1' ? 'reset' : 'landing'
   })
   const [resetEmail, setResetEmail] = useState(() => {
     const params = new URLSearchParams(window.location.search)
@@ -120,6 +121,24 @@ function AuthenticatedApp() {
   const [billingError, setBillingError] = useState('')
   const [billingBusy, setBillingBusy] = useState(false)
   const [showTutorial, setShowTutorial] = useState(false)
+  const wasSignedIn = useRef(false)
+
+  useEffect(() => {
+    if (user) {
+      wasSignedIn.current = true
+      return
+    }
+
+    if (!wasSignedIn.current) {
+      return
+    }
+
+    wasSignedIn.current = false
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('reset') !== '1') {
+      setAuthScreen('landing')
+    }
+  }, [user])
 
   useEffect(() => {
     if (!user || user.role === 'admin') {
@@ -201,7 +220,12 @@ function AuthenticatedApp() {
   if (!user) {
     return (
       <Shell appName={appName} signedOut>
-        {authScreen === 'register' ? (
+        {authScreen === 'landing' ? (
+          <LandingPage
+            onCreate={() => setAuthScreen('register')}
+            onSignIn={() => setAuthScreen('login')}
+          />
+        ) : authScreen === 'register' ? (
           <RegisterPage onShowLogin={() => setAuthScreen('login')} />
         ) : authScreen === 'forgot' ? (
           <ForgotPasswordPage onShowLogin={() => setAuthScreen('login')} />

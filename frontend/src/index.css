@@ -117,6 +117,10 @@ p {
   margin-bottom: 1.25rem;
 }
 
+.landing-hero h1 {
+  margin-top: 0.35rem;
+}
+
 .form {
   display: grid;
   gap: 0.9rem;

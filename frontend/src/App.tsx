@@ -539,7 +539,7 @@ function Shell({
   onTabChange?: (tab: Tab) => void
 }) {
   return (
-    <div className="app">
+    <div className={signedOut ? 'app signed-out' : 'app'}>
       {!hideHeader && (
         <header className="topbar">
           <p className="app-name">{appName || 'Shop'}</p>
@@ -548,8 +548,14 @@ function Shell({
 
       <main>{children}</main>
 
+      {signedOut && (
+        <footer className="builder-credit">Built by gitsystemng</footer>
+      )}
+
       {!signedOut && (
-        <nav className="tabbar" aria-label="Main">
+        <div className="tab-dock">
+          <footer className="builder-credit">Built by gitsystemng</footer>
+          <nav className="tabbar" aria-label="Main">
           <TabButton
             label="Home"
             current={tab === 'home'}
@@ -581,6 +587,7 @@ function Shell({
             icon="more"
           />
         </nav>
+        </div>
       )}
     </div>
   )

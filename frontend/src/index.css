@@ -33,7 +33,11 @@ body {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(6.6rem + env(safe-area-inset-bottom));
+}
+
+.app.signed-out {
+  padding-bottom: 0;
 }
 
 .topbar {
@@ -77,18 +81,34 @@ p {
   padding: 1.25rem;
 }
 
-.tabbar {
+.builder-credit {
+  margin: 0;
+  padding: 0.35rem 1rem 0.15rem;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.app.signed-out .builder-credit {
+  padding: 0.85rem 1rem calc(0.85rem + env(safe-area-inset-bottom));
+}
+
+.tab-dock {
   position: fixed;
   left: 50%;
   bottom: 0;
   width: min(480px, 100%);
   transform: translateX(-50%);
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+
+.tabbar {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 0.15rem;
-  padding: 0.4rem 0.35rem calc(0.45rem + env(safe-area-inset-bottom));
+  padding: 0.15rem 0.35rem calc(0.45rem + env(safe-area-inset-bottom));
   background: var(--card);
-  border-top: 1px solid var(--line);
 }
 
 .tabbar button {

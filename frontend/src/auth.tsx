@@ -14,6 +14,7 @@ import {
   setToken,
   type User,
 } from './api'
+import { markTutorialUnseen } from './tutorial'
 
 type AuthContextValue = {
   user: User | null
@@ -103,6 +104,7 @@ export function AuthProvider({
     currency: string
   }) {
     const result = await apiRegister(payload)
+    markTutorialUnseen(result.user.id)
     setUser(result.user)
   }
 

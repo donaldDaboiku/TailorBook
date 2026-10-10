@@ -112,6 +112,10 @@ class PaystackBilling
             return User::query()->findOrFail($payment->user_id)->load('business');
         }
 
+        if ($payment->status === 'refunded') {
+            throw new RuntimeException('This payment was refunded.');
+        }
+
         $response = Http::withToken((string) config('services.paystack.secret_key'))
             ->acceptJson()
             ->get('https://api.paystack.co/transaction/verify/'.rawurlencode($reference));
@@ -128,13 +132,25 @@ class PaystackBilling
         $currency = strtoupper((string) ($data['currency'] ?? ''));
         $expectedAmount = (int) $payment->amount;
 
+        $payment->forceFill([
+            'channel' => is_string($data['channel'] ?? null) ? $data['channel'] : $payment->channel,
+            'gateway_response' => is_string($data['gateway_response'] ?? null)
+                ? $data['gateway_response']
+                : $payment->gateway_response,
+        ])->save();
+
         if ($status !== 'success' || $currency !== 'NGN' || $amount !== $expectedAmount) {
-            $payment->update(['status' => 'failed']);
+            $this->markFailed(
+                $payment,
+                is_string($data['gateway_response'] ?? null)
+                    ? $data['gateway_response']
+                    : 'Payment was not successful.',
+            );
 
             throw new RuntimeException('Payment was not successful.');
         }
 
-        return $this->markPaid($payment);
+        return $this->markPaid($payment, $data);
     }
 
     public function handleWebhook(string $rawBody, ?string $signature): void
@@ -156,22 +172,135 @@ class PaystackBilling
             throw new RuntimeException('Invalid webhook payload.');
         }
 
-        if (($payload['event'] ?? null) !== 'charge.success') {
+        $event = $payload['event'] ?? null;
+        $data = is_array($payload['data'] ?? null) ? $payload['data'] : [];
+
+        if ($event === 'charge.success') {
+            $reference = $this->referenceFromPayload($data);
+            if ($reference !== null) {
+                $this->verifyAndActivate($reference);
+            }
+
             return;
         }
 
-        $reference = $payload['data']['reference'] ?? null;
+        if ($event === 'charge.failed') {
+            $reference = $this->referenceFromPayload($data);
+            if ($reference === null) {
+                return;
+            }
 
-        if (! is_string($reference) || $reference === '') {
+            $payment = SubscriptionPayment::query()->where('reference', $reference)->first();
+            if ($payment === null || $payment->status === 'success' || $payment->status === 'refunded') {
+                return;
+            }
+
+            $this->markFailed(
+                $payment,
+                is_string($data['gateway_response'] ?? null)
+                    ? $data['gateway_response']
+                    : (is_string($data['message'] ?? null) ? $data['message'] : 'Payment failed.'),
+                is_string($data['channel'] ?? null) ? $data['channel'] : null,
+            );
+
             return;
         }
 
-        $this->verifyAndActivate($reference);
+        if (in_array($event, ['refund.processed', 'charge.refunded'], true)) {
+            $reference = $this->referenceFromRefundPayload($data);
+            if ($reference !== null) {
+                $this->markRefunded($reference);
+            }
+        }
     }
 
-    private function markPaid(SubscriptionPayment $payment): User
+    public function markFailed(
+        SubscriptionPayment $payment,
+        string $message,
+        ?string $channel = null,
+    ): void {
+        if (in_array($payment->status, ['success', 'refunded'], true)) {
+            return;
+        }
+
+        $payment->forceFill([
+            'status' => 'failed',
+            'failure_message' => Str::limit($message, 240),
+            'channel' => $channel ?? $payment->channel,
+            'gateway_response' => Str::limit($message, 240),
+        ])->save();
+    }
+
+    public function markRefunded(string $reference): void
     {
-        return DB::transaction(function () use ($payment) {
+        $payment = SubscriptionPayment::query()->where('reference', $reference)->first();
+
+        if ($payment === null || $payment->status === 'refunded') {
+            return;
+        }
+
+        DB::transaction(function () use ($payment) {
+            /** @var SubscriptionPayment $locked */
+            $locked = SubscriptionPayment::query()
+                ->whereKey($payment->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($locked->status === 'refunded') {
+                return;
+            }
+
+            $wasSuccess = $locked->status === 'success';
+
+            $locked->forceFill([
+                'status' => 'refunded',
+                'refunded_at' => now(),
+                'failure_message' => $wasSuccess ? null : $locked->failure_message,
+            ])->save();
+
+            if (! $wasSuccess) {
+                return;
+            }
+
+            /** @var User $user */
+            $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
+            $days = (int) config('services.paystack.plan_days');
+
+            if ($user->subscribed_until === null) {
+                $user->forceFill([
+                    'subscription_status' => SubscriptionStatus::Free,
+                    'subscribed_until' => null,
+                ])->save();
+                $user->tokens()->delete();
+
+                return;
+            }
+
+            $nextUntil = $user->subscribed_until->copy()->subDays($days);
+
+            if ($nextUntil->copy()->endOfDay()->isPast()) {
+                $user->forceFill([
+                    'subscription_status' => SubscriptionStatus::Free,
+                    'subscribed_until' => null,
+                ])->save();
+                $user->tokens()->delete();
+
+                return;
+            }
+
+            $user->forceFill([
+                'subscription_status' => SubscriptionStatus::Subscribed,
+                'subscribed_until' => $nextUntil->toDateString(),
+            ])->save();
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function markPaid(SubscriptionPayment $payment, array $data = []): User
+    {
+        return DB::transaction(function () use ($payment, $data) {
             /** @var SubscriptionPayment $locked */
             $locked = SubscriptionPayment::query()
                 ->whereKey($payment->id)
@@ -197,9 +326,42 @@ class PaystackBilling
             $locked->forceFill([
                 'status' => 'success',
                 'paid_at' => now(),
+                'failure_message' => null,
+                'channel' => is_string($data['channel'] ?? null) ? $data['channel'] : $locked->channel,
+                'gateway_response' => is_string($data['gateway_response'] ?? null)
+                    ? $data['gateway_response']
+                    : $locked->gateway_response,
             ])->save();
 
             return $user->fresh()->load('business');
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function referenceFromPayload(array $data): ?string
+    {
+        $reference = $data['reference'] ?? null;
+
+        return is_string($reference) && $reference !== '' ? $reference : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function referenceFromRefundPayload(array $data): ?string
+    {
+        foreach ([
+            $data['transaction_reference'] ?? null,
+            $data['reference'] ?? null,
+            is_array($data['transaction'] ?? null) ? ($data['transaction']['reference'] ?? null) : null,
+        ] as $candidate) {
+            if (is_string($candidate) && $candidate !== '') {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 }

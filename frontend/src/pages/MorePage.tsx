@@ -9,7 +9,11 @@ import { useAuth } from '../auth'
 import MeasurementFieldsSettings from './MeasurementFieldsSettings'
 import SubscriptionBillingCard from './SubscriptionBillingCard'
 
-export default function MorePage() {
+export default function MorePage({
+  onShowTutorial,
+}: {
+  onShowTutorial: () => void
+}) {
   const { user, setUser, clearUser, logout, appName } = useAuth()
   const business = user?.business
 
@@ -118,6 +122,17 @@ export default function MorePage() {
       <section className="card">
         <h1>More</h1>
         <p className="lede">Shop settings, your account, and sign out.</p>
+      </section>
+
+      <section className="card muted-card">
+        <h2 className="section-title">How to use</h2>
+        <p className="status">
+          Short walkthrough of customers, measurements, jobs, payments, and
+          WhatsApp.
+        </p>
+        <button type="button" className="secondary" onClick={onShowTutorial}>
+          Open tutorial
+        </button>
       </section>
 
       <section className="card muted-card">

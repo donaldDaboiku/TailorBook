@@ -1,12 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   firstError,
+  listAdminPayments,
   listAdminShops,
   resetAdminShopPassword,
   suspendAdminShop,
   unsuspendAdminShop,
   updateAdminShopSubscription,
+  type AdminPayment,
   type AdminShop,
+  type PaymentStatus,
   type SubscriptionStatus,
 } from '../api'
 import { useAuth } from '../auth'
@@ -14,17 +17,29 @@ import { useAuth } from '../auth'
 export default function AdminShopsPage() {
   const { user, logout, appName } = useAuth()
   const [shops, setShops] = useState<AdminShop[]>([])
+  const [payments, setPayments] = useState<AdminPayment[]>([])
+  const [selectedId, setSelectedId] = useState<number | null>(null)
   const [q, setQ] = useState('')
+  const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | ''>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [actionId, setActionId] = useState<number | null>(null)
 
-  async function reload(search = q) {
+  const selectedShop =
+    selectedId === null
+      ? null
+      : (shops.find((shop) => shop.id === selectedId) ?? null)
+
+  async function reload(search = q, status = paymentFilter) {
     setLoading(true)
     try {
-      const rows = await listAdminShops(search)
+      const [rows, paymentRows] = await Promise.all([
+        listAdminShops(search),
+        listAdminPayments({ q: search, status }),
+      ])
       setShops(rows)
+      setPayments(paymentRows)
       setError('')
     } catch (err) {
       setError(firstError(err))
@@ -36,6 +51,21 @@ export default function AdminShopsPage() {
   useEffect(() => {
     void reload('')
   }, [])
+
+  useEffect(() => {
+    if (!selectedShop) {
+      return
+    }
+
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setSelectedId(null)
+      }
+    }
+
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedShop])
 
   async function onLogout() {
     setBusy(true)
@@ -142,10 +172,25 @@ export default function AdminShopsPage() {
             placeholder="Shop, owner, email, or phone"
           />
         </label>
+        <label className="search-label">
+          Payment status
+          <select
+            value={paymentFilter}
+            onChange={(event) =>
+              setPaymentFilter(event.target.value as PaymentStatus | '')
+            }
+          >
+            <option value="">All payments</option>
+            <option value="success">Success</option>
+            <option value="failed">Failed</option>
+            <option value="pending">Pending</option>
+            <option value="refunded">Refunded</option>
+          </select>
+        </label>
         <button
           type="button"
           className="primary"
-          onClick={() => void reload(q)}
+          onClick={() => void reload(q, paymentFilter)}
           disabled={loading}
         >
           Search
@@ -160,26 +205,98 @@ export default function AdminShopsPage() {
 
       {loading && <p className="status">Loading shops…</p>}
 
-      {!loading && shops.length === 0 && (
+      {!loading && (
         <section className="card muted-card">
-          <p>No shops found.</p>
+          <h2 className="section-title">Recent payments</h2>
+          <p className="status">
+            Tap a shop in the list below to manage it. Successful payments
+            activate plans automatically.
+          </p>
+          {payments.length === 0 ? (
+            <p className="status">No payments yet.</p>
+          ) : (
+            <ul className="admin-list">
+              {payments.map((payment) => (
+                <li key={payment.id}>
+                  <button
+                    type="button"
+                    className="admin-list-row"
+                    onClick={() => {
+                      if (payment.user_id) {
+                        setSelectedId(payment.user_id)
+                      }
+                    }}
+                    disabled={!payment.user_id}
+                  >
+                    <span className="admin-list-main">
+                      <strong>
+                        {payment.shop_name ?? payment.email ?? 'Shop'}
+                      </strong>
+                      <span className="status">
+                        {payment.amount_label} · {formatWhen(payment.created_at)}
+                        {payment.failure_message
+                          ? ` · ${payment.failure_message}`
+                          : ''}
+                      </span>
+                    </span>
+                    <span className={paymentBadgeClass(payment.status)}>
+                      {payment.status}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 
-      {shops.map((shop) => (
-        <ShopCard
-          key={shop.id}
-          shop={shop}
-          busy={actionId === shop.id}
-          onToggleSuspend={() => void onToggleSuspend(shop)}
-          onSaveSubscription={(status, until) =>
-            void onSaveSubscription(shop, status, until)
-          }
-          onResetPassword={(password, confirmation) =>
-            void onResetPassword(shop, password, confirmation)
-          }
-        />
-      ))}
+      {!loading && (
+        <section className="card muted-card">
+          <div className="row-between">
+            <h2 className="section-title">Shops</h2>
+            <span className="status">{shops.length}</span>
+          </div>
+
+          {shops.length === 0 ? (
+            <p className="status">No shops found.</p>
+          ) : (
+            <ul className="admin-list">
+              {shops.map((shop) => (
+                <li key={shop.id}>
+                  <button
+                    type="button"
+                    className="admin-list-row"
+                    onClick={() => setSelectedId(shop.id)}
+                  >
+                    <span className="admin-list-main">
+                      <strong>{shop.shop_name ?? 'No shop name'}</strong>
+                      <span className="status">
+                        {shop.owner_name} · {shop.email}
+                      </span>
+                    </span>
+                    <span className="admin-list-meta">
+                      <span
+                        className={
+                          shop.suspended ? 'badge danger' : 'badge ok'
+                        }
+                      >
+                        {shop.suspended ? 'Suspended' : 'Active'}
+                      </span>
+                      <span
+                        className={subscriptionBadgeClass(
+                          shop.subscription_access,
+                        )}
+                      >
+                        {subscriptionLabel(shop.subscription_access)}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <section className="card muted-card">
         <button
@@ -191,19 +308,36 @@ export default function AdminShopsPage() {
           {busy ? 'Signing out…' : 'Sign out'}
         </button>
       </section>
+
+      {selectedShop && (
+        <ShopModal
+          shop={selectedShop}
+          busy={actionId === selectedShop.id}
+          onClose={() => setSelectedId(null)}
+          onToggleSuspend={() => void onToggleSuspend(selectedShop)}
+          onSaveSubscription={(status, until) =>
+            void onSaveSubscription(selectedShop, status, until)
+          }
+          onResetPassword={(password, confirmation) =>
+            void onResetPassword(selectedShop, password, confirmation)
+          }
+        />
+      )}
     </>
   )
 }
 
-function ShopCard({
+function ShopModal({
   shop,
   busy,
+  onClose,
   onToggleSuspend,
   onSaveSubscription,
   onResetPassword,
 }: {
   shop: AdminShop
   busy: boolean
+  onClose: () => void
   onToggleSuspend: () => void
   onSaveSubscription: (status: SubscriptionStatus, until: string) => void
   onResetPassword: (password: string, confirmation: string) => void
@@ -233,130 +367,188 @@ function ShopCard({
   }
 
   return (
-    <section className="card muted-card">
-      <div className="row-between">
-        <h2 className="section-title">{shop.shop_name ?? 'No shop name'}</h2>
-        <span className={shop.suspended ? 'badge danger' : 'badge ok'}>
-          {shop.suspended ? 'Suspended' : 'Active'}
-        </span>
-      </div>
-      <dl className="details">
-        <div>
-          <dt>Owner</dt>
-          <dd>{shop.owner_name}</dd>
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose()
+        }
+      }}
+    >
+      <div
+        className="modal-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`shop-modal-${shop.id}`}
+      >
+        <div className="row-between">
+          <h2 className="section-title" id={`shop-modal-${shop.id}`}>
+            {shop.shop_name ?? 'No shop name'}
+          </h2>
+          <button type="button" className="secondary" onClick={onClose}>
+            Close
+          </button>
         </div>
-        <div>
-          <dt>Email</dt>
-          <dd>{shop.email}</dd>
-        </div>
-        <div>
-          <dt>Phone</dt>
-          <dd>{shop.phone ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Joined</dt>
-          <dd>{formatWhen(shop.created_at)}</dd>
-        </div>
-        <div>
-          <dt>Last login</dt>
-          <dd>{formatWhen(shop.last_login_at)}</dd>
-        </div>
-        <div>
-          <dt>Subscription</dt>
-          <dd>
-            <span className={subscriptionBadgeClass(shop.subscription_access)}>
-              {subscriptionLabel(shop.subscription_access)}
-            </span>
+
+        <div className="admin-modal-badges">
+          <span className={shop.suspended ? 'badge danger' : 'badge ok'}>
+            {shop.suspended ? 'Suspended' : 'Active'}
+          </span>
+          <span className={subscriptionBadgeClass(shop.subscription_access)}>
+            {subscriptionLabel(shop.subscription_access)}
             {shop.subscribed_until ? ` · until ${shop.subscribed_until}` : ''}
-          </dd>
+          </span>
         </div>
-      </dl>
 
-      <form className="form" onSubmit={onSubmit}>
-        <fieldset className="unit-field">
-          <legend>Plan</legend>
-          <label className="choice">
-            <input
-              type="radio"
-              name={`plan-${shop.id}`}
-              checked={status === 'free'}
-              onChange={() => setStatus('free')}
-            />
-            Free
-          </label>
-          <label className="choice">
-            <input
-              type="radio"
-              name={`plan-${shop.id}`}
-              checked={status === 'subscribed'}
-              onChange={() => setStatus('subscribed')}
-            />
-            Subscribed
-          </label>
-        </fieldset>
+        <dl className="details">
+          <div>
+            <dt>Owner</dt>
+            <dd>{shop.owner_name}</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd>{shop.email}</dd>
+          </div>
+          <div>
+            <dt>Phone</dt>
+            <dd>{shop.phone ?? '—'}</dd>
+          </div>
+          <div>
+            <dt>Joined</dt>
+            <dd>{formatWhen(shop.created_at)}</dd>
+          </div>
+          <div>
+            <dt>Last login</dt>
+            <dd>{formatWhen(shop.last_login_at)}</dd>
+          </div>
+          <div>
+            <dt>Latest payment</dt>
+            <dd>
+              {shop.latest_payment_status ? (
+                <>
+                  <span className={paymentBadgeClass(shop.latest_payment_status)}>
+                    {shop.latest_payment_status}
+                  </span>
+                  {shop.latest_payment_at
+                    ? ` · ${formatWhen(shop.latest_payment_at)}`
+                    : ''}
+                </>
+              ) : (
+                'None'
+              )}
+            </dd>
+          </div>
+        </dl>
 
-        {status === 'subscribed' && (
-          <label>
-            Subscribed until
-            <input
-              type="date"
-              value={until}
-              onChange={(event) => setUntil(event.target.value)}
-              required
-            />
-          </label>
+        {(shop.payments?.length ?? 0) > 0 && (
+          <div>
+            <h3 className="section-title">Payments</h3>
+            <ul className="plain-list">
+              {shop.payments?.map((payment) => (
+                <li key={payment.id}>
+                  {payment.amount_label} ·{' '}
+                  <span className={paymentBadgeClass(payment.status)}>
+                    {payment.status}
+                  </span>
+                  {' · '}
+                  {formatWhen(payment.created_at)}
+                  {payment.channel ? ` · ${payment.channel}` : ''}
+                  {payment.failure_message
+                    ? ` · ${payment.failure_message}`
+                    : ''}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
-        <button type="submit" className="primary" disabled={busy}>
-          {busy ? 'Saving…' : 'Save subscription'}
-        </button>
-      </form>
+        <form className="form" onSubmit={onSubmit}>
+          <fieldset className="unit-field">
+            <legend>Manual plan override</legend>
+            <label className="choice">
+              <input
+                type="radio"
+                name={`plan-${shop.id}`}
+                checked={status === 'free'}
+                onChange={() => setStatus('free')}
+              />
+              Free
+            </label>
+            <label className="choice">
+              <input
+                type="radio"
+                name={`plan-${shop.id}`}
+                checked={status === 'subscribed'}
+                onChange={() => setStatus('subscribed')}
+              />
+              Subscribed
+            </label>
+          </fieldset>
 
-      <form className="form" onSubmit={onSubmitPassword}>
-        <h3 className="section-title">Reset password</h3>
-        <p className="status">
-          Set a temporary password, then tell the owner privately.
-        </p>
-        <label>
-          New password
-          <input
-            type="password"
-            autoComplete="new-password"
-            value={newPassword}
-            onChange={(event) => setNewPassword(event.target.value)}
-            required
-            minLength={8}
-          />
-        </label>
-        <label>
-          Confirm password
-          <input
-            type="password"
-            autoComplete="new-password"
-            value={newPasswordConfirmation}
-            onChange={(event) => setNewPasswordConfirmation(event.target.value)}
-            required
-            minLength={8}
-          />
-        </label>
-        <button type="submit" className="secondary" disabled={busy}>
-          {busy ? 'Saving…' : 'Set new password'}
-        </button>
-      </form>
+          {status === 'subscribed' && (
+            <label>
+              Subscribed until
+              <input
+                type="date"
+                value={until}
+                onChange={(event) => setUntil(event.target.value)}
+                required
+              />
+            </label>
+          )}
 
-      <button
-        type="button"
-        className={shop.suspended ? 'primary' : 'secondary danger'}
-        onClick={onToggleSuspend}
-        disabled={busy}
-      >
-        {busy
-          ? 'Updating…'
-          : shop.suspended
-            ? 'Activate shop'
-            : 'Suspend shop'}
-      </button>
-    </section>
+          <button type="submit" className="primary" disabled={busy}>
+            {busy ? 'Saving…' : 'Save subscription'}
+          </button>
+        </form>
+
+        <form className="form" onSubmit={onSubmitPassword}>
+          <h3 className="section-title">Reset password</h3>
+          <p className="status">
+            Set a temporary password, then tell the owner privately.
+          </p>
+          <label>
+            New password
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              required
+              minLength={8}
+            />
+          </label>
+          <label>
+            Confirm password
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={newPasswordConfirmation}
+              onChange={(event) => setNewPasswordConfirmation(event.target.value)}
+              required
+              minLength={8}
+            />
+          </label>
+          <button type="submit" className="secondary" disabled={busy}>
+            {busy ? 'Saving…' : 'Set new password'}
+          </button>
+        </form>
+
+        <button
+          type="button"
+          className={shop.suspended ? 'primary' : 'secondary danger'}
+          onClick={onToggleSuspend}
+          disabled={busy}
+        >
+          {busy
+            ? 'Updating…'
+            : shop.suspended
+              ? 'Activate shop'
+              : 'Suspend shop'}
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -399,6 +591,16 @@ function subscriptionBadgeClass(
     return 'badge danger'
   }
   if (access === 'subscribed') {
+    return 'badge ok'
+  }
+  return 'badge'
+}
+
+function paymentBadgeClass(status: PaymentStatus): string {
+  if (status === 'failed' || status === 'refunded') {
+    return 'badge danger'
+  }
+  if (status === 'success') {
     return 'badge ok'
   }
   return 'badge'

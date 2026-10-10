@@ -180,4 +180,125 @@ class BillingTest extends TestCase
         $this->assertSame('success', $payment->fresh()->status);
         $this->assertSame(SubscriptionStatus::Subscribed, $user->fresh()->subscription_status);
     }
+
+    public function test_webhook_marks_failed_payments(): void
+    {
+        $user = User::factory()->create([
+            'subscription_status' => SubscriptionStatus::Free,
+        ]);
+        Business::factory()->create(['user_id' => $user->id]);
+
+        $payment = SubscriptionPayment::query()->create([
+            'user_id' => $user->id,
+            'reference' => 'tm_fail_ref',
+            'amount' => 500000,
+            'currency' => 'NGN',
+            'status' => 'pending',
+        ]);
+
+        $body = json_encode([
+            'event' => 'charge.failed',
+            'data' => [
+                'reference' => $payment->reference,
+                'gateway_response' => 'Insufficient funds',
+                'channel' => 'card',
+            ],
+        ], JSON_THROW_ON_ERROR);
+
+        $signature = hash_hmac('sha512', $body, 'sk_test_dummy');
+
+        $this->call(
+            'POST',
+            '/api/billing/webhook',
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_PAYSTACK_SIGNATURE' => $signature,
+            ],
+            $body,
+        )->assertOk();
+
+        $fresh = $payment->fresh();
+        $this->assertSame('failed', $fresh->status);
+        $this->assertSame('Insufficient funds', $fresh->failure_message);
+        $this->assertSame(SubscriptionStatus::Free, $user->fresh()->subscription_status);
+    }
+
+    public function test_webhook_refund_revokes_paid_days(): void
+    {
+        $user = User::factory()->create([
+            'subscription_status' => SubscriptionStatus::Subscribed,
+            'subscribed_until' => now()->addDays(20)->toDateString(),
+        ]);
+        Business::factory()->create(['user_id' => $user->id]);
+
+        $payment = SubscriptionPayment::query()->create([
+            'user_id' => $user->id,
+            'reference' => 'tm_refund_ref',
+            'amount' => 500000,
+            'currency' => 'NGN',
+            'status' => 'success',
+            'paid_at' => now(),
+        ]);
+
+        $body = json_encode([
+            'event' => 'refund.processed',
+            'data' => [
+                'transaction_reference' => $payment->reference,
+            ],
+        ], JSON_THROW_ON_ERROR);
+
+        $signature = hash_hmac('sha512', $body, 'sk_test_dummy');
+
+        $this->call(
+            'POST',
+            '/api/billing/webhook',
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_PAYSTACK_SIGNATURE' => $signature,
+            ],
+            $body,
+        )->assertOk();
+
+        $this->assertSame('refunded', $payment->fresh()->status);
+        $this->assertSame(SubscriptionStatus::Free, $user->fresh()->subscription_status);
+        $this->assertNull($user->fresh()->subscribed_until);
+    }
+
+    public function test_admin_can_list_payments(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $tailor = User::factory()->create(['name' => 'Ada']);
+        Business::factory()->create([
+            'user_id' => $tailor->id,
+            'name' => 'Ada Atelier',
+        ]);
+
+        SubscriptionPayment::query()->create([
+            'user_id' => $tailor->id,
+            'reference' => 'tm_admin_list',
+            'amount' => 500000,
+            'currency' => 'NGN',
+            'status' => 'failed',
+            'failure_message' => 'Declined',
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $this->getJson('/api/admin/payments')
+            ->assertOk()
+            ->assertJsonPath('data.0.reference', 'tm_admin_list')
+            ->assertJsonPath('data.0.status', 'failed')
+            ->assertJsonPath('data.0.shop_name', 'Ada Atelier');
+
+        $this->getJson('/api/admin/shops')
+            ->assertOk()
+            ->assertJsonPath('data.0.latest_payment_status', 'failed')
+            ->assertJsonPath('data.0.payments.0.reference', 'tm_admin_list');
+    }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\ShopController as AdminShopController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillingController;
@@ -80,5 +81,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/shops/{user}/unsuspend', [AdminShopController::class, 'unsuspend']);
         Route::put('/shops/{user}/subscription', [AdminShopController::class, 'updateSubscription']);
         Route::put('/shops/{user}/password', [AdminShopController::class, 'resetPassword']);
+        Route::get('/shops/{user}/payments', [AdminPaymentController::class, 'forShop']);
+        Route::get('/payments', [AdminPaymentController::class, 'index']);
     });
 });

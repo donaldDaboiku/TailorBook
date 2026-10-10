@@ -16,6 +16,7 @@ import ExpensesPage from './pages/ExpensesPage'
 import HomePage from './pages/HomePage'
 import JobFormPage from './pages/JobFormPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import HowToUseTutorial from './pages/HowToUseTutorial'
 import LoginPage from './pages/LoginPage'
 import MeasurementDetailPage from './pages/MeasurementDetailPage'
 import MeasurementFormPage from './pages/MeasurementFormPage'
@@ -25,6 +26,7 @@ import RegisterPage from './pages/RegisterPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import SubscriptionBillingCard from './pages/SubscriptionBillingCard'
 import WhatsAppComposePage from './pages/WhatsAppComposePage'
+import { hasSeenTutorial, markTutorialSeen } from './tutorial'
 
 type Gate = 'loading' | 'ready' | 'offline'
 type Tab = 'home' | 'customers' | 'finance' | 'more'
@@ -117,6 +119,16 @@ function AuthenticatedApp() {
   const [billingMessage, setBillingMessage] = useState('')
   const [billingError, setBillingError] = useState('')
   const [billingBusy, setBillingBusy] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(false)
+
+  useEffect(() => {
+    if (!user || user.role === 'admin') {
+      setShowTutorial(false)
+      return
+    }
+
+    setShowTutorial(!hasSeenTutorial(user.id))
+  }, [user?.id, user?.role])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -213,6 +225,19 @@ function AuthenticatedApp() {
     return (
       <Shell appName={appName} signedOut>
         <AdminShopsPage />
+      </Shell>
+    )
+  }
+
+  if (showTutorial) {
+    return (
+      <Shell appName={appName} signedOut>
+        <HowToUseTutorial
+          onDone={() => {
+            markTutorialSeen(user.id)
+            setShowTutorial(false)
+          }}
+        />
       </Shell>
     )
   }
@@ -425,7 +450,9 @@ function AuthenticatedApp() {
         />
       )}
 
-      {screen.name === 'more' && <MorePage />}
+      {screen.name === 'more' && (
+        <MorePage onShowTutorial={() => setShowTutorial(true)} />
+      )}
     </Shell>
   )
 }

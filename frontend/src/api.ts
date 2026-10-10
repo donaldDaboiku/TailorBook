@@ -39,6 +39,27 @@ export type BillingPlan = {
 export type SubscriptionStatus = 'free' | 'subscribed'
 export type SubscriptionAccess = 'free' | 'subscribed' | 'expired' | 'admin'
 
+export type PaymentStatus = 'pending' | 'success' | 'failed' | 'refunded'
+
+export type AdminPayment = {
+  id: string
+  reference: string
+  amount: number
+  amount_label: string
+  currency: string
+  channel: string | null
+  status: PaymentStatus
+  gateway_response: string | null
+  failure_message: string | null
+  paid_at: string | null
+  refunded_at: string | null
+  created_at: string | null
+  user_id?: number
+  owner_name?: string | null
+  email?: string | null
+  shop_name?: string | null
+}
+
 export type AdminShop = {
   id: number
   owner_name: string
@@ -53,6 +74,9 @@ export type AdminShop = {
   subscription_status: SubscriptionStatus
   subscription_access: SubscriptionAccess
   subscribed_until: string | null
+  latest_payment_status?: PaymentStatus | null
+  latest_payment_at?: string | null
+  payments?: AdminPayment[]
 }
 
 export type AuthResponse = {
@@ -300,6 +324,29 @@ export async function fetchMe(): Promise<User> {
 export async function listAdminShops(q = ''): Promise<AdminShop[]> {
   const query = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''
   const data = await apiJson<{ data: AdminShop[] }>(`/api/admin/shops${query}`)
+
+  if (!Array.isArray(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function listAdminPayments(options?: {
+  q?: string
+  status?: PaymentStatus | ''
+}): Promise<AdminPayment[]> {
+  const params = new URLSearchParams()
+  if (options?.q?.trim()) {
+    params.set('q', options.q.trim())
+  }
+  if (options?.status) {
+    params.set('status', options.status)
+  }
+  const query = params.toString() ? `?${params.toString()}` : ''
+  const data = await apiJson<{ data: AdminPayment[] }>(
+    `/api/admin/payments${query}`,
+  )
 
   if (!Array.isArray(data.data)) {
     throw new Error('bad response')

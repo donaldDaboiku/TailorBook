@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ResetShopPasswordRequest;
 use App\Http\Requests\Admin\UpdateShopSubscriptionRequest;
+use App\Models\SubscriptionPayment;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ class ShopController extends Controller
     {
         $search = trim((string) $request->query('q', ''));
 
-        $shops = User::query()
+        $users = User::query()
             ->where('role', UserRole::Tailor)
             ->with('business')
             ->when($search !== '', function ($query) use ($search) {
@@ -32,8 +33,24 @@ class ShopController extends Controller
             })
             ->orderByDesc('created_at')
             ->limit(200)
+            ->get();
+
+        $paymentsByUser = SubscriptionPayment::query()
+            ->whereIn('user_id', $users->pluck('id'))
+            ->orderByDesc('created_at')
             ->get()
-            ->map(fn (User $user) => $this->shopPayload($user))
+            ->groupBy('user_id')
+            ->map(fn ($rows) => $rows->take(5)->values());
+
+        $shops = $users
+            ->map(function (User $user) use ($paymentsByUser) {
+                $user->setRelation(
+                    'subscriptionPayments',
+                    $paymentsByUser->get($user->id, collect()),
+                );
+
+                return $this->shopPayload($user);
+            })
             ->values();
 
         return response()->json([
@@ -112,6 +129,12 @@ class ShopController extends Controller
      */
     private function shopPayload(User $user): array
     {
+        $payments = $user->relationLoaded('subscriptionPayments')
+            ? $user->subscriptionPayments
+            : $user->subscriptionPayments()->orderByDesc('created_at')->limit(5)->get();
+
+        $latest = $payments->first();
+
         return [
             'id' => $user->id,
             'owner_name' => $user->name,
@@ -126,6 +149,12 @@ class ShopController extends Controller
             'subscription_status' => $user->subscription_status?->value ?? 'free',
             'subscription_access' => $user->subscriptionAccessStatus(),
             'subscribed_until' => $user->subscribed_until?->toDateString(),
+            'latest_payment_status' => $latest?->status,
+            'latest_payment_at' => $latest?->created_at?->toIso8601String(),
+            'payments' => $payments
+                ->map(fn (SubscriptionPayment $payment) => PaymentController::paymentPayload($payment, false))
+                ->values()
+                ->all(),
         ];
     }
 }

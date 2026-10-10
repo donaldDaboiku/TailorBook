@@ -22,6 +22,8 @@ You need internet when you save anything. The first open after a quiet period ma
 
 You now have one shop linked to your login.
 
+Right after sign-up, a short **How to use** tutorial opens first. You can skip it, or open it again anytime under **More → Open tutorial**.
+
 ### Sign in later
 
 Use the same email and password. Sign out is under **More**.
@@ -267,22 +269,33 @@ php artisan admin:create --email=you@example.com --password=secret123 --name=Adm
 
 ### What admins see
 
-- List of registered shops
-- Owner name, email, phone
-- Joined date and last login
+- Compact **shop list** (scales as subscribers grow)
+- Tap a row to open a **modal** with full shop details and actions
 - Search by shop, owner, email, or phone
-- **Suspend** / **Activate** a shop (suspended shops cannot sign in; open sessions end)
-- **Subscription**: Free, or Subscribed with an until-date  
-  - Expired shops can still sign in to renew  
-  - Shop APIs stay locked until they pay or you set Free/Subscribed again  
-  - Shops can also pay themselves with Paystack (More → Subscription)
+- **Recent payments** (success / failed / pending / refunded) with filter — tap a payment to open that shop
+- In the modal: payment history, **Suspend** / **Activate**, **manual plan override**, **reset password**
 
-### Set a shop subscription (manual)
+Paid subscriptions do **not** need manual activation. Paystack success auto-extends the plan.
+
+### Payments behaviour
+
+| Event | What happens |
+|---|---|
+| Successful payment | Shop becomes Subscribed for `PAYSTACK_PLAN_DAYS` automatically |
+| Failed payment | Saved as **failed** (with reason). Plan unchanged |
+| Refund in Paystack | Payment marked **refunded**; paid days removed (may return shop to Free) |
+| Suspend | Admin blocks the shop regardless of payment status |
+
+Refunds are started in the **Paystack dashboard**. The app listens for the webhook and adjusts access.
+
+### Manual plan override (optional)
 
 1. Open a shop card in Admin  
 2. Choose **Free** or **Subscribed**  
 3. If subscribed, pick **Subscribed until**  
-4. Tap **Save subscription**
+4. Tap **Save subscription**  
+
+Use this for free comps or support fixes — not for normal paid renewals.
 
 ### Paystack (shop self-serve)
 
@@ -305,7 +318,9 @@ In the Paystack dashboard, set the webhook URL to:
 https://YOUR-API.onrender.com/api/billing/webhook
 ```
 
-Then a tailor opens **More → Subscription → Pay with Paystack**, pays, and returns to the app. The app verifies the payment (webhook also activates it).
+Enable events: `charge.success`, `charge.failed`, `refund.processed` (and `charge.refunded` if available).
+
+Then a tailor opens **More → Subscription → Pay with Paystack**, pays, and returns to the app. The app verifies the payment; the webhook also activates it.
 
 ---
 

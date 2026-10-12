@@ -32,6 +32,7 @@ class SettingsTest extends TestCase
             'phone' => '08035551234',
             'whatsapp_phone' => '08035559999',
             'country' => 'NG',
+            'state' => 'Lagos',
             'measurement_unit' => 'cm',
             'currency' => 'NGN',
         ])
@@ -39,7 +40,8 @@ class SettingsTest extends TestCase
             ->assertJsonPath('data.business.name', 'Ada Fashion House')
             ->assertJsonPath('data.business.phone', '08035551234')
             ->assertJsonPath('data.business.whatsapp_phone', '08035559999')
-            ->assertJsonPath('data.business.measurement_unit', 'cm');
+            ->assertJsonPath('data.business.measurement_unit', 'cm')
+            ->assertJsonPath('data.business.state', 'Lagos');
 
         $this->assertDatabaseHas('businesses', [
             'user_id' => $user->id,

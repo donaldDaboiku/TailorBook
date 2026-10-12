@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   firstError,
+  listAdminFeedback,
   listAdminPayments,
   listAdminShops,
   resetAdminShopPassword,
@@ -8,6 +9,7 @@ import {
   unsuspendAdminShop,
   updateAdminShopSubscription,
   type AdminPayment,
+  type FeedbackNote,
   type AdminShop,
   type PaymentStatus,
   type SubscriptionStatus,
@@ -18,6 +20,7 @@ export default function AdminShopsPage() {
   const { user, logout, appName } = useAuth()
   const [shops, setShops] = useState<AdminShop[]>([])
   const [payments, setPayments] = useState<AdminPayment[]>([])
+  const [feedback, setFeedback] = useState<FeedbackNote[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [q, setQ] = useState('')
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | ''>('')
@@ -34,12 +37,14 @@ export default function AdminShopsPage() {
   async function reload(search = q, status = paymentFilter) {
     setLoading(true)
     try {
-      const [rows, paymentRows] = await Promise.all([
+      const [rows, paymentRows, notes] = await Promise.all([
         listAdminShops(search),
         listAdminPayments({ q: search, status }),
+        listAdminFeedback(),
       ])
       setShops(rows)
       setPayments(paymentRows)
+      setFeedback(notes)
       setError('')
     } catch (err) {
       setError(firstError(err))
@@ -253,6 +258,38 @@ export default function AdminShopsPage() {
       {!loading && (
         <section className="card muted-card">
           <div className="row-between">
+            <h2 className="section-title">App feedback</h2>
+            <span className="status">{feedback.length}</span>
+          </div>
+          <p className="status">
+            Messages about TailorMate. Reply with the contact they left.
+          </p>
+          {feedback.length === 0 ? (
+            <p className="status">No messages yet.</p>
+          ) : (
+            <ul className="plain-list">
+              {feedback.map((note) => (
+                <li key={note.id}>
+                  <strong>{note.name}</strong>
+                  {' · '}
+                  {note.contact.includes('@') ? (
+                    <a href={`mailto:${note.contact}`}>{note.contact}</a>
+                  ) : (
+                    <a href={`tel:${note.contact}`}>{note.contact}</a>
+                  )}
+                  {note.shop_email ? ` · signed in as ${note.shop_email}` : ''}
+                  <br />
+                  {note.message}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {!loading && (
+        <section className="card muted-card">
+          <div className="row-between">
             <h2 className="section-title">Shops</h2>
             <span className="status">{shops.length}</span>
           </div>
@@ -272,6 +309,7 @@ export default function AdminShopsPage() {
                       <strong>{shop.shop_name ?? 'No shop name'}</strong>
                       <span className="status">
                         {shop.owner_name} · {shop.email}
+                        {shop.state ? ` · ${shop.state}` : ''}
                       </span>
                     </span>
                     <span className="admin-list-meta">
@@ -413,6 +451,10 @@ function ShopModal({
           <div>
             <dt>Phone</dt>
             <dd>{shop.phone ?? '—'}</dd>
+          </div>
+          <div>
+            <dt>State</dt>
+            <dd>{shop.state ?? '—'}</dd>
           </div>
           <div>
             <dt>Joined</dt>

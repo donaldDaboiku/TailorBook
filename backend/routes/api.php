@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\ShopController as AdminShopController;
 use App\Http\Controllers\Api\AuthController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\MeasurementController;
 use App\Http\Controllers\Api\MeasurementTemplateController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\WhatsAppController;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +36,10 @@ Route::middleware('throttle:20,1')->group(function () {
 
 Route::post('/billing/webhook', [BillingController::class, 'webhook'])
     ->middleware('throttle:60,1');
+
+Route::get('/public/presence', [PublicController::class, 'presence']);
+Route::post('/public/feedback', [PublicController::class, 'feedback'])
+    ->middleware('throttle:5,1');
 
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
@@ -91,5 +97,6 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::put('/shops/{user}/password', [AdminShopController::class, 'resetPassword']);
         Route::get('/shops/{user}/payments', [AdminPaymentController::class, 'forShop']);
         Route::get('/payments', [AdminPaymentController::class, 'index']);
+        Route::get('/feedback', [AdminFeedbackController::class, 'index']);
     });
 });

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   deleteAccount,
+  fetchPresence,
   fetchShopLogo,
   firstError,
   updateBusiness,
@@ -8,6 +9,7 @@ import {
   uploadShopLogo,
 } from '../api'
 import { useAuth } from '../auth'
+import CommunityPanel from './CommunityPanel'
 import MeasurementFieldsSettings from './MeasurementFieldsSettings'
 import SubscriptionBillingCard from './SubscriptionBillingCard'
 
@@ -41,6 +43,8 @@ export default function MorePage({
   const [signatureName, setSignatureName] = useState(
     business?.signature_name ?? '',
   )
+  const [stateName, setStateName] = useState(business?.state ?? '')
+  const [stateOptions, setStateOptions] = useState<string[]>([])
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [logoError, setLogoError] = useState('')
   const [accountError, setAccountError] = useState('')
@@ -53,6 +57,22 @@ export default function MorePage({
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteError, setDeleteError] = useState('')
   const [deleteBusy, setDeleteBusy] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    fetchPresence()
+      .then((presence) => {
+        if (!cancelled) {
+          setStateOptions(presence.state_options)
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (!business?.has_logo) {
@@ -124,6 +144,7 @@ export default function MorePage({
         phone: phone.trim(),
         whatsapp_phone: whatsappPhone.trim() || undefined,
         country: business?.country ?? 'NG',
+        state: stateName,
         measurement_unit: unit,
         currency: currency.trim().toUpperCase() || 'NGN',
         receipt_header: receiptHeader.trim(),
@@ -189,6 +210,11 @@ export default function MorePage({
         </button>
       </section>
 
+      <CommunityPanel
+        defaultName={user?.name ?? ''}
+        defaultContact={user?.email ?? ''}
+      />
+
       <section className="card muted-card">
         <h2 className="section-title">Shop settings</h2>
         <form className="form" onSubmit={onSaveShop}>
@@ -210,6 +236,25 @@ export default function MorePage({
               onChange={(event) => setPhone(event.target.value)}
               required
             />
+          </label>
+
+          <label>
+            State
+            <select
+              value={stateName}
+              onChange={(event) => setStateName(event.target.value)}
+              required
+            >
+              <option value="">Choose a state</option>
+              {stateOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+              {stateName && !stateOptions.includes(stateName) ? (
+                <option value={stateName}>{stateName}</option>
+              ) : null}
+            </select>
           </label>
 
           <label>

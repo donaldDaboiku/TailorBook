@@ -126,11 +126,12 @@ class PaystackBilling
             );
         }
 
-        $data = $response->json('data') ?? [];
+        $data = is_array($response->json('data')) ? $response->json('data') : [];
         $status = $data['status'] ?? null;
-        $amount = (int) ($data['amount'] ?? 0);
+        $amount = $this->koboAmount($data['amount'] ?? null);
         $currency = strtoupper((string) ($data['currency'] ?? ''));
         $expectedAmount = (int) $payment->amount;
+        $paidReference = $data['reference'] ?? null;
 
         $payment->forceFill([
             'channel' => is_string($data['channel'] ?? null) ? $data['channel'] : $payment->channel,
@@ -139,7 +140,13 @@ class PaystackBilling
                 : $payment->gateway_response,
         ])->save();
 
-        if ($status !== 'success' || $currency !== 'NGN' || $amount !== $expectedAmount) {
+        if (
+            $status !== 'success'
+            || $currency !== 'NGN'
+            || $amount !== $expectedAmount
+            || ! is_string($paidReference)
+            || $paidReference !== $reference
+        ) {
             $this->markFailed(
                 $payment,
                 is_string($data['gateway_response'] ?? null)
@@ -162,7 +169,7 @@ class PaystackBilling
         $secret = (string) config('services.paystack.secret_key');
         $expected = hash_hmac('sha512', $rawBody, $secret);
 
-        if (! is_string($signature) || ! hash_equals($expected, $signature)) {
+        if (! is_string($signature) || strlen($signature) !== strlen($expected) || ! hash_equals($expected, $signature)) {
             throw new RuntimeException('Invalid Paystack signature.');
         }
 
@@ -209,7 +216,7 @@ class PaystackBilling
         if (in_array($event, ['refund.processed', 'charge.refunded'], true)) {
             $reference = $this->referenceFromRefundPayload($data);
             if ($reference !== null) {
-                $this->markRefunded($reference);
+                $this->revokeIfPaystackConfirmsRefund($reference);
             }
         }
     }
@@ -311,6 +318,10 @@ class PaystackBilling
                 return User::query()->findOrFail($locked->user_id)->load('business');
             }
 
+            if ($locked->status === 'refunded') {
+                throw new RuntimeException('This payment was refunded.');
+            }
+
             /** @var User $user */
             $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
             $days = (int) config('services.paystack.plan_days');
@@ -335,6 +346,77 @@ class PaystackBilling
 
             return $user->fresh()->load('business');
         });
+    }
+
+    private function revokeIfPaystackConfirmsRefund(string $reference): void
+    {
+        $payment = SubscriptionPayment::query()->where('reference', $reference)->first();
+
+        if ($payment === null || $payment->status === 'refunded') {
+            return;
+        }
+
+        $response = Http::withToken((string) config('services.paystack.secret_key'))
+            ->acceptJson()
+            ->get('https://api.paystack.co/transaction/verify/'.rawurlencode($reference));
+
+        if (! $response->successful() || ! $response->json('status')) {
+            throw new RuntimeException('Could not verify refund.');
+        }
+
+        $data = is_array($response->json('data')) ? $response->json('data') : [];
+        $paidReference = $data['reference'] ?? null;
+
+        if (! is_string($paidReference) || $paidReference !== $reference) {
+            throw new RuntimeException('Paystack reference did not match.');
+        }
+
+        if (! $this->paystackConfirmsRefund($data, (int) $payment->amount)) {
+            return;
+        }
+
+        $this->markRefunded($reference);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function paystackConfirmsRefund(array $data, int $expectedAmount): bool
+    {
+        if (($data['status'] ?? null) === 'reversed') {
+            return true;
+        }
+
+        $refunds = $data['refunds'] ?? null;
+
+        if (! is_array($refunds)) {
+            return false;
+        }
+
+        foreach ($refunds as $refund) {
+            if (! is_array($refund) || ! in_array($refund['status'] ?? null, ['processed', 'success'], true)) {
+                continue;
+            }
+
+            if ($this->koboAmount($refund['amount'] ?? null) === $expectedAmount) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function koboAmount(mixed $amount): ?int
+    {
+        if (is_int($amount)) {
+            return $amount;
+        }
+
+        if (is_string($amount) && preg_match('/^[0-9]+$/', $amount) === 1) {
+            return (int) $amount;
+        }
+
+        return null;
     }
 
     /**

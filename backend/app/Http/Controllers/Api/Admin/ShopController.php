@@ -27,7 +27,8 @@ class ShopController extends Controller
                         ->orWhere('email', 'ilike', "%{$search}%")
                         ->orWhereHas('business', function ($business) use ($search) {
                             $business->where('name', 'ilike', "%{$search}%")
-                                ->orWhere('phone', 'ilike', "%{$search}%");
+                                ->orWhere('phone', 'ilike', "%{$search}%")
+                                ->orWhere('state', 'ilike', "%{$search}%");
                         });
                 });
             })
@@ -142,6 +143,7 @@ class ShopController extends Controller
             'shop_name' => $user->business?->name,
             'phone' => $user->business?->phone,
             'country' => $user->business?->country,
+            'state' => $user->business?->state,
             'created_at' => $user->created_at?->toIso8601String(),
             'last_login_at' => $user->last_login_at?->toIso8601String(),
             'suspended' => $user->isSuspended(),

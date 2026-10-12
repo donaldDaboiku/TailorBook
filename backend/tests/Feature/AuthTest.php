@@ -24,6 +24,7 @@ class AuthTest extends TestCase
             ->assertJsonPath('user.business.phone', '08031234567')
             ->assertJsonPath('user.business.whatsapp_phone', '08031234567')
             ->assertJsonPath('user.business.country', 'NG')
+            ->assertJsonPath('user.business.state', 'Lagos')
             ->assertJsonPath('user.business.measurement_unit', 'in')
             ->assertJsonPath('user.business.currency', 'NGN')
             ->assertJsonStructure(['token', 'user']);
@@ -141,6 +142,7 @@ class AuthTest extends TestCase
             'business_name' => 'Ada Atelier',
             'phone' => '08031234567',
             'country' => 'NG',
+            'state' => 'Lagos',
             'measurement_unit' => 'in',
             'currency' => 'NGN',
         ], $overrides);

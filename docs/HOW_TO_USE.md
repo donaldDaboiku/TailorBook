@@ -17,6 +17,7 @@ You need internet when you save anything. The first open after a quiet period ma
    - Shop name
    - Shop phone
    - Email and password
+   - State (where the shop works)
    - Measurement unit (inches or centimetres)
 4. Submit.
 
@@ -330,6 +331,43 @@ https://YOUR-API.onrender.com/api/billing/webhook
 Enable events: `charge.success`, `charge.failed`, `refund.processed` (and `charge.refunded` if available).
 
 Then a tailor opens **More → Subscription → Pay with Paystack**, pays, and returns to the app. The app verifies the payment; the webhook also activates it.
+
+A shop is activated only after Paystack’s verify API reports a successful NGN charge for that exact reference and the plan amount. A webhook with a bad signature, the wrong amount, another currency, or a mismatched reference does not start a subscription. A refund event removes paid days only after Paystack confirms the charge was reversed.
+
+---
+
+## 12. Production email, HTTPS, and backups
+
+On the API service, set:
+
+- `APP_URL` to the API’s `https://` address and `FRONTEND_URL` to the web app’s `https://` address. Production forces HTTPS links.
+- `MAIL_MAILER` to `smtp` (or `resend`), plus `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_FROM_ADDRESS`. Password reset and receipt emails use this.
+- `SESSION_SECURE_COOKIE=true` and `SANCTUM_EXPIRATION=43200` (login tokens last 30 days).
+
+The API sends `nosniff`, `DENY` framing, a referrer policy, and HSTS in production. The static site sends the same headers from `render.yaml`.
+
+Database dumps:
+
+```bash
+php artisan backup:database
+```
+
+This needs `pg_dump` (included in the API Docker image) and writes the newest 7 `.sql` files under `storage/app/private/backups`. The free Render web disk is wiped on restart, and the free Render Postgres plan has no managed backups. Download each dump, or move the database to a plan that keeps backups, before you rely on this.
+
+---
+
+## 13. Contact, feedback, and subscribers
+
+The first screen and **More** show how many shops are currently subscribed, and how many of those are in each state. Shop names are not listed. A shop is counted only while its paid plan is active.
+
+New shops choose a Nigerian state when they register. Existing shops set it under **More → Shop settings**. That state is what the public totals use.
+
+The landing page and **More** also let anyone reach the TailorMate admin about the app. WhatsApp, phone, email, and social links are the admin’s. The feedback form is about TailorMate. Each message is saved for the admin under **App feedback**, and a copy is emailed to `SUPPORT_EMAIL` when that address is set. Set these on the API service before the links and email show:
+
+- `SUPPORT_EMAIL`
+- `SUPPORT_PHONE`
+- `SUPPORT_WHATSAPP` (a phone number, or a full `https://` link)
+- `SOCIAL_INSTAGRAM`, `SOCIAL_FACEBOOK`, `SOCIAL_TIKTOK`, `SOCIAL_X` (full `https://` links)
 
 ---
 

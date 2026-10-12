@@ -46,6 +46,7 @@ class AuthController extends Controller
                 'phone' => $phone,
                 'whatsapp_phone' => $phone,
                 'country' => strtoupper($data['country']),
+                'state' => $data['state'],
                 'measurement_unit' => MeasurementUnit::from($data['measurement_unit']),
                 'currency' => strtoupper($data['currency']),
             ]);

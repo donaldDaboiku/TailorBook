@@ -243,6 +243,18 @@ class BillingTest extends TestCase
             'paid_at' => now(),
         ]);
 
+        Http::fake([
+            'api.paystack.co/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'reversed',
+                    'amount' => 500000,
+                    'currency' => 'NGN',
+                    'reference' => $payment->reference,
+                ],
+            ]),
+        ]);
+
         $body = json_encode([
             'event' => 'refund.processed',
             'data' => [
@@ -300,5 +312,192 @@ class BillingTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.latest_payment_status', 'failed')
             ->assertJsonPath('data.0.payments.0.reference', 'tm_admin_list');
+    }
+
+    public function test_forged_or_mismatched_paystack_events_do_not_activate_a_shop(): void
+    {
+        $user = User::factory()->create([
+            'subscription_status' => SubscriptionStatus::Free,
+        ]);
+        Business::factory()->create(['user_id' => $user->id]);
+
+        $payment = SubscriptionPayment::query()->create([
+            'user_id' => $user->id,
+            'reference' => 'tm_fraud_ref',
+            'amount' => 500000,
+            'currency' => 'NGN',
+            'status' => 'pending',
+        ]);
+
+        $this->postWebhook('charge.success', ['reference' => $payment->reference], 'not-a-signature')
+            ->assertStatus(400);
+        $this->assertSame(SubscriptionStatus::Free, $user->fresh()->subscription_status);
+
+        Http::fake([
+            'api.paystack.co/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'amount' => '500000abc',
+                    'currency' => 'NGN',
+                    'reference' => $payment->reference,
+                ],
+            ]),
+        ]);
+        $this->signedWebhook('charge.success', ['reference' => $payment->reference])->assertStatus(400);
+        $this->assertSame('failed', $payment->fresh()->status);
+        $this->assertSame(SubscriptionStatus::Free, $user->fresh()->subscription_status);
+
+        $payment->forceFill(['status' => 'pending', 'failure_message' => null])->save();
+
+        Http::fake([
+            'api.paystack.co/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'amount' => 100,
+                    'currency' => 'NGN',
+                    'reference' => $payment->reference,
+                ],
+            ]),
+        ]);
+        $this->signedWebhook('charge.success', ['reference' => $payment->reference])->assertStatus(400);
+        $this->assertSame(SubscriptionStatus::Free, $user->fresh()->subscription_status);
+
+        $payment->forceFill(['status' => 'pending'])->save();
+
+        Http::fake([
+            'api.paystack.co/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'amount' => 500000,
+                    'currency' => 'USD',
+                    'reference' => $payment->reference,
+                ],
+            ]),
+        ]);
+        $this->signedWebhook('charge.success', ['reference' => $payment->reference])->assertStatus(400);
+
+        $payment->forceFill(['status' => 'pending'])->save();
+
+        Http::fake([
+            'api.paystack.co/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'amount' => 500000,
+                    'currency' => 'NGN',
+                    'reference' => 'someone_elses_charge',
+                ],
+            ]),
+        ]);
+        $this->signedWebhook('charge.success', ['reference' => $payment->reference])->assertStatus(400);
+        $this->assertSame('failed', $payment->fresh()->status);
+        $this->assertSame(SubscriptionStatus::Free, $user->fresh()->subscription_status);
+    }
+
+    public function test_a_shop_cannot_verify_another_shops_payment(): void
+    {
+        $owner = User::factory()->create();
+        Business::factory()->create(['user_id' => $owner->id]);
+        $other = User::factory()->create();
+        Business::factory()->create(['user_id' => $other->id]);
+
+        $payment = SubscriptionPayment::query()->create([
+            'user_id' => $owner->id,
+            'reference' => 'tm_owner_ref',
+            'amount' => 500000,
+            'currency' => 'NGN',
+            'status' => 'pending',
+        ]);
+
+        Http::fake([
+            'api.paystack.co/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'amount' => 500000,
+                    'currency' => 'NGN',
+                    'reference' => $payment->reference,
+                ],
+            ]),
+        ]);
+
+        Sanctum::actingAs($other);
+
+        $this->postJson('/api/billing/verify', ['reference' => $payment->reference])
+            ->assertStatus(422);
+
+        $this->assertSame('pending', $payment->fresh()->status);
+        $this->assertSame(SubscriptionStatus::Free, $owner->fresh()->subscription_status);
+    }
+
+    public function test_a_signed_refund_event_is_ignored_unless_paystack_confirms_it(): void
+    {
+        $user = User::factory()->create([
+            'subscription_status' => SubscriptionStatus::Subscribed,
+            'subscribed_until' => now()->addDays(20)->toDateString(),
+        ]);
+        Business::factory()->create(['user_id' => $user->id]);
+
+        $payment = SubscriptionPayment::query()->create([
+            'user_id' => $user->id,
+            'reference' => 'tm_fake_refund',
+            'amount' => 500000,
+            'currency' => 'NGN',
+            'status' => 'success',
+            'paid_at' => now(),
+        ]);
+
+        Http::fake([
+            'api.paystack.co/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'amount' => 500000,
+                    'currency' => 'NGN',
+                    'reference' => $payment->reference,
+                ],
+            ]),
+        ]);
+
+        $this->signedWebhook('refund.processed', [
+            'transaction_reference' => $payment->reference,
+        ])->assertOk();
+
+        $this->assertSame('success', $payment->fresh()->status);
+        $this->assertSame(SubscriptionStatus::Subscribed, $user->fresh()->subscription_status);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function signedWebhook(string $event, array $data): \Illuminate\Testing\TestResponse
+    {
+        $body = json_encode(['event' => $event, 'data' => $data], JSON_THROW_ON_ERROR);
+
+        return $this->postWebhook($event, $data, hash_hmac('sha512', $body, 'sk_test_dummy'), $body);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function postWebhook(string $event, array $data, string $signature, ?string $body = null): \Illuminate\Testing\TestResponse
+    {
+        $body ??= json_encode(['event' => $event, 'data' => $data], JSON_THROW_ON_ERROR);
+
+        return $this->call(
+            'POST',
+            '/api/billing/webhook',
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_PAYSTACK_SIGNATURE' => $signature,
+            ],
+            $body,
+        );
     }
 }

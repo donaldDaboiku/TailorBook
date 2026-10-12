@@ -1,3 +1,5 @@
+import CommunityPanel from './CommunityPanel'
+
 export default function LandingPage({
   onCreate,
   onSignIn,
@@ -34,6 +36,8 @@ export default function LandingPage({
         </ul>
         <p className="status">Start free. Add it to your home screen from the browser.</p>
       </section>
+
+      <CommunityPanel />
     </>
   )
 }

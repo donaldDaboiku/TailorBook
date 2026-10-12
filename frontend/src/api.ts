@@ -9,6 +9,7 @@ export type Business = {
   phone: string
   whatsapp_phone: string | null
   country: string
+  state: string | null
   measurement_unit: 'cm' | 'in'
   currency: string
   receipt_header?: string | null
@@ -71,6 +72,7 @@ export type AdminShop = {
   shop_name: string | null
   phone: string | null
   country: string | null
+  state: string | null
   created_at: string | null
   last_login_at: string | null
   suspended: boolean
@@ -260,6 +262,85 @@ export async function fetchHealth(): Promise<Health> {
   return data
 }
 
+export type StateCount = {
+  state: string
+  subscribers: number
+}
+
+export type PublicPresence = {
+  subscribers: number
+  states: StateCount[]
+  state_options: string[]
+  contact: {
+    email: string | null
+    phone: string | null
+    whatsapp_url: string | null
+  }
+  social: { name: string; url: string }[]
+}
+
+export type FeedbackNote = {
+  id: string
+  name: string
+  contact: string
+  message: string
+  shop_email: string | null
+  created_at: string | null
+}
+
+export async function fetchPresence(): Promise<PublicPresence> {
+  const response = await fetch(apiUrl('/api/public/presence'), {
+    headers: { Accept: 'application/json' },
+  })
+
+  if (!response.ok) {
+    throw new Error('unavailable')
+  }
+
+  const data = (await parseJson(response)) as { data?: PublicPresence }
+
+  if (!data.data || !Array.isArray(data.data.state_options)) {
+    throw new Error('unavailable')
+  }
+
+  return data.data
+}
+
+export async function sendFeedback(payload: {
+  name: string
+  contact: string
+  message: string
+}): Promise<string> {
+  const token = getToken()
+  const response = await fetch(apiUrl('/api/public/feedback'), {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+
+  const data = (await parseJson(response)) as { message?: string }
+
+  return data.message ?? 'The TailorMate admin received your message.'
+}
+
+export async function listAdminFeedback(): Promise<FeedbackNote[]> {
+  const data = await apiJson<{ data: FeedbackNote[] }>('/api/admin/feedback')
+
+  if (!Array.isArray(data.data)) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
 export async function register(payload: {
   name: string
   email: string
@@ -268,6 +349,7 @@ export async function register(payload: {
   business_name: string
   phone: string
   country: string
+  state: string
   measurement_unit: 'cm' | 'in'
   currency: string
 }): Promise<AuthResponse> {
@@ -485,6 +567,7 @@ export async function updateBusiness(payload: {
   phone: string
   whatsapp_phone?: string
   country: string
+  state: string
   measurement_unit: 'cm' | 'in'
   currency: string
   receipt_header?: string
@@ -495,6 +578,7 @@ export async function updateBusiness(payload: {
     name: payload.name,
     phone: payload.phone,
     country: payload.country,
+    state: payload.state,
     measurement_unit: payload.measurement_unit,
     currency: payload.currency,
     receipt_header: payload.receipt_header?.trim() ?? '',

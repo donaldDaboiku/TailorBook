@@ -22,6 +22,7 @@ class BusinessResource extends JsonResource
             'phone' => $this->phone,
             'whatsapp_phone' => $this->whatsapp_phone,
             'country' => $this->country,
+            'state' => $this->state,
             'measurement_unit' => $this->measurement_unit?->value,
             'currency' => $this->currency,
             'receipt_header' => $this->receipt_header,

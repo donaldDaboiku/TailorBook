@@ -30,6 +30,7 @@ type AuthContextValue = {
     business_name: string
     phone: string
     country: string
+    state: string
     measurement_unit: 'cm' | 'in'
     currency: string
   }) => Promise<void>
@@ -100,6 +101,7 @@ export function AuthProvider({
     business_name: string
     phone: string
     country: string
+    state: string
     measurement_unit: 'cm' | 'in'
     currency: string
   }) {

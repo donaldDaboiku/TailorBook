@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Business;
 
 use App\Enums\MeasurementUnit;
+use App\Support\NigerianStates;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -23,6 +24,7 @@ class UpdateBusinessRequest extends FormRequest
             'phone' => ['required', 'string', 'max:32'],
             'whatsapp_phone' => ['nullable', 'string', 'max:32'],
             'country' => ['required', 'string', 'size:2'],
+            'state' => ['required', 'string', Rule::in(NigerianStates::all())],
             'measurement_unit' => ['required', Rule::enum(MeasurementUnit::class)],
             'currency' => ['required', 'string', 'size:3'],
             'receipt_header' => ['nullable', 'string', 'max:240'],
@@ -39,6 +41,8 @@ class UpdateBusinessRequest extends FormRequest
         return [
             'name.required' => 'Enter your shop or fashion house name.',
             'phone.required' => 'Enter your shop phone number.',
+            'state.required' => 'Choose the state your shop is in.',
+            'state.in' => 'Choose a Nigerian state.',
         ];
     }
 }

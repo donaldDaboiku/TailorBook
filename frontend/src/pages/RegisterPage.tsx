@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react'
-import { firstError } from '../api'
+import { useEffect, useState, type FormEvent } from 'react'
+import { fetchPresence, firstError } from '../api'
 import { useAuth } from '../auth'
 
 export default function RegisterPage({
@@ -15,8 +15,30 @@ export default function RegisterPage({
   const [businessName, setBusinessName] = useState('')
   const [phone, setPhone] = useState('')
   const [unit, setUnit] = useState<'in' | 'cm'>('in')
+  const [stateName, setStateName] = useState('')
+  const [stateOptions, setStateOptions] = useState<string[]>([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    fetchPresence()
+      .then((presence) => {
+        if (!cancelled) {
+          setStateOptions(presence.state_options)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError('Could not load the state list. Check your connection and try again.')
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -32,6 +54,7 @@ export default function RegisterPage({
         business_name: businessName.trim(),
         phone: phone.trim(),
         country: 'NG',
+        state: stateName,
         measurement_unit: unit,
         currency: 'NGN',
       })
@@ -77,6 +100,22 @@ export default function RegisterPage({
             autoComplete="tel"
             required
           />
+        </label>
+
+        <label>
+          State
+          <select
+            value={stateName}
+            onChange={(event) => setStateName(event.target.value)}
+            required
+          >
+            <option value="">Choose a state</option>
+            {stateOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label>

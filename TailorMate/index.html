@@ -74,6 +74,16 @@
     <article class="feature"><div class="ico" aria-hidden="true">🪡</div><h2>Jobs and orders</h2><p>Organise customer jobs and service dates in one workspace.</p></article>
     <article class="feature"><div class="ico" aria-hidden="true">📊</div><h2>Business finances</h2><p>Keep an eye on payments, expenses and your business summary.</p></article>
   </section>
+  <section class="section" aria-labelledby="price-title">
+    <div class="panel">
+      <div class="eyebrow"><span class="dot"></span> Price</div>
+      <h2 id="price-title">Free to start</h2>
+      <p>A new shop opens on Free. The paid plan is one price, paid inside the app.</p>
+      <div class="stat" id="plan-price">…</div>
+      <p id="plan-note">Loading the paid plan…</p>
+      <p class="fine"><a class="btn primary" id="price-app" href="https://tailormate-web.onrender.com">Open the app to subscribe</a></p>
+    </div>
+  </section>
   <section class="section" aria-labelledby="connect-title">
     <div class="section-head"><div class="eyebrow"><span class="dot"></span> Stay connected</div><h2 id="connect-title">Reach the admin</h2><p>Questions about TailorMate go to the admin. Shop customers still message their tailor inside the app.</p></div>
     <div class="social-grid" id="social-grid"></div>
@@ -85,7 +95,7 @@
         <div class="eyebrow"><span class="dot"></span> Subscribed shops</div>
         <h3>On TailorMate</h3>
         <div class="stat" id="subscriber-count">…</div>
-        <p id="subscriber-note">Active paid shops, counted by state. Shop names stay private.</p>
+        <p id="subscriber-note">Free and paid shops, counted by state. Shop names stay private.</p>
         <ul class="state-list" id="state-list"></ul>
       </div>
       <div class="panel">
@@ -128,7 +138,7 @@
   const API_URL = 'https://tailormate-api.onrender.com'
 
   document.getElementById('year').textContent = String(new Date().getFullYear())
-  for (const id of ['open-app', 'launch-app', 'about-app']) {
+  for (const id of ['open-app', 'launch-app', 'about-app', 'price-app']) {
     document.getElementById(id).href = APP_URL
   }
 
@@ -165,8 +175,18 @@
       const payload = await response.json()
       const data = payload.data || {}
       const subscribers = Number(data.subscribers || 0)
-      count.textContent = subscribers === 1 ? '1 subscribed shop' : subscribers + ' subscribed shops'
-      note.textContent = 'Active paid shops. Names stay private.'
+      count.textContent = subscribers === 1 ? '1 shop' : subscribers + ' shops'
+      note.textContent = 'Free and paid shops. Names stay private.'
+      const plan = data.plan || {}
+      const planPrice = document.getElementById('plan-price')
+      const planNote = document.getElementById('plan-note')
+      if (plan.amount_label) {
+        planPrice.textContent = plan.amount_label
+        planNote.textContent = (plan.label || 'Paid plan') + ' · ' + (plan.days || 30) + ' days. Free shops stay free until they pay in the app.'
+      } else {
+        planPrice.textContent = '—'
+        planNote.textContent = 'The paid plan price will show after the API is updated.'
+      }
       states.replaceChildren()
       for (const row of data.states || []) {
         const item = document.createElement('li')
@@ -208,6 +228,8 @@
       count.textContent = 'Unavailable'
       note.textContent = 'The live count could not be loaded from the API. You can still open the app.'
       socialNote.textContent = 'Contact links could not be loaded. Open the app and use More → Contact TailorMate.'
+      document.getElementById('plan-price').textContent = '—'
+      document.getElementById('plan-note').textContent = 'The paid plan price could not be loaded. You can still subscribe inside the app.'
     }
   }
 

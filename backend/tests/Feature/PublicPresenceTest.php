@@ -22,6 +22,9 @@ class PublicPresenceTest extends TestCase
             'services.support.whatsapp' => '08031234567',
             'services.support.instagram' => 'https://instagram.com/tailormate',
             'services.support.facebook' => 'tailormate',
+            'services.paystack.plan_amount' => 500000,
+            'services.paystack.plan_days' => 30,
+            'services.paystack.plan_label' => 'Monthly shop plan',
         ]);
 
         $this->subscriber('Lagos');
@@ -47,18 +50,21 @@ class PublicPresenceTest extends TestCase
 
         $this->getJson('/api/public/presence')
             ->assertOk()
-            ->assertJsonPath('data.subscribers', 3)
+            ->assertJsonPath('data.subscribers', 4)
+            ->assertJsonPath('data.plan.amount_label', '₦5,000.00')
+            ->assertJsonPath('data.plan.days', 30)
             ->assertJsonPath('data.states.0.state', 'Lagos')
             ->assertJsonPath('data.states.0.subscribers', 2)
-            ->assertJsonPath('data.states.1.state', 'Rivers')
-            ->assertJsonPath('data.states.1.subscribers', 1)
+            ->assertJsonFragment(['state' => 'Rivers', 'subscribers' => 1])
+            ->assertJsonFragment(['state' => 'Oyo', 'subscribers' => 1])
             ->assertJsonPath('data.contact.email', 'hello@tailormate.test')
             ->assertJsonPath('data.contact.whatsapp_url', 'https://wa.me/2348031234567?text=Hello%20TailorMate')
             ->assertJsonPath('data.social.0.name', 'Instagram')
             ->assertJsonPath('data.social.0.url', 'https://instagram.com/tailormate')
             ->assertJsonCount(1, 'data.social')
             ->assertJsonMissing(['name' => 'Hidden Expired Shop'])
-            ->assertJsonMissing(['name' => 'Hidden Free Shop']);
+            ->assertJsonMissing(['name' => 'Hidden Free Shop'])
+            ->assertJsonMissing(['state' => 'Kano']);
     }
 
     public function test_register_requires_a_nigerian_state(): void

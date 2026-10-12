@@ -67,7 +67,7 @@ export default function CommunityPanel({
 
   const count = presence?.subscribers ?? 0
   const countLabel =
-    count === 1 ? '1 subscribed shop' : `${count} subscribed shops`
+    count === 1 ? '1 shop' : `${count} shops`
   const contactLinks = presence?.contact
   const hasContact = Boolean(
     contactLinks?.email || contactLinks?.phone || contactLinks?.whatsapp_url,
@@ -89,7 +89,12 @@ export default function CommunityPanel({
               ))}
             </ul>
           ) : (
-            <p className="status">State totals appear as shops subscribe.</p>
+            <p className="status">State totals appear as shops choose a state.</p>
+          )}
+          {presence.plan?.amount_label && (
+            <p className="status">
+              Free to open a shop. {presence.plan.label}: {presence.plan.amount_label} for {presence.plan.days} days.
+            </p>
           )}
         </>
       ) : (

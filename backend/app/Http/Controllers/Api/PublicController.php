@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\FeedbackMessage;
 use App\Models\User;
+use App\Services\PaystackBilling;
 use App\Services\PhoneNormalizer;
 use App\Support\NigerianStates;
 use Illuminate\Http\JsonResponse;
@@ -17,13 +18,18 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class PublicController extends Controller
 {
-    public function presence(): JsonResponse
+    public function presence(PaystackBilling $billing): JsonResponse
     {
         $subscribers = User::query()
             ->where('role', UserRole::Tailor)
             ->whereNull('suspended_at')
-            ->where('subscription_status', SubscriptionStatus::Subscribed)
-            ->whereDate('subscribed_until', '>=', now()->toDateString())
+            ->where(function ($query) {
+                $query->where('subscription_status', SubscriptionStatus::Free)
+                    ->orWhere(function ($paid) {
+                        $paid->where('subscription_status', SubscriptionStatus::Subscribed)
+                            ->whereDate('subscribed_until', '>=', now()->toDateString());
+                    });
+            })
             ->with('business:id,user_id,state')
             ->get();
 
@@ -37,10 +43,17 @@ class PublicController extends Controller
             ->sortByDesc('subscribers')
             ->values();
 
+        $plan = $billing->plan();
+
         return response()->json([
             'data' => [
                 'subscribers' => $subscribers->count(),
                 'states' => $states,
+                'plan' => [
+                    'label' => $plan['label'],
+                    'amount_label' => $plan['amount_label'],
+                    'days' => $plan['days'],
+                ],
                 'state_options' => NigerianStates::all(),
                 'contact' => $this->contact(),
                 'social' => $this->social(),

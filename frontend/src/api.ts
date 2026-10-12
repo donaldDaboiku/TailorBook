@@ -277,6 +277,11 @@ export type PublicPresence = {
     whatsapp_url: string | null
   }
   social: { name: string; url: string }[]
+  plan?: {
+    label: string
+    amount_label: string
+    days: number
+  }
 }
 
 export type FeedbackNote = {

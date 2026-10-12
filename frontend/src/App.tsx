@@ -18,7 +18,6 @@ import JobFormPage from './pages/JobFormPage'
 import JobsPage from './pages/JobsPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HowToUseTutorial from './pages/HowToUseTutorial'
-import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import MeasurementDetailPage from './pages/MeasurementDetailPage'
 import MeasurementFormPage from './pages/MeasurementFormPage'
@@ -107,10 +106,10 @@ export default function App() {
 function AuthenticatedApp() {
   const { user, loading, appName, setUser, logout } = useAuth()
   const [authScreen, setAuthScreen] = useState<
-    'landing' | 'login' | 'register' | 'forgot' | 'reset'
+    'login' | 'register' | 'forgot' | 'reset'
   >(() => {
     const params = new URLSearchParams(window.location.search)
-    return params.get('reset') === '1' ? 'reset' : 'landing'
+    return params.get('reset') === '1' ? 'reset' : 'login'
   })
   const [resetEmail, setResetEmail] = useState(() => {
     const params = new URLSearchParams(window.location.search)
@@ -140,7 +139,7 @@ function AuthenticatedApp() {
     wasSignedIn.current = false
     const params = new URLSearchParams(window.location.search)
     if (params.get('reset') !== '1') {
-      setAuthScreen('landing')
+      setAuthScreen('login')
     }
   }, [user])
 
@@ -224,12 +223,7 @@ function AuthenticatedApp() {
   if (!user) {
     return (
       <Shell appName={appName} signedOut>
-        {authScreen === 'landing' ? (
-          <LandingPage
-            onCreate={() => setAuthScreen('register')}
-            onSignIn={() => setAuthScreen('login')}
-          />
-        ) : authScreen === 'register' ? (
+        {authScreen === 'register' ? (
           <RegisterPage onShowLogin={() => setAuthScreen('login')} />
         ) : authScreen === 'forgot' ? (
           <ForgotPasswordPage onShowLogin={() => setAuthScreen('login')} />
@@ -548,13 +542,8 @@ function Shell({
 
       <main>{children}</main>
 
-      {signedOut && (
-        <footer className="builder-credit">Built by gitsystemng</footer>
-      )}
-
       {!signedOut && (
         <div className="tab-dock">
-          <footer className="builder-credit">Built by gitsystemng</footer>
           <nav className="tabbar" aria-label="Main">
           <TabButton
             label="Home"

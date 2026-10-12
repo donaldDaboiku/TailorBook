@@ -362,7 +362,9 @@ The first screen and **More** show how many shops are currently subscribed, and 
 
 New shops choose a Nigerian state when they register. Existing shops set it under **More → Shop settings**. That state is what the public totals use.
 
-The landing page and **More** also let anyone reach the TailorMate admin about the app. WhatsApp, phone, email, and social links are the admin’s. The feedback form is about TailorMate. Each message is saved for the admin under **App feedback**, and a copy is emailed to `SUPPORT_EMAIL` when that address is set. Set these on the API service before the links and email show:
+The public site is a separate page in the `TailorMate` folder (`index.html`). It links to the app. Inside the app, sign-in is the first screen. **More → About the app** says the app was built by gitsystemng.
+
+The public site and **More** also let anyone reach the TailorMate admin about the app. WhatsApp, phone, email, and social links are the admin’s. The feedback form is about TailorMate. Each message is saved for the admin under **App feedback**, and a copy is emailed to `SUPPORT_EMAIL` when that address is set. Set these on the API service before the links and email show:
 
 - `SUPPORT_EMAIL`
 - `SUPPORT_PHONE`

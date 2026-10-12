@@ -200,6 +200,15 @@ export default function MorePage({
       </section>
 
       <section className="card muted-card">
+        <h2 className="section-title">About the app</h2>
+        <p className="lede">
+          TailorMate keeps one shop’s customers, measurements, jobs, payments,
+          and expenses on the phone.
+        </p>
+        <p className="status">Built by gitsystemng</p>
+      </section>
+
+      <section className="card muted-card">
         <h2 className="section-title">How to use</h2>
         <p className="status">
           Short walkthrough of customers, measurements, jobs, payments, and

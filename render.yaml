@@ -34,6 +34,8 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: LANDING_URL
+        sync: false
       - key: SUPPORT_EMAIL
         sync: false
       - key: SUPPORT_PHONE
@@ -141,3 +143,20 @@ services:
     envVars:
       - key: VITE_API_URL
         sync: false
+
+  - type: web
+    name: tailormate-landing
+    runtime: static
+    rootDir: TailorMate
+    buildCommand: echo TailorMate
+    staticPublishPath: .
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin

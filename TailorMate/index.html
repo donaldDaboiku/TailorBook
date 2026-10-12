@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173f35">
+  <meta name="description" content="TailorMate helps fashion designers manage customer measurements, tailoring jobs, payments and business records.">
+  <title>TailorMate — Your tailoring business, organised</title>
+  <style>
+    :root{color-scheme:light;--green:#173f35;--green2:#245b4c;--cream:#f6f5ef;--ink:#17231f;--muted:#68756f;--line:#dfe6df;--gold:#e8bd65}
+    *{box-sizing:border-box} body{margin:0;background:var(--cream);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
+    a{color:inherit} .wrap{min-height:100vh;display:flex;flex-direction:column}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px clamp(20px,6vw,84px)}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:-.03em;font-size:1.2rem}
+    .mark{width:42px;height:42px;border-radius:14px;background:var(--green);display:grid;place-items:center;color:#fff;font-size:1.1rem}
+    .toplink{font-size:.92rem;text-decoration:none;color:var(--green);font-weight:700}
+    main{width:min(1120px,calc(100% - 40px));margin:auto;flex:1;display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:clamp(28px,6vw,76px);padding:42px 0 70px}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--green2);font-size:.78rem;text-transform:uppercase;letter-spacing:.13em;font-weight:800}
+    .dot{width:8px;height:8px;background:var(--gold);border-radius:50%}
+    h1{font-size:clamp(2.7rem,6vw,5.1rem);line-height:1.02;letter-spacing:-.065em;margin:18px 0 22px;max-width:660px}
+    h1 span{color:var(--green2)}
+    .intro{font-size:1.1rem;color:var(--muted);max-width:570px;margin:0 0 30px}
+    .actions{display:flex;flex-wrap:wrap;gap:12px}
+    .btn{display:inline-flex;justify-content:center;align-items:center;gap:10px;padding:14px 20px;border-radius:12px;font-weight:800;text-decoration:none;transition:transform .15s,box-shadow .15s}
+    .btn:hover{transform:translateY(-2px)} .primary{background:var(--green);color:#fff;box-shadow:0 8px 20px #173f3524}.secondary{border:1px solid var(--line);background:#fff}
+    .fine{font-size:.83rem;color:var(--muted);margin-top:15px}
+    .preview{position:relative;background:var(--green);border-radius:28px;padding:26px;color:#fff;overflow:hidden;box-shadow:0 24px 60px #173f3525}
+    .preview:before{content:"";position:absolute;width:230px;height:230px;border-radius:50%;background:#ffffff0b;right:-70px;top:-80px}
+    .preview-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px;position:relative}
+    .preview-title{font-weight:800;font-size:1.05rem}.pill{font-size:.72rem;border:1px solid #ffffff35;border-radius:999px;padding:5px 9px;color:#e7eee9}
+    .metric{position:relative;background:#ffffff0d;border:1px solid #ffffff18;border-radius:16px;padding:17px;margin-bottom:12px}
+    .metric small{display:block;color:#c3d4cb;font-size:.8rem}.metric strong{display:block;font-size:1.45rem;margin-top:4px}
+    .rows{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mini{background:#fff;color:var(--ink);border-radius:15px;padding:15px}.mini small{color:var(--muted)}.mini strong{display:block;margin-top:7px}
+    .features{width:min(1120px,calc(100% - 40px));margin:0 auto 44px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .section{width:min(1120px,calc(100% - 40px));margin:0 auto 58px}
+    .section-head{max-width:650px;margin-bottom:20px}.section-head h2{font-size:clamp(1.7rem,3vw,2.4rem);letter-spacing:-.04em;margin:8px 0}.section-head p{color:var(--muted);margin:0}
+    .social-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.social{display:flex;align-items:center;gap:12px;padding:17px;background:#fff;border:1px solid var(--line);border-radius:15px;text-decoration:none;font-weight:700}.social:hover{border-color:var(--green2);transform:translateY(-1px)}
+    .community-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px}.panel h3{margin:0 0 7px}.panel p{color:var(--muted);font-size:.92rem}.stat{font-size:2rem;font-weight:800;letter-spacing:-.04em;color:var(--green);margin:12px 0 4px}.status{display:inline-block;background:#f5eddb;color:#75571c;border-radius:999px;padding:5px 10px;font-size:.75rem;font-weight:800}
+    .state-list{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding:0;list-style:none}.state-list li{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:.85rem}
+    .feedback-form{display:grid;gap:12px}.stars{display:flex;gap:5px}.stars button{border:0;background:transparent;font-size:1.7rem;padding:2px;cursor:pointer;color:#b8c0ba}.stars button.selected{color:#d59c28}.feedback-form input,.feedback-form textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}.feedback-form textarea{min-height:95px;resize:vertical}.feedback-form .send{border:0;border-radius:10px;background:var(--green);color:#fff;font-weight:800;padding:13px;cursor:pointer}.form-note{font-size:.8rem;color:var(--muted);margin:0}
+    .feature{padding:22px;border:1px solid var(--line);border-radius:18px;background:#fff}.feature .ico{font-size:1.3rem}.feature h2{font-size:1rem;margin:10px 0 6px}.feature p{font-size:.9rem;color:var(--muted);margin:0}
+    footer{border-top:1px solid var(--line);padding:22px clamp(20px,6vw,84px);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.82rem}
+    @media(max-width:760px){main{grid-template-columns:1fr;padding-top:24px}.preview{max-width:520px;width:100%;margin:auto}.features{grid-template-columns:1fr}.intro{font-size:1rem}header{padding-top:18px;padding-bottom:18px}.social-grid,.community-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="#top" aria-label="TailorMate home" style="text-decoration:none"><span class="mark" aria-hidden="true">✂</span><span>TailorMate</span></a>
+    <a class="toplink" id="open-app" href="https://tailormate-web.onrender.com">Open the app</a>
+  </header>
+  <main id="top">
+    <section>
+      <div class="eyebrow"><span class="dot"></span> Made for fashion professionals</div>
+      <h1>Your craft.<br><span>Your customers.</span><br>All organised.</h1>
+      <p class="intro">Keep customer measurements, tailoring jobs, payments and everyday business records together — so you can spend more time creating great outfits.</p>
+      <div class="actions">
+        <a class="btn primary" id="launch-app" href="https://tailormate-web.onrender.com">Launch TailorMate</a>
+        <a class="btn secondary" href="#about">About the app</a>
+      </div>
+      <p class="fine">Sign in or create an account inside the app.</p>
+    </section>
+    <aside class="preview" aria-label="TailorMate feature preview">
+      <div class="preview-head"><div class="preview-title">Your tailoring workspace</div><span class="pill">Simple. Organised.</span></div>
+      <div class="metric"><small>Customer records</small><strong>Measurements in one place</strong></div>
+      <div class="rows">
+        <div class="mini"><span aria-hidden="true">🧵</span><strong>Job tracking</strong><small>Follow each order</small></div>
+        <div class="mini"><span aria-hidden="true">₦</span><strong>Payments</strong><small>Track what is paid</small></div>
+      </div>
+    </aside>
+  </main>
+  <section class="features" aria-label="Main features">
+    <article class="feature"><div class="ico" aria-hidden="true">📏</div><h2>Customer measurements</h2><p>Keep measurement history accessible when it is time to sew.</p></article>
+    <article class="feature"><div class="ico" aria-hidden="true">🪡</div><h2>Jobs and orders</h2><p>Organise customer jobs and service dates in one workspace.</p></article>
+    <article class="feature"><div class="ico" aria-hidden="true">📊</div><h2>Business finances</h2><p>Keep an eye on payments, expenses and your business summary.</p></article>
+  </section>
+  <section class="section" aria-labelledby="connect-title">
+    <div class="section-head"><div class="eyebrow"><span class="dot"></span> Stay connected</div><h2 id="connect-title">Reach the admin</h2><p>Questions about TailorMate go to the admin. Shop customers still message their tailor inside the app.</p></div>
+    <div class="social-grid" id="social-grid"></div>
+    <p class="form-note" id="social-note">Loading contact links…</p>
+  </section>
+  <section class="section" aria-label="Subscribers and feedback">
+    <div class="community-grid">
+      <div class="panel">
+        <div class="eyebrow"><span class="dot"></span> Subscribed shops</div>
+        <h3>On TailorMate</h3>
+        <div class="stat" id="subscriber-count">…</div>
+        <p id="subscriber-note">Active paid shops, counted by state. Shop names stay private.</p>
+        <ul class="state-list" id="state-list"></ul>
+      </div>
+      <div class="panel">
+        <div class="eyebrow"><span class="dot"></span> About the app</div>
+        <h3>Send feedback to the admin</h3>
+        <p>Tell the TailorMate admin what works or what should change.</p>
+        <form class="feedback-form" id="feedback-form">
+          <div>
+            <label for="rating">Your rating</label>
+            <div class="stars" role="group" aria-label="Choose a rating from one to five stars" id="rating-stars">
+              <button type="button" aria-label="1 star" data-rating="1">★</button>
+              <button type="button" aria-label="2 stars" data-rating="2">★</button>
+              <button type="button" aria-label="3 stars" data-rating="3">★</button>
+              <button type="button" aria-label="4 stars" data-rating="4">★</button>
+              <button type="button" aria-label="5 stars" data-rating="5">★</button>
+            </div>
+          </div>
+          <div><label for="feedback-name">Name</label><input id="feedback-name" name="name" maxlength="80" autocomplete="name" required placeholder="Your name"></div>
+          <div><label for="feedback-contact">Email or phone</label><input id="feedback-contact" name="contact" maxlength="160" autocomplete="email" required placeholder="So the admin can reply"></div>
+          <div><label for="feedback-message">Feedback</label><textarea id="feedback-message" name="message" maxlength="1500" required placeholder="What should we improve?"></textarea></div>
+          <button class="send" type="submit">Send to the admin</button>
+          <p class="form-note" id="feedback-note" aria-live="polite">This message is saved for the TailorMate admin.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+  <section class="section" id="about" aria-labelledby="about-title">
+    <div class="panel">
+      <div class="eyebrow"><span class="dot"></span> About the app</div>
+      <h2 id="about-title">TailorMate</h2>
+      <p>TailorMate is a phone-friendly workspace for one fashion shop: customers, measurements, jobs, payments, and expenses.</p>
+      <p><strong>Built by gitsystemng</strong></p>
+      <p class="fine"><a id="about-app" href="https://tailormate-web.onrender.com">Open the app</a></p>
+    </div>
+  </section>
+  <footer><span>© <span id="year">2026</span> TailorMate</span><span>Built by gitsystemng</span></footer>
+</div>
+<script>
+  const APP_URL = 'https://tailormate-web.onrender.com'
+  const API_URL = 'https://tailormate-api.onrender.com'
+
+  document.getElementById('year').textContent = String(new Date().getFullYear())
+  for (const id of ['open-app', 'launch-app', 'about-app']) {
+    document.getElementById(id).href = APP_URL
+  }
+
+  let selectedRating = 0
+  const starButtons = [...document.querySelectorAll('#rating-stars button')]
+  starButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      selectedRating = Number(button.dataset.rating)
+      starButtons.forEach((item) => {
+        item.classList.toggle('selected', Number(item.dataset.rating) <= selectedRating)
+        item.setAttribute('aria-pressed', String(Number(item.dataset.rating) === selectedRating))
+      })
+    })
+  })
+
+  function linkLabel(name) {
+    return name
+  }
+
+  async function loadPresence() {
+    const count = document.getElementById('subscriber-count')
+    const note = document.getElementById('subscriber-note')
+    const states = document.getElementById('state-list')
+    const social = document.getElementById('social-grid')
+    const socialNote = document.getElementById('social-note')
+
+    try {
+      const response = await fetch(API_URL + '/api/public/presence', {
+        headers: { Accept: 'application/json' },
+      })
+      if (!response.ok) {
+        throw new Error('unavailable')
+      }
+      const payload = await response.json()
+      const data = payload.data || {}
+      const subscribers = Number(data.subscribers || 0)
+      count.textContent = subscribers === 1 ? '1 subscribed shop' : subscribers + ' subscribed shops'
+      note.textContent = 'Active paid shops. Names stay private.'
+      states.replaceChildren()
+      for (const row of data.states || []) {
+        const item = document.createElement('li')
+        item.textContent = row.state + ' · ' + row.subscribers
+        states.append(item)
+      }
+
+      const links = []
+      if (data.contact && data.contact.whatsapp_url) {
+        links.push({ name: 'WhatsApp', url: data.contact.whatsapp_url })
+      }
+      if (data.contact && data.contact.phone) {
+        links.push({ name: 'Call', url: 'tel:' + data.contact.phone })
+      }
+      if (data.contact && data.contact.email) {
+        links.push({ name: 'Email', url: 'mailto:' + data.contact.email })
+      }
+      for (const item of data.social || []) {
+        if (item && item.url && item.name) {
+          links.push(item)
+        }
+      }
+      social.replaceChildren()
+      if (links.length === 0) {
+        socialNote.textContent = 'Admin contact links appear after SUPPORT_EMAIL, SUPPORT_PHONE, SUPPORT_WHATSAPP, and the SOCIAL links are set on the API.'
+        return
+      }
+      for (const item of links) {
+        const anchor = document.createElement('a')
+        anchor.className = 'social'
+        anchor.href = item.url
+        anchor.target = '_blank'
+        anchor.rel = 'noopener noreferrer'
+        anchor.textContent = linkLabel(item.name)
+        social.append(anchor)
+      }
+      socialNote.textContent = ''
+    } catch {
+      count.textContent = 'Unavailable'
+      note.textContent = 'The live count could not be loaded from the API. You can still open the app.'
+      socialNote.textContent = 'Contact links could not be loaded. Open the app and use More → Contact TailorMate.'
+    }
+  }
+
+  document.getElementById('feedback-form').addEventListener('submit', async (event) => {
+    event.preventDefault()
+    const note = document.getElementById('feedback-note')
+    const message = document.getElementById('feedback-message').value.trim()
+    const name = document.getElementById('feedback-name').value.trim()
+    const contact = document.getElementById('feedback-contact').value.trim()
+    if (!selectedRating) {
+      note.textContent = 'Choose a star rating before sending.'
+      return
+    }
+    note.textContent = 'Sending…'
+    try {
+      const response = await fetch(API_URL + '/api/public/feedback', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          contact,
+          message: 'Rating: ' + selectedRating + '/5\n\n' + message,
+        }),
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        const errors = payload.errors || {}
+        const first = Object.values(errors)[0]
+        note.textContent = (Array.isArray(first) && first[0]) || payload.message || 'The message was not sent.'
+        return
+      }
+      note.textContent = payload.message || 'The TailorMate admin received your message.'
+      document.getElementById('feedback-form').reset()
+      selectedRating = 0
+      starButtons.forEach((item) => {
+        item.classList.remove('selected')
+        item.setAttribute('aria-pressed', 'false')
+      })
+    } catch {
+      note.textContent = 'The message was not sent. Check your connection and try again.'
+    }
+  })
+
+  loadPresence()
+</script>
+</body>
+</html>

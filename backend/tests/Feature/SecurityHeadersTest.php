@@ -20,6 +20,23 @@ class SecurityHeadersTest extends TestCase
             ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
     }
 
+    public function test_the_app_and_landing_sites_can_read_the_api(): void
+    {
+        $this->get('/api/health', [
+            'Origin' => 'https://tailormate-web.onrender.com',
+        ])->assertOk()->assertHeader(
+            'Access-Control-Allow-Origin',
+            'https://tailormate-web.onrender.com',
+        );
+
+        $this->get('/api/health', [
+            'Origin' => 'https://tailormate-landing.onrender.com',
+        ])->assertOk()->assertHeader(
+            'Access-Control-Allow-Origin',
+            'https://tailormate-landing.onrender.com',
+        );
+    }
+
     public function test_database_backup_writes_a_sql_dump_when_pg_dump_is_installed(): void
     {
         $probe = new Process(['pg_dump', '--version']);

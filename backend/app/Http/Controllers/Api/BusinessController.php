@@ -7,12 +7,25 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\UpdateBusinessRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Business;
+use App\Services\ShopRecords;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 
 class BusinessController extends Controller
 {
+    public function export(Request $request, ShopRecords $records): Response
+    {
+        $business = $this->business($request)->load('user');
+        $filename = $records->filename($business);
+
+        return response($records->csv($business), 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
     public function update(UpdateBusinessRequest $request): UserResource
     {
         $business = $this->business($request);

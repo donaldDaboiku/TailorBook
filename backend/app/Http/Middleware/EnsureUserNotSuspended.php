@@ -43,6 +43,7 @@ class EnsureUserNotSuspended
             return true;
         }
 
-        return $request->is('api/billing/*');
+        return $request->is('api/billing/*')
+            || ($request->isMethod('GET') && $request->is('api/business/export'));
     }
 }

@@ -607,6 +607,28 @@ export async function updateBusiness(payload: {
   return data.data
 }
 
+export async function downloadShopRecords(): Promise<void> {
+  const response = await fetch(apiUrl('/api/business/export'), {
+    headers: authHeaders(),
+  })
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  const header = response.headers.get('Content-Disposition') ?? ''
+  const match = /filename="([^"]+)"/.exec(header)
+  link.href = url
+  link.download = match?.[1] ?? 'tailormate-records.csv'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
 export async function deleteAccount(password: string): Promise<void> {
   await apiJson<{ message: string }>('/api/auth/account', {
     method: 'DELETE',

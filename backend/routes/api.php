@@ -46,6 +46,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::delete('/auth/account', [AuthController::class, 'destroy']);
+    Route::get('/business/export', [BusinessController::class, 'export']);
     Route::put('/business', [BusinessController::class, 'update']);
     Route::post('/business/logo', [BusinessController::class, 'uploadLogo']);
     Route::get('/business/logo', [BusinessController::class, 'logo']);

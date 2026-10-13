@@ -190,6 +190,19 @@ Update your name or email. Tap **Save account**.
 
 Use **Sign out** near the bottom of **More**.
 
+### Download your records
+
+If you want a copy of every client before you leave TailorMate:
+
+1. Sign in.
+2. Open **More**.
+3. Scroll to **Your records**.
+4. Tap **Download my records**.
+
+The file is a spreadsheet (CSV). It includes the shop, clients (including archived ones), measurements, jobs, payments, and expenses. It does not include another shop’s clients. An expired plan can still download. A suspended account cannot sign in, so ask the admin to lift the suspension first, then download, then leave.
+
+Do this before **Delete account**. Deleting removes those records from TailorMate.
+
 ### Delete account
 
 1. Scroll to **Delete account**.

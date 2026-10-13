@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   deleteAccount,
+  downloadShopRecords,
   fetchPresence,
   fetchShopLogo,
   firstError,
@@ -57,6 +58,8 @@ export default function MorePage({
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteError, setDeleteError] = useState('')
   const [deleteBusy, setDeleteBusy] = useState(false)
+  const [exportBusy, setExportBusy] = useState(false)
+  const [exportError, setExportError] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -157,6 +160,18 @@ export default function MorePage({
       setShopError(firstError(err))
     } finally {
       setShopBusy(false)
+    }
+  }
+
+  async function onDownloadRecords() {
+    setExportError('')
+    setExportBusy(true)
+    try {
+      await downloadShopRecords()
+    } catch (err) {
+      setExportError(firstError(err))
+    } finally {
+      setExportBusy(false)
     }
   }
 
@@ -438,6 +453,28 @@ export default function MorePage({
           disabled={logoutBusy || deleteBusy}
         >
           {logoutBusy ? 'Signing out…' : 'Sign out'}
+        </button>
+      </section>
+
+      <section className="card muted-card">
+        <h2 className="section-title">Your records</h2>
+        <p className="lede">
+          Download every client, measurement, job, payment, and expense as a
+          spreadsheet. Do this before you delete the account. Deleting removes
+          the records from TailorMate.
+        </p>
+        {exportError && (
+          <p className="form-error" role="alert">
+            {exportError}
+          </p>
+        )}
+        <button
+          type="button"
+          className="secondary"
+          onClick={onDownloadRecords}
+          disabled={exportBusy}
+        >
+          {exportBusy ? 'Preparing…' : 'Download my records'}
         </button>
       </section>
 

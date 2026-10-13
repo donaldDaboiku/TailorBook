@@ -857,6 +857,14 @@ a.primary {
   background: color-mix(in srgb, var(--ink) 45%, transparent);
 }
 
+.field-pref-scroll {
+  max-height: min(52vh, 28rem);
+  overflow-y: auto;
+  display: grid;
+  gap: 0.75rem;
+  padding-right: 0.15rem;
+}
+
 .modal-sheet {
   width: min(100%, 480px);
   max-height: min(92svh, 900px);

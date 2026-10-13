@@ -21,6 +21,7 @@ export default function MeasurementFieldsSettings() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
+  const [open, setOpen] = useState(false)
 
   const active = useMemo(
     () => templates.find((item) => item.slug === slug) ?? null,
@@ -56,6 +57,21 @@ export default function MeasurementFieldsSettings() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
 
   function onPickTemplate(nextSlug: string) {
     setSlug(nextSlug)
@@ -93,6 +109,7 @@ export default function MeasurementFieldsSettings() {
       )
       setDrafts(toDrafts(updated.fields))
       setSaved(true)
+      setOpen(false)
     } catch (err) {
       setError(firstError(err))
     } finally {
@@ -100,77 +117,121 @@ export default function MeasurementFieldsSettings() {
     }
   }
 
-  if (loading) {
-    return <p className="status">Loading measurement fields…</p>
-  }
-
   return (
-    <section className="card muted-card">
-      <h2 className="section-title">Measurement fields</h2>
-      <p className="lede">
-        Rename terms for your shop, and turn off fields you do not use.
-      </p>
-
-      <div className="template-picks" role="group" aria-label="Template">
-        {templates.map((template) => (
-          <button
-            key={template.id}
-            type="button"
-            className={
-              template.slug === slug
-                ? 'secondary template-pick active'
-                : 'secondary template-pick'
-            }
-            onClick={() => onPickTemplate(template.slug)}
-          >
-            {template.name}
-          </button>
-        ))}
-      </div>
-
-      <form className="form" onSubmit={onSave}>
-        {drafts.map((field) => (
-          <div key={field.key} className="field-pref">
-            <label className="choice">
-              <input
-                type="checkbox"
-                checked={field.enabled}
-                onChange={(event) =>
-                  updateDraft(field.key, { enabled: event.target.checked })
-                }
-              />
-              Use this field
-            </label>
-            <label>
-              Name
-              <input
-                value={field.label}
-                onChange={(event) =>
-                  updateDraft(field.key, { label: event.target.value })
-                }
-                required={field.enabled}
-                disabled={!field.enabled}
-              />
-            </label>
-          </div>
-        ))}
-
-        {active && drafts.length === 0 && (
-          <p className="status">No fields on this template.</p>
-        )}
-
-        {error && (
+    <>
+      <section className="card muted-card">
+        <h2 className="section-title">Measurement fields</h2>
+        <p className="lede">
+          Rename terms for your shop, and turn off fields you do not use.
+        </p>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => setOpen(true)}
+          disabled={loading}
+        >
+          {loading ? 'Loading fields…' : 'Edit measurement fields'}
+        </button>
+        {saved && <p className="status">Measurement fields saved.</p>}
+        {error && !open && (
           <p className="form-error" role="alert">
             {error}
           </p>
         )}
-        {saved && <p className="status">Measurement fields saved.</p>}
+      </section>
 
-        <button type="submit" className="primary" disabled={busy}>
-          {busy ? 'Saving…' : 'Save fields'}
-        </button>
-      </form>
-    </section>
+      {open && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setOpen(false)
+            }
+          }}
+        >
+          <div
+            className="modal-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="measurement-fields-title"
+          >
+            <div className="row-between">
+              <h2 className="section-title" id="measurement-fields-title">
+                Measurement fields
+              </h2>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="template-picks" role="group" aria-label="Template">
+              {templates.map((template) => (
+                <button
+                  key={template.id}
+                  type="button"
+                  className={
+                    template.slug === slug
+                      ? 'secondary template-pick active'
+                      : 'secondary template-pick'
+                  }
+                  onClick={() => onPickTemplate(template.slug)}
+                >
+                  {template.name}
+                </button>
+              ))}
+            </div>
+
+            <form className="form" onSubmit={onSave}>
+              <div className="field-pref-scroll">
+                {drafts.map((field) => (
+                  <div key={field.key} className="field-pref">
+                    <label className="choice">
+                      <input
+                        type="checkbox"
+                        checked={field.enabled}
+                        onChange={(event) =>
+                          updateDraft(field.key, { enabled: event.target.checked })
+                        }
+                      />
+                      Use this field
+                    </label>
+                    <label>
+                      Name
+                      <input
+                        value={field.label}
+                        onChange={(event) =>
+                          updateDraft(field.key, { label: event.target.value })
+                        }
+                        required={field.enabled}
+                        disabled={!field.enabled}
+                      />
+                    </label>
+                  </div>
+                ))}
+                {active && drafts.length === 0 && (
+                  <p className="status">No fields on this template.</p>
+                )}
+              </div>
+
+              {error && (
+                <p className="form-error" role="alert">
+                  {error}
+                </p>
+              )}
+
+              <button type="submit" className="primary" disabled={busy}>
+                {busy ? 'Saving…' : 'Save fields'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

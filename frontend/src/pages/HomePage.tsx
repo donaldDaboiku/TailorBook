@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchHome, firstError, type HomeDashboard, type ShopJob } from '../api'
 import { useAuth } from '../auth'
-import CommunityPanel from './CommunityPanel'
 
 function timeGreeting(now = new Date()): string {
   const hour = now.getHours()
@@ -73,8 +72,6 @@ export default function HomePage({
           {initial}
         </button>
       </header>
-
-      <CommunityPanel variant="compact" />
 
       <section className="balance-card">
         <p className="balance-label">Outstanding balances</p>

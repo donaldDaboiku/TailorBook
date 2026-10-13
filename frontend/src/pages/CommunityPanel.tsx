@@ -7,11 +7,9 @@ import {
 } from '../api'
 
 export default function CommunityPanel({
-  variant = 'page',
   defaultName = '',
   defaultContact = '',
 }: {
-  variant?: 'page' | 'compact'
   defaultName?: string
   defaultContact?: string
 }) {
@@ -106,8 +104,7 @@ export default function CommunityPanel({
       )}
     </section>
 
-      {variant === 'compact' ? null : (
-        <section className="card muted-card">
+      <section className="card muted-card">
           <h2 className="section-title">Contact TailorMate</h2>
           <p className="lede">
             Reach the admin about the app. Messages here go to TailorMate.
@@ -187,7 +184,6 @@ export default function CommunityPanel({
             </button>
           </form>
         </section>
-      )}
     </>
   )
 }

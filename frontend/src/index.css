@@ -792,6 +792,29 @@ a.primary {
   color: var(--ink);
 }
 
+.location-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.location-picks button {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: inherit;
+  font: inherit;
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 0.35rem 0.75rem;
+}
+
+.location-picks button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 .admin-list {
   list-style: none;
   margin: 0.75rem 0 0;

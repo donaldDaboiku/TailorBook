@@ -6,7 +6,9 @@ use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ResetShopPasswordRequest;
+use App\Http\Requests\Admin\UpdateShopStateRequest;
 use App\Http\Requests\Admin\UpdateShopSubscriptionRequest;
+use App\Models\Business;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -80,6 +82,23 @@ class ShopController extends Controller
 
         return response()->json([
             'message' => 'Shop activated.',
+            'data' => $this->shopPayload($user->fresh()->load('business')),
+        ]);
+    }
+
+    public function updateState(UpdateShopStateRequest $request, User $user): JsonResponse
+    {
+        abort_unless($user->role === UserRole::Tailor, 404);
+
+        $business = $user->business;
+        abort_unless($business instanceof Business, 422, 'This account has no shop yet.');
+
+        $business->update([
+            'state' => $request->validated('state'),
+        ]);
+
+        return response()->json([
+            'message' => 'State updated.',
             'data' => $this->shopPayload($user->fresh()->load('business')),
         ]);
     }

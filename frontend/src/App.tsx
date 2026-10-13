@@ -28,6 +28,7 @@ import RegisterPage from './pages/RegisterPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import SubscriptionBillingCard from './pages/SubscriptionBillingCard'
 import WhatsAppComposePage from './pages/WhatsAppComposePage'
+import { useI18n } from './i18n'
 import { hasSeenTutorial, markTutorialSeen } from './tutorial'
 
 type Gate = 'loading' | 'ready' | 'offline'
@@ -532,6 +533,8 @@ function Shell({
   tab?: Tab
   onTabChange?: (tab: Tab) => void
 }) {
+  const { t } = useI18n()
+
   return (
     <div className={signedOut ? 'app signed-out' : 'app'}>
       {!hideHeader && (
@@ -546,31 +549,31 @@ function Shell({
         <div className="tab-dock">
           <nav className="tabbar" aria-label="Main">
           <TabButton
-            label="Home"
+            label={t('nav.home')}
             current={tab === 'home'}
             onClick={() => onTabChange?.('home')}
             icon="home"
           />
           <TabButton
-            label="Clients"
+            label={t('nav.clients')}
             current={tab === 'customers'}
             onClick={() => onTabChange?.('customers')}
             icon="clients"
           />
           <TabButton
-            label="Jobs"
+            label={t('nav.jobs')}
             current={tab === 'jobs'}
             onClick={() => onTabChange?.('jobs')}
             icon="jobs"
           />
           <TabButton
-            label="Finance"
+            label={t('nav.finance')}
             current={tab === 'finance'}
             onClick={() => onTabChange?.('finance')}
             icon="finance"
           />
           <TabButton
-            label="More"
+            label={t('nav.more')}
             current={tab === 'more'}
             onClick={() => onTabChange?.('more')}
             icon="more"

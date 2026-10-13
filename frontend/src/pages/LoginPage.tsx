@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { firstError } from '../api'
 import { useAuth } from '../auth'
+import { LanguageSelect, useI18n } from '../i18n'
 
 export default function LoginPage({
   onShowRegister,
@@ -10,6 +11,7 @@ export default function LoginPage({
   onShowForgot: () => void
 }) {
   const { login, appName } = useAuth()
+  const { t } = useI18n()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -31,12 +33,13 @@ export default function LoginPage({
 
   return (
     <section className="card">
-      <h1>Sign in</h1>
-      <p className="lede">Use your {appName || 'shop'} account.</p>
+      <h1>{t('login.title')}</h1>
+      <p className="lede">{t('login.lede', { shop: appName || 'shop' })}</p>
 
       <form className="form" onSubmit={onSubmit}>
+        <LanguageSelect />
         <label>
-          Email
+          {t('login.email')}
           <input
             type="email"
             autoComplete="email"
@@ -47,7 +50,7 @@ export default function LoginPage({
         </label>
 
         <label>
-          Password
+          {t('login.password')}
           <input
             type="password"
             autoComplete="current-password"
@@ -60,20 +63,20 @@ export default function LoginPage({
         {error && <p className="form-error" role="alert">{error}</p>}
 
         <button type="submit" className="primary" disabled={busy}>
-          {busy ? 'Signing in…' : 'Sign in'}
+          {busy ? t('login.busy') : t('login.submit')}
         </button>
       </form>
 
       <p className="switch">
         <button type="button" className="link" onClick={onShowForgot}>
-          Forgot password?
+          {t('login.forgot')}
         </button>
       </p>
 
       <p className="switch">
-        New shop?{' '}
+        {t('login.new')}{' '}
         <button type="button" className="link" onClick={onShowRegister}>
-          Create an account
+          {t('login.create')}
         </button>
       </p>
     </section>

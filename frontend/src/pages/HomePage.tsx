@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
 import { fetchHome, firstError, type HomeDashboard, type ShopJob } from '../api'
 import { useAuth } from '../auth'
+import { useI18n } from '../i18n'
 
-function timeGreeting(now = new Date()): string {
+function timeGreeting(t: (key: string) => string, now = new Date()): string {
   const hour = now.getHours()
   if (hour < 12) {
-    return 'Good morning'
+    return t('home.morning')
   }
   if (hour < 17) {
-    return 'Good afternoon'
+    return t('home.afternoon')
   }
-  return 'Good evening'
+  return t('home.evening')
 }
 
 export default function HomePage({
@@ -31,6 +32,7 @@ export default function HomePage({
   onOpenMore: () => void
 }) {
   const { user, appName } = useAuth()
+  const { t } = useI18n()
   const [home, setHome] = useState<HomeDashboard | null>(null)
   const [error, setError] = useState('')
   const initial = (user?.name ?? 'S').trim().charAt(0).toUpperCase()
@@ -60,8 +62,8 @@ export default function HomePage({
       <header className="dash-head">
         <div>
           <p className="app-name">{appName || 'TailorMate'}</p>
-          <h1>{timeGreeting()}!</h1>
-          <p className="status">Let’s organize your shop.</p>
+          <h1>{timeGreeting(t)}!</h1>
+          <p className="status">{t('home.organize')}</p>
         </div>
         <button
           type="button"
@@ -74,19 +76,19 @@ export default function HomePage({
       </header>
 
       <section className="balance-card">
-        <p className="balance-label">Outstanding balances</p>
+        <p className="balance-label">{t('home.outstanding')}</p>
         <p className="balance-amount">
           {home?.outstanding_label ?? '—'}
         </p>
-        <p className="balance-note">Still owed across open jobs.</p>
+        <p className="balance-note">{t('home.owed')}</p>
         <div className="balance-stats">
           <div>
             <strong>{home?.active_jobs ?? '—'}</strong>
-            <span>Active jobs</span>
+            <span>{t('home.active')}</span>
           </div>
           <div>
             <strong>{home?.due_soon ?? '—'}</strong>
-            <span>Due soon</span>
+            <span>{t('home.due')}</span>
           </div>
         </div>
       </section>
@@ -100,42 +102,42 @@ export default function HomePage({
       <div className="dash-grid">
         <button type="button" className="dash-tile accent" onClick={onAddCustomer}>
           <TileIcon name="person" />
-          <span className="dash-tile-title">New customer</span>
-          <span className="dash-tile-note">Save details & measurements</span>
+          <span className="dash-tile-title">{t('home.newCustomer')}</span>
+          <span className="dash-tile-note">{t('home.newCustomerNote')}</span>
         </button>
         <button type="button" className="dash-tile" onClick={onAddJob}>
           <TileIcon name="job" />
-          <span className="dash-tile-title">New job</span>
-          <span className="dash-tile-note">Record an outfit order</span>
+          <span className="dash-tile-title">{t('home.newJob')}</span>
+          <span className="dash-tile-note">{t('home.newJobNote')}</span>
         </button>
         <button type="button" className="dash-tile" onClick={onAddPayment}>
           <TileIcon name="pay" />
-          <span className="dash-tile-title">Record payment</span>
-          <span className="dash-tile-note">Deposit or final payment</span>
+          <span className="dash-tile-title">{t('home.payment')}</span>
+          <span className="dash-tile-note">{t('home.paymentNote')}</span>
         </button>
         <button type="button" className="dash-tile" onClick={onAddExpense}>
           <TileIcon name="expense" />
-          <span className="dash-tile-title">Add expense</span>
-          <span className="dash-tile-note">Track shop spending</span>
+          <span className="dash-tile-title">{t('home.expense')}</span>
+          <span className="dash-tile-note">{t('home.expenseNote')}</span>
         </button>
       </div>
 
       <section className="card dash-upcoming">
         <div className="row-between">
-          <h2 className="section-title">Upcoming jobs</h2>
+          <h2 className="section-title">{t('home.upcoming')}</h2>
           <button type="button" className="link" onClick={onOpenJobs}>
-            View all
+            {t('home.viewAll')}
           </button>
         </div>
         <button type="button" className="week-chip" onClick={onOpenJobs}>
           <span>
-            <strong>Jobs due this week</strong>
-            <span className="status">Check delivery dates and fittings</span>
+            <strong>{t('home.week')}</strong>
+            <span className="status">{t('home.weekNote')}</span>
           </span>
           <span aria-hidden="true">›</span>
         </button>
         {(home?.upcoming_jobs.length ?? 0) === 0 ? (
-          <p className="status">No upcoming jobs to display.</p>
+          <p className="status">{t('home.none')}</p>
         ) : (
           <ul className="admin-list">
             {home?.upcoming_jobs.map((job) => (
@@ -148,7 +150,7 @@ export default function HomePage({
                   <span className="admin-list-main">
                     <strong>{job.title}</strong>
                     <span className="status">
-                      {job.customer_name ?? 'Customer'} · {job.service_date}
+                      {job.customer_name ?? t('home.customer')} · {job.service_date}
                     </span>
                   </span>
                   <span className="status">{job.outstanding_label}</span>

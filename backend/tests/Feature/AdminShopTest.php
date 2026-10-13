@@ -164,4 +164,34 @@ class AdminShopTest extends TestCase
             'password' => 'password',
         ])->assertOk();
     }
+
+    public function test_admin_can_set_a_shop_state(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $tailor = User::factory()->create();
+        $shop = Business::factory()->create([
+            'user_id' => $tailor->id,
+            'state' => null,
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $this->putJson("/api/admin/shops/{$tailor->id}/state", [
+            'state' => 'Lagos',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.state', 'Lagos');
+
+        $this->assertSame('Lagos', $shop->fresh()->state);
+
+        $this->putJson("/api/admin/shops/{$tailor->id}/state", [
+            'state' => 'Paris',
+        ])->assertUnprocessable();
+
+        Sanctum::actingAs($tailor);
+
+        $this->putJson("/api/admin/shops/{$tailor->id}/state", [
+            'state' => 'Oyo',
+        ])->assertForbidden();
+    }
 }

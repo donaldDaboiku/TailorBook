@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
+  fetchPresence,
   firstError,
   listAdminFeedback,
   listAdminPayments,
@@ -7,6 +8,7 @@ import {
   resetAdminShopPassword,
   suspendAdminShop,
   unsuspendAdminShop,
+  updateAdminShopState,
   updateAdminShopSubscription,
   type AdminPayment,
   type FeedbackNote,
@@ -28,6 +30,32 @@ export default function AdminShopsPage() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [actionId, setActionId] = useState<number | null>(null)
+  const [place, setPlace] = useState<string | null>(null)
+  const [stateOptions, setStateOptions] = useState<string[]>([])
+
+  const places = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const shop of shops) {
+      const key = shop.state?.trim() || ''
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+
+    return [...counts.entries()].sort((left, right) => {
+      if (left[0] === '') {
+        return 1
+      }
+      if (right[0] === '') {
+        return -1
+      }
+
+      return right[1] - left[1] || left[0].localeCompare(right[0])
+    })
+  }, [shops])
+
+  const visibleShops =
+    place === null
+      ? shops
+      : shops.filter((shop) => (shop.state?.trim() || '') === place)
 
   const selectedShop =
     selectedId === null
@@ -58,6 +86,27 @@ export default function AdminShopsPage() {
   }, [])
 
   useEffect(() => {
+    let cancelled = false
+    fetchPresence()
+      .then((presence) => {
+        if (!cancelled) {
+          setStateOptions(presence.state_options)
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (place !== null && !places.some(([name]) => name === place)) {
+      setPlace(null)
+    }
+  }, [place, places])
+
+  useEffect(() => {
     if (!selectedShop) {
       return
     }
@@ -85,6 +134,16 @@ export default function AdminShopsPage() {
     setShops((current) =>
       current.map((row) => (row.id === updated.id ? updated : row)),
     )
+  }
+
+  async function onSaveState(shop: AdminShop, state: string) {
+    setActionId(shop.id)
+    try {
+      const updated = await updateAdminShopState(shop.id, state)
+      replaceShop(updated)
+    } finally {
+      setActionId(null)
+    }
   }
 
   async function onToggleSuspend(shop: AdminShop) {
@@ -291,14 +350,46 @@ export default function AdminShopsPage() {
         <section className="card muted-card">
           <div className="row-between">
             <h2 className="section-title">Shops</h2>
-            <span className="status">{shops.length}</span>
+            <span className="status">
+              {place === null
+                ? shops.length
+                : `${visibleShops.length} of ${shops.length}`}
+            </span>
           </div>
 
-          {shops.length === 0 ? (
+          {shops.length > 0 && (
+            <>
+              <p className="status">
+                Grouped by the state each shop chose. Tap a state, then tap a
+                shop for the owner, phone, and plan.
+              </p>
+              <div className="location-picks" role="group" aria-label="Shop locations">
+                <button
+                  type="button"
+                  aria-pressed={place === null}
+                  onClick={() => setPlace(null)}
+                >
+                  All · {shops.length}
+                </button>
+                {places.map(([name, count]) => (
+                  <button
+                    key={name || 'none'}
+                    type="button"
+                    aria-pressed={place === name}
+                    onClick={() => setPlace(name)}
+                  >
+                    {name || 'No state yet'} · {count}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {visibleShops.length === 0 ? (
             <p className="status">No shops found.</p>
           ) : (
             <ul className="admin-list">
-              {shops.map((shop) => (
+              {visibleShops.map((shop) => (
                 <li key={shop.id}>
                   <button
                     type="button"
@@ -309,10 +400,12 @@ export default function AdminShopsPage() {
                       <strong>{shop.shop_name ?? 'No shop name'}</strong>
                       <span className="status">
                         {shop.owner_name} · {shop.email}
-                        {shop.state ? ` · ${shop.state}` : ''}
                       </span>
                     </span>
                     <span className="admin-list-meta">
+                      <span className={shop.state?.trim() ? 'badge ok' : 'badge'}>
+                        {shop.state?.trim() || 'No state'}
+                      </span>
                       <span
                         className={
                           shop.suspended ? 'badge danger' : 'badge ok'
@@ -351,8 +444,10 @@ export default function AdminShopsPage() {
         <ShopModal
           shop={selectedShop}
           busy={actionId === selectedShop.id}
+          stateOptions={stateOptions}
           onClose={() => setSelectedId(null)}
           onToggleSuspend={() => void onToggleSuspend(selectedShop)}
+          onSaveState={(state) => onSaveState(selectedShop, state)}
           onSaveSubscription={(status, until) =>
             void onSaveSubscription(selectedShop, status, until)
           }
@@ -368,15 +463,19 @@ export default function AdminShopsPage() {
 function ShopModal({
   shop,
   busy,
+  stateOptions,
   onClose,
   onToggleSuspend,
+  onSaveState,
   onSaveSubscription,
   onResetPassword,
 }: {
   shop: AdminShop
   busy: boolean
+  stateOptions: string[]
   onClose: () => void
   onToggleSuspend: () => void
+  onSaveState: (state: string) => Promise<void>
   onSaveSubscription: (status: SubscriptionStatus, until: string) => void
   onResetPassword: (password: string, confirmation: string) => void
 }) {
@@ -386,11 +485,26 @@ function ShopModal({
   const [until, setUntil] = useState(shop.subscribed_until ?? defaultUntil())
   const [newPassword, setNewPassword] = useState('')
   const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('')
+  const [stateName, setStateName] = useState(shop.state ?? '')
+  const [stateError, setStateError] = useState('')
+  const [stateSaved, setStateSaved] = useState(false)
 
   useEffect(() => {
     setStatus(shop.subscription_status === 'subscribed' ? 'subscribed' : 'free')
     setUntil(shop.subscribed_until ?? defaultUntil())
-  }, [shop.id, shop.subscription_status, shop.subscribed_until])
+    setStateName(shop.state ?? '')
+    setStateSaved(false)
+    setStateError('')
+  }, [shop.id, shop.subscription_status, shop.subscribed_until, shop.state])
+
+  function onSubmitState(event: FormEvent) {
+    event.preventDefault()
+    setStateError('')
+    setStateSaved(false)
+    void onSaveState(stateName)
+      .then(() => setStateSaved(true))
+      .catch((err) => setStateError(firstError(err)))
+  }
 
   function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -454,7 +568,37 @@ function ShopModal({
           </div>
           <div>
             <dt>State</dt>
-            <dd>{shop.state ?? '—'}</dd>
+            <dd>
+              <form className="form" onSubmit={onSubmitState}>
+                <label>
+                  Nigerian state
+                  <select
+                    value={stateName}
+                    onChange={(event) => setStateName(event.target.value)}
+                    required
+                  >
+                    <option value="">Choose a state</option>
+                    {stateOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                    {stateName && !stateOptions.includes(stateName) ? (
+                      <option value={stateName}>{stateName}</option>
+                    ) : null}
+                  </select>
+                </label>
+                {stateError && (
+                  <p className="form-error" role="alert">
+                    {stateError}
+                  </p>
+                )}
+                {stateSaved && <p className="status">State saved.</p>}
+                <button type="submit" className="secondary" disabled={busy || !stateName}>
+                  {busy ? 'Saving…' : 'Save state'}
+                </button>
+              </form>
+            </dd>
           </div>
           <div>
             <dt>Joined</dt>

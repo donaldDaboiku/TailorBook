@@ -9,12 +9,14 @@ import {
   type FinancePeriod,
   type FinanceSummary,
 } from '../api'
+import { useI18n } from '../i18n'
 
 export default function ExpensesPage({
   onCreate,
 }: {
   onCreate: () => void
 }) {
+  const { t } = useI18n()
   const [month, setMonth] = useState(currentMonth())
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [summary, setSummary] = useState<FinanceSummary | null>(null)
@@ -75,12 +77,12 @@ export default function ExpensesPage({
     <>
       <section className="card">
         <div className="row-between">
-          <h1>Finance</h1>
+          <h1>{t('finance.title')}</h1>
           <button type="button" className="primary compact" onClick={onCreate}>
-            Add expense
+            {t('finance.add')}
           </button>
         </div>
-        <p className="lede">Money in, money out, and what customers still owe.</p>
+        <p className="lede">{t('finance.lede')}</p>
       </section>
 
       {error && (

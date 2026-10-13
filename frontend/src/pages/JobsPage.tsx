@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { firstError, listShopJobs, type ShopJob } from '../api'
+import { useI18n } from '../i18n'
 
 export default function JobsPage({
   onOpen,
@@ -8,6 +9,7 @@ export default function JobsPage({
   onOpen: (job: ShopJob) => void
   onBack: () => void
 }) {
+  const { t } = useI18n()
   const [upcoming, setUpcoming] = useState<ShopJob[]>([])
   const [overdue, setOverdue] = useState<ShopJob[]>([])
   const [error, setError] = useState('')
@@ -44,10 +46,10 @@ export default function JobsPage({
     <>
       <section className="card">
         <button type="button" className="link" onClick={onBack}>
-          Back
+          {t('jobs.back')}
         </button>
-        <h1>Jobs</h1>
-        <p className="lede">Delivery dates across your shop.</p>
+        <h1>{t('jobs.title')}</h1>
+        <p className="lede">{t('jobs.lede')}</p>
       </section>
 
       {error && (
@@ -55,7 +57,7 @@ export default function JobsPage({
           {error}
         </p>
       )}
-      {loading && <p className="status">Loading jobs…</p>}
+      {loading && <p className="status">{t('jobs.loading')}</p>}
 
       {!loading && (
         <JobGroup title="Due and upcoming" jobs={upcoming} onOpen={onOpen} empty="No jobs scheduled." />

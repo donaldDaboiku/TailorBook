@@ -10,6 +10,7 @@ import {
   uploadShopLogo,
 } from '../api'
 import { useAuth } from '../auth'
+import { LanguageSelect, useI18n } from '../i18n'
 import CommunityPanel from './CommunityPanel'
 import MeasurementFieldsSettings from './MeasurementFieldsSettings'
 import SubscriptionBillingCard from './SubscriptionBillingCard'
@@ -20,6 +21,7 @@ export default function MorePage({
   onShowTutorial: () => void
 }) {
   const { user, setUser, clearUser, logout, appName } = useAuth()
+  const { t } = useI18n()
   const business = user?.business
 
   const [name, setName] = useState(user?.name ?? '')
@@ -210,8 +212,16 @@ export default function MorePage({
   return (
     <>
       <section className="card">
-        <h1>More</h1>
-        <p className="lede">Shop settings, your account, and sign out.</p>
+        <h1>{t('more.title')}</h1>
+        <p className="lede">{t('more.lede')}</p>
+      </section>
+
+      <section className="card muted-card">
+        <h2 className="section-title">{t('language')}</h2>
+        <form className="form">
+          <LanguageSelect />
+        </form>
+        <p className="status">{t('language.note')}</p>
       </section>
 
       <section className="card muted-card">

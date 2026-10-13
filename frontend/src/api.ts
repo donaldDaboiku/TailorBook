@@ -522,6 +522,21 @@ export async function verifyBillingPayment(reference: string): Promise<User> {
   return data.data
 }
 
+export async function updateAdminShopState(
+  userId: number,
+  state: string,
+): Promise<AdminShop> {
+  const data = await apiJson<{ data: AdminShop; message: string }>(
+    `/api/admin/shops/${userId}/state`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({ state }),
+    },
+  )
+
+  return data.data
+}
+
 export async function updateAdminShopSubscription(
   userId: number,
   payload: {

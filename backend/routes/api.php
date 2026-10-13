@@ -94,6 +94,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/shops', [AdminShopController::class, 'index']);
         Route::post('/shops/{user}/suspend', [AdminShopController::class, 'suspend']);
         Route::post('/shops/{user}/unsuspend', [AdminShopController::class, 'unsuspend']);
+        Route::put('/shops/{user}/state', [AdminShopController::class, 'updateState']);
         Route::put('/shops/{user}/subscription', [AdminShopController::class, 'updateSubscription']);
         Route::put('/shops/{user}/password', [AdminShopController::class, 'resetPassword']);
         Route::get('/shops/{user}/payments', [AdminPaymentController::class, 'forShop']);

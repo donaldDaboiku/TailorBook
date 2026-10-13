@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { firstError, listCustomers, type Customer } from '../api'
+import { useI18n } from '../i18n'
 
 export default function CustomersPage({
   onOpen,
@@ -8,6 +9,7 @@ export default function CustomersPage({
   onOpen: (id: string) => void
   onCreate: () => void
 }) {
+  const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
@@ -46,16 +48,16 @@ export default function CustomersPage({
     <>
       <section className="card">
         <div className="row-between">
-          <h1>Customers</h1>
+          <h1>{t('customers.title')}</h1>
           <button type="button" className="primary compact" onClick={onCreate}>
-            Add
+            {t('customers.add')}
           </button>
         </div>
         <label className="search-label">
-          Search
+          {t('customers.search')}
           <input
             type="search"
-            placeholder="Name or phone"
+            placeholder={t('customers.placeholder')}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />

@@ -293,10 +293,11 @@ php artisan admin:create --email=you@example.com --password=secret123 --name=Adm
 ### What admins see
 
 - Compact **shop list** (scales as subscribers grow)
+- **Locations**: shops grouped by Nigerian state, including **No state yet**. Tap a state to list those shops, then tap a shop for the owner, phone, email, and plan
 - Tap a row to open a **modal** with full shop details and actions
 - Search by shop, owner, email, or phone
 - **Recent payments** (success / failed / pending / refunded) with filter — tap a payment to open that shop
-- In the modal: payment history, **Suspend** / **Activate**, **manual plan override**, **reset password**
+- In the modal: payment history, **State** (admin can set it; the shop can also set it under **More → Shop settings**), **Suspend** / **Activate**, **manual plan override**, **reset password**
 
 Paid subscriptions do **not** need manual activation. Paystack success auto-extends the plan.
 
@@ -373,7 +374,11 @@ This needs `pg_dump` (included in the API Docker image) and writes the newest 7 
 
 The public site and **More** show how many shops are on TailorMate, and how many are in each state. Free shops are included. A paid shop drops off the count when the plan expires. The public page also shows the paid plan price from `PAYSTACK_PLAN_AMOUNT` (kobo). The default is ₦5,000 for 30 days. Shops pay that inside the app. Suspended shops are left out. Shop names are not listed.
 
-New shops choose a Nigerian state when they register. Existing shops set it under **More → Shop settings**. That state is what the public totals use.
+New shops choose a Nigerian state when they register. Existing shops set it under **More → Shop settings**. An admin can set the same state from the shop modal. That state is what the public totals use.
+
+### Language
+
+English is the default. On **More → Language**, or on the sign-in screen, a shop can choose English, Yorùbá, Igbo, Hausa, or French. The choice stays on that phone. It changes the home screen, the bottom tabs, sign-in, and the main list headings. Customer names, measurements, notes, receipts, and the longer settings pages stay in the language they were written.
 
 The public site is a separate page in the `TailorMate` folder (`index.html`). It links to the app. Inside the app, sign-in is the first screen. **More → About the app** says the app was built by gitsystemng.
 

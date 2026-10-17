@@ -37,13 +37,13 @@ services:
       - key: LANDING_URL
         sync: false
       - key: SUPPORT_EMAIL
-        value: gitsystemng@gmail.com
+        sync: false
       - key: SUPPORT_PHONE
-        value: "08100197402"
+        sync: false
       - key: SUPPORT_WHATSAPP
-        value: "08100197402"
+        sync: false
       - key: SOCIAL_INSTAGRAM
-        value: https://www.instagram.com/gitsystemng/
+        sync: false
       - key: SOCIAL_FACEBOOK
         sync: false
       - key: SOCIAL_TIKTOK

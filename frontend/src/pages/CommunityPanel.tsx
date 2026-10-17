@@ -68,10 +68,7 @@ export default function CommunityPanel({
     count === 1 ? '1 shop' : `${count} shops`
   const contactLinks = presence?.contact
   const hasContact = Boolean(
-    contactLinks?.email ||
-      contactLinks?.phone ||
-      contactLinks?.whatsapp_url ||
-      contactLinks?.sms_url,
+    contactLinks?.email || contactLinks?.whatsapp_url,
   )
 
   return (
@@ -125,7 +122,7 @@ export default function CommunityPanel({
             </div>
           ) : (
             <p className="status">
-              The admin phone, email, and social links show here once they are set.
+              WhatsApp, email, and social links show here once they are set.
             </p>
           )}
 

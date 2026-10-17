@@ -135,6 +135,8 @@ export type ShopJob = {
 export type HomeDashboard = {
   outstanding: string
   outstanding_label: string
+  received_week: string
+  received_week_label: string
   active_jobs: number
   due_soon: number
   upcoming_jobs: ShopJob[]

@@ -8,6 +8,7 @@ use App\Models\CustomerJob;
 use App\Models\Payment;
 use App\Services\Balance;
 use App\Services\Money;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -41,11 +42,22 @@ class HomeController extends Controller
             ->get();
 
         $outstanding = $this->outstanding($business->id);
+        $week = CarbonImmutable::now();
+        $receivedWeek = Balance::total(
+            Payment::query()
+                ->where('business_id', $business->id)
+                ->whereDate('paid_on', '>=', $week->startOfWeek()->toDateString())
+                ->whereDate('paid_on', '<=', $week->endOfWeek()->startOfDay()->toDateString())
+                ->pluck('amount')
+                ->all(),
+        );
 
         return response()->json([
             'data' => [
                 'outstanding' => $outstanding,
                 'outstanding_label' => Money::format($outstanding, $business->currency),
+                'received_week' => $receivedWeek,
+                'received_week_label' => Money::format($receivedWeek, $business->currency),
                 'active_jobs' => $activeJobs,
                 'due_soon' => $dueSoon,
                 'upcoming_jobs' => $upcoming

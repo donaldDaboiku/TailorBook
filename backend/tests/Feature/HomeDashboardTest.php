@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\CustomerJob;
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -39,11 +40,20 @@ class HomeDashboardTest extends TestCase
             'service_date' => now()->subDays(10)->toDateString(),
         ]);
 
+        Payment::factory()->create([
+            'business_id' => $business->id,
+            'customer_id' => $customer->id,
+            'amount' => '5000.00',
+            'paid_on' => now()->toDateString(),
+            'method' => 'cash',
+        ]);
+
         Sanctum::actingAs($user);
 
         $this->getJson('/api/home')
             ->assertOk()
-            ->assertJsonPath('data.outstanding_label', '₦30,000.00')
+            ->assertJsonPath('data.outstanding_label', '₦25,000.00')
+            ->assertJsonPath('data.received_week_label', '₦5,000.00')
             ->assertJsonPath('data.active_jobs', 2)
             ->assertJsonPath('data.due_soon', 1)
             ->assertJsonPath('data.upcoming_jobs.0.title', 'Gown')

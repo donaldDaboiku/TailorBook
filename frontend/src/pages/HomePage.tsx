@@ -81,15 +81,18 @@ export default function HomePage({
           {home?.outstanding_label ?? '—'}
         </p>
         <p className="balance-note">{t('home.owed')}</p>
+        <p className="balance-note">
+          {t('home.received')}: {home?.received_week_label ?? '—'}
+        </p>
         <div className="balance-stats">
-          <div>
+          <button type="button" onClick={onOpenJobs}>
             <strong>{home?.active_jobs ?? '—'}</strong>
             <span>{t('home.active')}</span>
-          </div>
-          <div>
+          </button>
+          <button type="button" onClick={onOpenJobs}>
             <strong>{home?.due_soon ?? '—'}</strong>
             <span>{t('home.due')}</span>
-          </div>
+          </button>
         </div>
       </section>
 

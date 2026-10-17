@@ -6,7 +6,10 @@
   --card: #fffcf8;
   --line: #e6dfd4;
   --accent: #1f3d34;
+  --danger: #9f1239;
   --font: "Segoe UI", system-ui, sans-serif;
+  --radius: 16px;
+  --space: 1.25rem;
 }
 
 * {
@@ -25,6 +28,21 @@ body {
   font-family: var(--font);
   color: var(--ink);
   background: var(--paper);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.balance-card :focus-visible {
+  outline-color: #f7f4ef;
+}
+
+.form input,
+.form select,
+.form textarea {
+  scroll-margin-bottom: 8rem;
 }
 
 .app {
@@ -263,6 +281,16 @@ p {
   margin-top: 1rem;
 }
 
+.balance-stats button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  padding: 0;
+  min-height: 44px;
+}
+
 .balance-stats strong {
   display: block;
   font-size: 1.25rem;
@@ -413,7 +441,7 @@ p {
 }
 
 .form-error {
-  color: #9f1239;
+  color: var(--danger);
   font-size: 0.92rem;
 }
 

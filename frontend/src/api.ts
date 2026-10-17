@@ -275,6 +275,7 @@ export type PublicPresence = {
     email: string | null
     phone: string | null
     whatsapp_url: string | null
+    sms_url: string | null
   }
   social: { name: string; url: string }[]
   plan?: {

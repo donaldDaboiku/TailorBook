@@ -382,7 +382,15 @@ English is the default. On **More → Language**, or on the sign-in screen, a sh
 
 The public site is a separate page in the `TailorMate` folder (`index.html`). It links to the app. Inside the app, sign-in is the first screen. **More → About the app** says the app was built by gitsystemng.
 
-The public site and **More** also let anyone reach the TailorMate admin about the app. WhatsApp, phone, email, and social links are the admin’s. The feedback form is about TailorMate. Each message is saved for the admin under **App feedback**, and a copy is emailed to `SUPPORT_EMAIL` when that address is set. Set these on the API service before the links and email show:
+The public site and **More** also let anyone reach the TailorMate admin about the app. The admin number opens WhatsApp. Email and Instagram are separate links. SMS and phone call are not shown. The feedback form is about TailorMate. Each message is saved for the admin under **App feedback**, and a copy is emailed to the admin address.
+
+Defaults, used when the API variables are empty:
+
+- Email: `gitsystemng@gmail.com`
+- WhatsApp: `08100197402`
+- Instagram: `https://www.instagram.com/gitsystemng/`
+
+Set these on the API service to replace the defaults:
 
 - `SUPPORT_EMAIL`
 - `SUPPORT_PHONE`

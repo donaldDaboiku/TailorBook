@@ -68,7 +68,10 @@ export default function CommunityPanel({
     count === 1 ? '1 shop' : `${count} shops`
   const contactLinks = presence?.contact
   const hasContact = Boolean(
-    contactLinks?.email || contactLinks?.phone || contactLinks?.whatsapp_url,
+    contactLinks?.email ||
+      contactLinks?.phone ||
+      contactLinks?.whatsapp_url ||
+      contactLinks?.sms_url,
   )
 
   return (
@@ -115,9 +118,6 @@ export default function CommunityPanel({
                 <a href={contactLinks.whatsapp_url} target="_blank" rel="noreferrer">
                   WhatsApp the admin
                 </a>
-              )}
-              {contactLinks?.phone && (
-                <a href={`tel:${contactLinks.phone}`}>Call {contactLinks.phone}</a>
               )}
               {contactLinks?.email && (
                 <a href={`mailto:${contactLinks.email}`}>{contactLinks.email}</a>

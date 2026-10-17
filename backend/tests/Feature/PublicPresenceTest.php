@@ -59,6 +59,7 @@ class PublicPresenceTest extends TestCase
             ->assertJsonFragment(['state' => 'Oyo', 'subscribers' => 1])
             ->assertJsonPath('data.contact.email', 'hello@tailormate.test')
             ->assertJsonPath('data.contact.whatsapp_url', 'https://wa.me/2348031234567?text=Hello%20TailorMate')
+            ->assertJsonPath('data.contact.sms_url', 'sms:+2348031234567')
             ->assertJsonPath('data.social.0.name', 'Instagram')
             ->assertJsonPath('data.social.0.url', 'https://instagram.com/tailormate')
             ->assertJsonCount(1, 'data.social')

@@ -198,9 +198,6 @@
       if (data.contact && data.contact.whatsapp_url) {
         links.push({ name: 'WhatsApp', url: data.contact.whatsapp_url })
       }
-      if (data.contact && data.contact.phone) {
-        links.push({ name: 'Call', url: 'tel:' + data.contact.phone })
-      }
       if (data.contact && data.contact.email) {
         links.push({ name: 'Email', url: 'mailto:' + data.contact.email })
       }

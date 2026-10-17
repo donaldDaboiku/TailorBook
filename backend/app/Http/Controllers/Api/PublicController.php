@@ -89,13 +89,13 @@ class PublicController extends Controller
     }
 
     /**
-     * @return array{email: ?string, phone: ?string, whatsapp_url: ?string}
+     * @return array{email: ?string, phone: ?string, whatsapp_url: ?string, sms_url: ?string}
      */
     private function contact(): array
     {
         $email = $this->filledConfig('services.support.email');
         $phone = $this->filledConfig('services.support.phone');
-        $whatsapp = $this->filledConfig('services.support.whatsapp');
+        $whatsapp = $this->filledConfig('services.support.whatsapp') ?? $phone;
         $whatsappUrl = null;
 
         if ($whatsapp !== null) {
@@ -108,6 +108,7 @@ class PublicController extends Controller
             'email' => $email,
             'phone' => $phone,
             'whatsapp_url' => $whatsappUrl,
+            'sms_url' => $phone === null ? null : PhoneNormalizer::smsUrl($phone),
         ];
     }
 

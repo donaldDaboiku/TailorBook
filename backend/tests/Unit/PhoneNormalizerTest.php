@@ -27,4 +27,9 @@ class PhoneNormalizerTest extends TestCase
             PhoneNormalizer::whatsappUrl('08031234567', 'NG', 'Hello Grace'),
         );
     }
+
+    public function test_sms_url_uses_the_nigerian_country_code(): void
+    {
+        $this->assertSame('sms:+2348100197402', PhoneNormalizer::smsUrl('08100197402'));
+    }
 }

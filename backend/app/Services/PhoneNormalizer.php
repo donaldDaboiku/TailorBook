@@ -46,4 +46,11 @@ class PhoneNormalizer
 
         return $url;
     }
+
+    public static function smsUrl(string $phone, string $country = 'NG'): ?string
+    {
+        $number = self::forWhatsApp($phone, $country);
+
+        return $number === '' ? null : 'sms:+'.$number;
+    }
 }

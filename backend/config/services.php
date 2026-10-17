@@ -36,10 +36,10 @@ return [
     ],
 
     'support' => [
-        'email' => env('SUPPORT_EMAIL'),
-        'phone' => env('SUPPORT_PHONE'),
-        'whatsapp' => env('SUPPORT_WHATSAPP'),
-        'instagram' => env('SOCIAL_INSTAGRAM'),
+        'email' => env('SUPPORT_EMAIL') ?: 'gitsystemng@gmail.com',
+        'phone' => env('SUPPORT_PHONE') ?: '08100197402',
+        'whatsapp' => env('SUPPORT_WHATSAPP') ?: '08100197402',
+        'instagram' => env('SOCIAL_INSTAGRAM') ?: 'https://www.instagram.com/gitsystemng/',
         'facebook' => env('SOCIAL_FACEBOOK'),
         'tiktok' => env('SOCIAL_TIKTOK'),
         'x' => env('SOCIAL_X'),

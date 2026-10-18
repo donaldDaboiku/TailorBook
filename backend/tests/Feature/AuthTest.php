@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Enums\SubscriptionStatus;
+use App\Models\Business;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +29,8 @@ class AuthTest extends TestCase
             ->assertJsonPath('user.business.state', 'Lagos')
             ->assertJsonPath('user.business.measurement_unit', 'in')
             ->assertJsonPath('user.business.currency', 'NGN')
+            ->assertJsonPath('user.subscription_access', 'trial')
+            ->assertJsonPath('user.subscribed_until', now()->addDays(14)->toDateString())
             ->assertJsonStructure(['token', 'user']);
 
         $this->assertDatabaseHas('users', ['email' => 'ada@example.com']);
@@ -34,6 +38,20 @@ class AuthTest extends TestCase
             'name' => 'Ada Atelier',
             'user_id' => User::query()->where('email', 'ada@example.com')->value('id'),
         ]);
+    }
+
+    public function test_a_finished_trial_cannot_open_the_shop(): void
+    {
+        $user = User::factory()->create([
+            'subscription_status' => SubscriptionStatus::Free,
+            'subscribed_until' => now()->subDay()->toDateString(),
+        ]);
+        Business::factory()->create(['user_id' => $user->id]);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/customers')->assertForbidden();
+        $this->getJson('/api/billing/plan')->assertOk();
     }
 
     public function test_register_rejects_a_duplicate_email(): void

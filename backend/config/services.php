@@ -40,9 +40,9 @@ return [
         'phone' => env('SUPPORT_PHONE') ?: '08100197402',
         'whatsapp' => env('SUPPORT_WHATSAPP') ?: '08100197402',
         'instagram' => env('SOCIAL_INSTAGRAM') ?: 'https://www.instagram.com/gitsystemng/',
-        'facebook' => env('SOCIAL_FACEBOOK'),
-        'tiktok' => env('SOCIAL_TIKTOK'),
-        'x' => env('SOCIAL_X'),
+        'facebook' => env('SOCIAL_FACEBOOK') ?: 'https://www.facebook.com/gitsystemng',
+        'tiktok' => env('SOCIAL_TIKTOK') ?: 'https://www.tiktok.com/@gitsystemng',
+        'x' => env('SOCIAL_X') ?: 'https://x.com/gitsystemng',
     ],
 
     'paystack' => [
@@ -50,6 +50,7 @@ return [
         'public_key' => env('PAYSTACK_PUBLIC_KEY'),
         'plan_amount' => (int) env('PAYSTACK_PLAN_AMOUNT', 500000),
         'plan_days' => (int) env('PAYSTACK_PLAN_DAYS', 30),
+        'trial_days' => (int) env('TRIAL_DAYS', 14),
         'plan_label' => env('PAYSTACK_PLAN_LABEL', 'Monthly shop plan'),
         'callback_url' => rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/').'/?billing=1',
     ],

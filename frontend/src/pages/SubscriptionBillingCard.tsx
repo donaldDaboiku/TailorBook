@@ -69,6 +69,12 @@ export default function SubscriptionBillingCard({
       {!lead && access === 'free' && (
         <p className="status">Your shop is on the free plan.</p>
       )}
+      {access === 'trial' && (
+        <p className="status">
+          Your trial runs until {until}. Subscribe before that day to keep the
+          shop open.
+        </p>
+      )}
       {access === 'subscribed' && (
         <p className="status">
           Subscribed{until ? ` until ${until}` : ''}.

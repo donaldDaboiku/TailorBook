@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\MeasurementUnit;
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\DeleteAccountRequest;
@@ -38,6 +39,8 @@ class AuthController extends Controller
                 'email' => $data['email'],
                 'password' => $data['password'],
                 'role' => UserRole::Tailor,
+                'subscription_status' => SubscriptionStatus::Free,
+                'subscribed_until' => now()->addDays((int) config('services.paystack.trial_days'))->toDateString(),
             ]);
 
             Business::query()->create([

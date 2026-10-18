@@ -77,8 +77,8 @@
   <section class="section" aria-labelledby="price-title">
     <div class="panel">
       <div class="eyebrow"><span class="dot"></span> Price</div>
-      <h2 id="price-title">Free to start</h2>
-      <p>A new shop opens on Free. The paid plan is one price, paid inside the app.</p>
+      <h2 id="price-title">Try it for 14 days</h2>
+      <p>A new shop can use TailorMate for 14 days. Then the paid plan is one price, paid inside the app.</p>
       <div class="stat" id="plan-price">…</div>
       <p id="plan-note">Loading the paid plan…</p>
       <p class="fine"><a class="btn primary" id="price-app" href="https://tailormate-web.onrender.com">Open the app to subscribe</a></p>
@@ -182,7 +182,7 @@
       const planNote = document.getElementById('plan-note')
       if (plan.amount_label) {
         planPrice.textContent = plan.amount_label
-        planNote.textContent = (plan.label || 'Paid plan') + ' · ' + (plan.days || 30) + ' days. Free shops stay free until they pay in the app.'
+        planNote.textContent = (plan.trial_days || 14) + ' days to try. Then ' + (plan.label || 'the paid plan') + ' · ' + plan.amount_label + ' for ' + (plan.days || 30) + ' days.'
       } else {
         planPrice.textContent = '—'
         planNote.textContent = 'The paid plan price will show after the API is updated.'

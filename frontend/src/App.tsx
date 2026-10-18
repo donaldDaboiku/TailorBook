@@ -269,9 +269,15 @@ function AuthenticatedApp() {
     return (
       <Shell appName={appName} signedOut>
         <section className="card">
-          <h1>Subscription expired</h1>
+          <h1>
+            {user.subscription_status === 'free'
+              ? 'Trial ended'
+              : 'Subscription expired'}
+          </h1>
           <p className="lede">
-            Renew your shop plan to open customers, jobs, and expenses again.
+            {user.subscription_status === 'free'
+              ? 'Your 14-day trial has ended. Subscribe to open customers, jobs, and expenses again.'
+              : 'Renew your shop plan to open customers, jobs, and expenses again.'}
           </p>
           {billingBusy && <p className="status">{billingMessage}</p>}
           {billingMessage && !billingBusy && (

@@ -24,11 +24,17 @@ class PublicController extends Controller
             ->where('role', UserRole::Tailor)
             ->whereNull('suspended_at')
             ->where(function ($query) {
-                $query->where('subscription_status', SubscriptionStatus::Free)
-                    ->orWhere(function ($paid) {
-                        $paid->where('subscription_status', SubscriptionStatus::Subscribed)
-                            ->whereDate('subscribed_until', '>=', now()->toDateString());
-                    });
+                $today = now()->toDateString();
+                $query->where(function ($open) use ($today) {
+                    $open->where('subscription_status', SubscriptionStatus::Free)
+                        ->where(function ($trial) use ($today) {
+                            $trial->whereNull('subscribed_until')
+                                ->orWhereDate('subscribed_until', '>=', $today);
+                        });
+                })->orWhere(function ($paid) use ($today) {
+                    $paid->where('subscription_status', SubscriptionStatus::Subscribed)
+                        ->whereDate('subscribed_until', '>=', $today);
+                });
             })
             ->with('business:id,user_id,state')
             ->get();
@@ -53,6 +59,7 @@ class PublicController extends Controller
                     'label' => $plan['label'],
                     'amount_label' => $plan['amount_label'],
                     'days' => $plan['days'],
+                    'trial_days' => (int) config('services.paystack.trial_days'),
                 ],
                 'state_options' => NigerianStates::all(),
                 'contact' => $this->contact(),

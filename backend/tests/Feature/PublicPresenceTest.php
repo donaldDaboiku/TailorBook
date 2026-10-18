@@ -53,6 +53,7 @@ class PublicPresenceTest extends TestCase
             ->assertJsonPath('data.subscribers', 4)
             ->assertJsonPath('data.plan.amount_label', '₦5,000.00')
             ->assertJsonPath('data.plan.days', 30)
+            ->assertJsonPath('data.plan.trial_days', 14)
             ->assertJsonPath('data.states.0.state', 'Lagos')
             ->assertJsonPath('data.states.0.subscribers', 2)
             ->assertJsonFragment(['state' => 'Rivers', 'subscribers' => 1])

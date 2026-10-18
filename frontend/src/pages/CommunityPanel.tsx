@@ -91,7 +91,7 @@ export default function CommunityPanel({
           )}
           {presence.plan?.amount_label && (
             <p className="status">
-              Free to open a shop. {presence.plan.label}: {presence.plan.amount_label} for {presence.plan.days} days.
+              A new shop can try TailorMate for {presence.plan.trial_days ?? 14} days. Then {presence.plan.label}: {presence.plan.amount_label} for {presence.plan.days} days.
             </p>
           )}
         </>

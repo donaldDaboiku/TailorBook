@@ -761,6 +761,8 @@ function subscriptionLabel(access: AdminShop['subscription_access']): string {
   switch (access) {
     case 'subscribed':
       return 'Subscribed'
+    case 'trial':
+      return 'Trial'
     case 'expired':
       return 'Expired'
     case 'admin':

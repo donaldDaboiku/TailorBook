@@ -42,7 +42,7 @@ export type BillingPlan = {
 }
 
 export type SubscriptionStatus = 'free' | 'subscribed'
-export type SubscriptionAccess = 'free' | 'subscribed' | 'expired' | 'admin'
+export type SubscriptionAccess = 'free' | 'trial' | 'subscribed' | 'expired' | 'admin'
 
 export type PaymentStatus = 'pending' | 'success' | 'failed' | 'refunded'
 
@@ -284,6 +284,7 @@ export type PublicPresence = {
     label: string
     amount_label: string
     days: number
+    trial_days?: number
   }
 }
 

@@ -80,7 +80,15 @@ class User extends Authenticatable implements CanResetPasswordContract
         $status = $this->subscription_status ?? SubscriptionStatus::Free;
 
         if ($status === SubscriptionStatus::Free) {
-            return 'free';
+            if ($this->subscribed_until === null) {
+                return 'free';
+            }
+
+            if ($this->subscribed_until->copy()->endOfDay()->isPast()) {
+                return 'expired';
+            }
+
+            return 'trial';
         }
 
         if ($this->subscribed_until === null || $this->subscribed_until->copy()->endOfDay()->isPast()) {
@@ -96,6 +104,6 @@ class User extends Authenticatable implements CanResetPasswordContract
             return true;
         }
 
-        return in_array($this->subscriptionAccessStatus(), ['free', 'subscribed'], true);
+        return in_array($this->subscriptionAccessStatus(), ['free', 'trial', 'subscribed'], true);
     }
 }

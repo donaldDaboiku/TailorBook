@@ -372,7 +372,7 @@ This needs `pg_dump` (included in the API Docker image) and writes the newest 7 
 
 ## 13. Contact, feedback, and subscribers
 
-The public site and **More** show how many shops are on TailorMate, and how many are in each state. Free shops are included. A paid shop drops off the count when the plan expires. The public page also shows the paid plan price from `PAYSTACK_PLAN_AMOUNT` (kobo). The default is ₦5,000 for 30 days. Shops pay that inside the app. Suspended shops are left out. Shop names are not listed.
+The public site and **More** show how many shops are on TailorMate, and how many are in each state. Shops still on an open trial, and older shops left on Free, are included. A shop drops off the count when the trial or the paid plan ends. A new shop gets 14 days to try the app (`TRIAL_DAYS`). After that, the shop pays inside the app. The public page shows the paid plan price from `PAYSTACK_PLAN_AMOUNT` (kobo). The default is ₦5,000 for 30 days. Suspended shops are left out. Shop names are not listed.
 
 New shops choose a Nigerian state when they register. Existing shops set it under **More → Shop settings**. An admin can set the same state from the shop modal. That state is what the public totals use.
 

@@ -21,16 +21,15 @@ class ReceiptController extends Controller
         $document = ReceiptText::document($payment);
         $phone = $customer->whatsapp_phone ?: $customer->phone;
         $country = $payment->business?->country ?: 'NG';
+        $number = PhoneNormalizer::forWhatsApp((string) $phone, $country);
 
         return response()->json([
             'data' => [
                 ...$document,
                 'email' => $customer->email,
-                'whatsapp_url' => PhoneNormalizer::whatsappUrl(
-                    $phone,
-                    $country,
-                    (string) $document['caption'],
-                ),
+                'whatsapp_url' => $number === ''
+                    ? null
+                    : PhoneNormalizer::whatsappUrl((string) $phone, $country, (string) $document['caption']),
             ],
         ]);
     }

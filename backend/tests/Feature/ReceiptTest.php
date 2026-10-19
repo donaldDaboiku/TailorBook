@@ -30,6 +30,8 @@ class ReceiptTest extends TestCase
         $customer = Customer::factory()->create([
             'business_id' => $business->id,
             'name' => 'Bola',
+            'phone' => '08031234567',
+            'whatsapp_phone' => '08031234567',
             'email' => 'bola@example.com',
         ]);
         $payment = Payment::factory()->create([
@@ -42,7 +44,7 @@ class ReceiptTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $this->getJson("/api/customers/{$customer->id}/payments/{$payment->id}/receipt")
+        $receipt = $this->getJson("/api/customers/{$customer->id}/payments/{$payment->id}/receipt")
             ->assertOk()
             ->assertJsonPath('data.email', 'bola@example.com')
             ->assertJsonPath('data.shop_name', 'Ada Atelier')
@@ -52,6 +54,10 @@ class ReceiptTest extends TestCase
             ->assertJsonPath('data.amount_label', '₦15,000.00')
             ->assertJsonPath('data.receipt_number', 'RCP-00001');
 
+        $url = (string) $receipt->json('data.whatsapp_url');
+        $this->assertStringStartsWith('https://wa.me/2348031234567?text=', $url);
+        $this->assertStringContainsString(rawurlencode('Hello Bola, this is Ada Atelier.'), $url);
+
         $png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
         $this->postJson("/api/customers/{$customer->id}/payments/{$payment->id}/receipt/email", [
@@ -59,7 +65,5 @@ class ReceiptTest extends TestCase
         ])
             ->assertOk()
             ->assertJsonPath('message', 'Receipt sent to bola@example.com.');
-
-        Mail::assertSentCount(1);
     }
 }

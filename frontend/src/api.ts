@@ -921,7 +921,7 @@ export type PaymentReceipt = {
   outstanding_label: string | null
   caption: string
   email: string | null
-  whatsapp_url: string
+  whatsapp_url: string | null
 }
 
 export async function fetchPaymentReceipt(

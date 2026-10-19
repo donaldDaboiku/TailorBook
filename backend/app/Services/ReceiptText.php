@@ -21,6 +21,24 @@ class ReceiptText
         $amount = Money::format((string) $payment->amount, $currency);
         $shop = $business?->name ?? 'Shop';
 
+        $name = $customer?->name ?: 'Customer';
+        $outstanding = $customer
+            ? Money::format($customer->outstandingAmount(), $currency)
+            : null;
+        $lines = [
+            "Hello {$name}, this is {$shop}.",
+            "Receipt {$number}.",
+            "Amount paid: {$amount}.",
+        ];
+
+        if (filled($payment->job?->title)) {
+            $lines[] = 'Job: '.$payment->job->title.'.';
+        }
+
+        if ($outstanding !== null) {
+            $lines[] = "Outstanding: {$outstanding}.";
+        }
+
         return [
             'receipt_number' => $number,
             'shop_name' => $shop,
@@ -40,8 +58,8 @@ class ReceiptText
             'note' => $payment->note,
             'agreed_label' => $customer ? Money::format($customer->totalAgreed(), $currency) : null,
             'paid_label' => $customer ? Money::format($customer->totalPaid(), $currency) : null,
-            'outstanding_label' => $customer ? Money::format($customer->outstandingAmount(), $currency) : null,
-            'caption' => "Receipt {$number} from {$shop}. Amount {$amount}.",
+            'outstanding_label' => $outstanding,
+            'caption' => implode(' ', $lines),
         ];
     }
 

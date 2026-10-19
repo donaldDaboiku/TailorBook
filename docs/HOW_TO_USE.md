@@ -115,8 +115,8 @@ Archive a job or payment if it was entered by mistake. Archived rows stop counti
 
 1. **More → Shop settings** — add a **shop logo**, **signature name**, optional receipt line and footer.
 2. Open a customer → **Payments** → **Receipt**. The receipt is an image with the logo, receipt number (RCP-00001), amount, and signature.
-3. **Send image on WhatsApp** opens the phone share sheet so you can attach the picture.
-4. **Email receipt image** sends the picture to the customer's email. Add an email on the customer first.
+3. **WhatsApp this client** opens that client’s WhatsApp chat with the receipt written in the message. The picture cannot be attached from the app, so **Share the picture** is a second step: pick the same client in the phone share sheet.
+4. **Email** sends the picture to the email saved on that client. Add an email on the customer first.
 
 Email delivery needs mail configured on the API (`MAIL_MAILER` and SMTP or similar). WhatsApp sharing works from the phone without that.
 

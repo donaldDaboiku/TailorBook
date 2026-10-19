@@ -466,6 +466,16 @@ function ReceiptSheet({
     }
   }, [customerId, payment.id])
 
+  function onWhatsApp() {
+    if (!receipt?.whatsapp_url) {
+      setError('Add a phone number for this client before sending on WhatsApp.')
+      return
+    }
+
+    setError('')
+    window.location.assign(receipt.whatsapp_url)
+  }
+
   async function onShare() {
     if (!receipt || !imageBlob) {
       return
@@ -482,8 +492,8 @@ function ReceiptSheet({
       )
       setNotice(
         result === 'shared'
-          ? 'Choose WhatsApp to send the receipt image.'
-          : 'Image saved. On a computer, attach that file in WhatsApp.',
+          ? `Picture ready. Choose ${receipt.customer ?? 'this client'} in the share sheet.`
+          : 'Image saved. Attach that file in this client’s WhatsApp chat.',
       )
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
@@ -511,6 +521,9 @@ function ReceiptSheet({
       setBusy(false)
     }
   }
+
+  const clientName = receipt?.customer ?? 'this client'
+  const emailLabel = receipt?.email ? `Email ${receipt.email}` : 'Email receipt image'
 
   return (
     <div
@@ -547,24 +560,38 @@ function ReceiptSheet({
           <button
             type="button"
             className="primary"
+            onClick={onWhatsApp}
+            disabled={!imageBlob || !receipt?.whatsapp_url}
+          >
+            WhatsApp {clientName}
+          </button>
+          <button
+            type="button"
+            className="secondary"
             onClick={() => void onShare()}
             disabled={!imageBlob}
           >
-            Send image on WhatsApp
+            Share the picture
           </button>
           <button
             type="button"
             className="secondary"
             onClick={() => void onEmail()}
-            disabled={busy || !imageBlob}
+            disabled={busy || !imageBlob || !receipt?.email}
           >
-            {busy ? 'Sending…' : 'Email receipt image'}
+            {busy ? 'Sending…' : emailLabel}
           </button>
         </div>
         <p className="status">
-          On a phone, WhatsApp opens in the share sheet with the picture
-          attached.
+          WhatsApp opens this client’s chat with the receipt written out.
+          Share the picture when you also want them to receive the image, and
+          choose {clientName} in the share sheet.
         </p>
+        {receipt && !receipt.whatsapp_url && (
+          <p className="status">
+            Add a phone number for this client before sending on WhatsApp.
+          </p>
+        )}
         {receipt && !receipt.email && (
           <p className="status">
             This customer has no email. Add one before sending by email.

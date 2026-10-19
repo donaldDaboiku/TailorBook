@@ -8,6 +8,7 @@ import {
   type CustomerJob,
   type PaymentMethod,
 } from '../api'
+import { useI18n } from '../i18n'
 
 export default function PaymentFormPage({
   customer,
@@ -20,6 +21,7 @@ export default function PaymentFormPage({
   onCancel: () => void
   onSaved: () => void
 }) {
+  const { t } = useI18n()
   const [jobs, setJobs] = useState<CustomerJob[]>([])
   const [amount, setAmount] = useState('')
   const [paidOn, setPaidOn] = useState(todayDate())
@@ -82,20 +84,20 @@ export default function PaymentFormPage({
   }
 
   if (loading) {
-    return <p className="status">Loading payment form…</p>
+    return <p className="status">{t('pay.loading')}</p>
   }
 
   return (
     <section className="card">
       <button type="button" className="link back-link" onClick={onCancel}>
-        Back to {customer.name}
+        {t('form.back', { name: customer.name })}
       </button>
-      <h1>Record payment</h1>
-      <p className="lede">Money received from {customer.name}.</p>
+      <h1>{t('pay.title')}</h1>
+      <p className="lede">{t('pay.lede', { name: customer.name })}</p>
 
       <form className="form" onSubmit={onSubmit}>
         <label>
-          Amount (₦)
+          {t('pay.amount')}
           <input
             type="number"
             inputMode="decimal"
@@ -108,35 +110,35 @@ export default function PaymentFormPage({
         </label>
 
         <label>
-          Method
+          {t('pay.method')}
           <select
             value={method}
             onChange={(event) => setMethod(event.target.value as PaymentMethod)}
           >
-            <option value="cash">Cash</option>
-            <option value="bank_transfer">Bank transfer</option>
-            <option value="pos">POS</option>
-            <option value="other">Other</option>
+            <option value="cash">{t('pay.cash')}</option>
+            <option value="bank_transfer">{t('pay.transfer')}</option>
+            <option value="pos">{t('pay.pos')}</option>
+            <option value="other">{t('pay.other')}</option>
           </select>
         </label>
 
         <label>
-          For job
+          {t('pay.forJob')}
           <select
             value={jobId}
             onChange={(event) => setJobId(event.target.value)}
           >
-            <option value="">General payment</option>
+            <option value="">{t('pay.general')}</option>
             {jobs.map((job) => (
               <option key={job.id} value={job.id}>
-                {job.title} · owes {job.outstanding_label}
+                {job.title} · {t('pay.owes', { amount: job.outstanding_label })}
               </option>
             ))}
           </select>
         </label>
 
         <label>
-          Date
+          {t('form.date')}
           <input
             type="date"
             value={paidOn}
@@ -146,16 +148,16 @@ export default function PaymentFormPage({
         </label>
 
         <label>
-          Reference
+          {t('pay.reference')}
           <input
             value={reference}
             onChange={(event) => setReference(event.target.value)}
-            placeholder="Transfer ref, optional"
+            placeholder={t('pay.referenceHint')}
           />
         </label>
 
         <label>
-          Note
+          {t('pay.note')}
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
@@ -170,10 +172,10 @@ export default function PaymentFormPage({
         )}
 
         <button type="submit" className="primary" disabled={busy}>
-          {busy ? 'Saving…' : 'Save payment'}
+          {busy ? t('form.saving') : t('pay.save')}
         </button>
         <button type="button" className="secondary" onClick={onCancel}>
-          Cancel
+          {t('form.cancel')}
         </button>
       </form>
     </section>

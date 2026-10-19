@@ -343,6 +343,25 @@ p {
   padding-bottom: 1rem;
 }
 
+.due-row {
+  display: grid;
+  gap: 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.85rem 0.9rem;
+}
+
+.due-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.due-actions button {
+  flex: 1;
+  min-height: 44px;
+}
+
 .week-chip {
   width: 100%;
   display: flex;

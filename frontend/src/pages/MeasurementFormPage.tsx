@@ -11,6 +11,7 @@ import {
   type MeasurementUnit,
 } from '../api'
 import { useAuth } from '../auth'
+import { translatedFieldLabel, translatedTemplateName, useI18n } from '../i18n'
 
 export default function MeasurementFormPage({
   customer,
@@ -24,6 +25,7 @@ export default function MeasurementFormPage({
   onSaved: (measurement: Measurement) => void
 }) {
   const { user } = useAuth()
+  const { t } = useI18n()
   const defaultUnit = user?.business?.measurement_unit ?? 'in'
   const [templates, setTemplates] = useState<MeasurementTemplate[]>([])
   const [templateSlug, setTemplateSlug] = useState(seed?.template.slug ?? 'female')
@@ -115,7 +117,7 @@ export default function MeasurementFormPage({
 
       const number = Number(raw)
       if (!Number.isFinite(number) || number <= 0) {
-        setError(`${field.label} must be a positive number.`)
+        setError(t('measure.positive', { field: translatedFieldLabel(t, field.key, field.label) }))
         return
       }
 
@@ -123,7 +125,7 @@ export default function MeasurementFormPage({
     }
 
     if (Object.keys(payloadValues).length === 0) {
-      setError('Enter at least one measurement.')
+      setError(t('measure.needOne'))
       return
     }
 
@@ -146,23 +148,23 @@ export default function MeasurementFormPage({
   }
 
   if (loading) {
-    return <p className="status">Loading measurement form…</p>
+    return <p className="status">{t('measure.loading')}</p>
   }
 
   return (
     <section className="card">
       <button type="button" className="link back-link" onClick={onCancel}>
-        Back to {customer.name}
+        {t('form.back', { name: customer.name })}
       </button>
-      <h1>Take measurements</h1>
+      <h1>{t('measure.title')}</h1>
       <p className="lede">
-        {customer.name}. Each save keeps the old set.
-        {seed ? ' Starting from the last set.' : ''}
+        {t('measure.lede', { name: customer.name })}
+        {seed ? t('measure.seed') : ''}
       </p>
 
       <form className="form" onSubmit={onSubmit}>
         <label>
-          Template
+          {t('measure.template')}
           <select
             value={templateSlug}
             onChange={(event) => {
@@ -174,14 +176,14 @@ export default function MeasurementFormPage({
           >
             {templates.map((item) => (
               <option key={item.id} value={item.slug}>
-                {item.name}
+                {translatedTemplateName(t, item.slug, item.name)}
               </option>
             ))}
           </select>
         </label>
 
         <fieldset className="unit-field">
-          <legend>Unit</legend>
+          <legend>{t('measure.unit')}</legend>
           <label className="choice">
             <input
               type="radio"
@@ -189,7 +191,7 @@ export default function MeasurementFormPage({
               checked={unit === 'in'}
               onChange={() => setUnit('in')}
             />
-            Inches
+            {t('measure.inches')}
           </label>
           <label className="choice">
             <input
@@ -198,12 +200,12 @@ export default function MeasurementFormPage({
               checked={unit === 'cm'}
               onChange={() => setUnit('cm')}
             />
-            Centimeters
+            {t('measure.cm')}
           </label>
         </fieldset>
 
         <label>
-          Date
+          {t('form.date')}
           <input
             type="date"
             value={takenOn}
@@ -214,11 +216,13 @@ export default function MeasurementFormPage({
 
         {template?.fields.map((field) => (
           <label key={field.id} className="measure-field">
-            {field.label}
+            {translatedFieldLabel(t, field.key, field.label)}
             <div className="stepper">
               <button
                 type="button"
-                aria-label={`Decrease ${field.label}`}
+                aria-label={t('measure.decrease', {
+                  field: translatedFieldLabel(t, field.key, field.label),
+                })}
                 onClick={() => nudge(field.key, -1)}
               >
                 −
@@ -233,7 +237,9 @@ export default function MeasurementFormPage({
               />
               <button
                 type="button"
-                aria-label={`Increase ${field.label}`}
+                aria-label={t('measure.increase', {
+                  field: translatedFieldLabel(t, field.key, field.label),
+                })}
                 onClick={() => nudge(field.key, 1)}
               >
                 +
@@ -249,10 +255,10 @@ export default function MeasurementFormPage({
         )}
 
         <button type="submit" className="primary" disabled={busy}>
-          {busy ? 'Saving…' : 'Save measurements'}
+          {busy ? t('form.saving') : t('measure.save')}
         </button>
         <button type="button" className="secondary" onClick={onCancel}>
-          Cancel
+          {t('form.cancel')}
         </button>
       </form>
     </section>

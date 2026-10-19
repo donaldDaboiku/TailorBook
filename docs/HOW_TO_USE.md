@@ -228,9 +228,8 @@ After install it opens full-screen like an app. Saving still needs internet.
 2. Agree a price → **Add job**.  
 3. Deposit paid → **Record payment**.  
 4. Buy fabric → **Add expense**.  
-5. Reminder → customer → **WhatsApp** → Balance reminder.  
-6. Outfit done → **WhatsApp** → Outfit ready.  
-7. End of day → **Finance** to see today’s income, expenses, and net.
+5. Home → **Due today**. **Balance** opens the balance WhatsApp. **Outfit ready** opens the pickup WhatsApp.  
+6. End of day → **Finance** to see today’s income, expenses, and net.
 
 ---
 
@@ -238,7 +237,7 @@ After install it opens full-screen like an app. Saving still needs internet.
 
 - One shop per login.  
 - Needs internet to save.  
-- Free hosting may sleep; first load can be slow.  
+- Free hosting may sleep. The first open waits while the server wakes, up to about a minute.  
 - No photo gallery, staff logins, inventory, or offline sync queue yet.  
 - Do not share your password. Each tailor should use their own account.
 

@@ -139,6 +139,7 @@ export type HomeDashboard = {
   received_week_label: string
   active_jobs: number
   due_soon: number
+  due_today: ShopJob[]
   upcoming_jobs: ShopJob[]
 }
 
@@ -249,6 +250,7 @@ async function parseJson(response: Response): Promise<unknown> {
 export async function fetchHealth(): Promise<Health> {
   const response = await fetch(apiUrl('/api/health'), {
     headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(20000),
   })
 
   if (!response.ok) {

@@ -31,6 +31,15 @@ class HomeController extends Controller
             ->whereDate('service_date', '<=', $weekEnd)
             ->count();
 
+        $dueToday = CustomerJob::query()
+            ->where('business_id', $business->id)
+            ->whereDate('service_date', $todayDate)
+            ->with('customer')
+            ->withSum('payments', 'amount')
+            ->orderBy('customer_id')
+            ->limit(20)
+            ->get();
+
         $upcoming = CustomerJob::query()
             ->where('business_id', $business->id)
             ->whereDate('service_date', '>=', $todayDate)
@@ -60,6 +69,9 @@ class HomeController extends Controller
                 'received_week_label' => Money::format($receivedWeek, $business->currency),
                 'active_jobs' => $activeJobs,
                 'due_soon' => $dueSoon,
+                'due_today' => $dueToday
+                    ->map(fn (CustomerJob $job) => $this->jobRow($job, $business->currency))
+                    ->values(),
                 'upcoming_jobs' => $upcoming
                     ->map(fn (CustomerJob $job) => $this->jobRow($job, $business->currency))
                     ->values(),

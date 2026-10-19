@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchHome, firstError, type HomeDashboard, type ShopJob } from '../api'
+import { fetchHome, fetchWhatsAppTemplates, firstError, type HomeDashboard, type ShopJob, type WhatsAppTemplateKey } from '../api'
 import { useAuth } from '../auth'
 import { useI18n } from '../i18n'
 
@@ -35,6 +35,7 @@ export default function HomePage({
   const { t } = useI18n()
   const [home, setHome] = useState<HomeDashboard | null>(null)
   const [error, setError] = useState('')
+  const [opening, setOpening] = useState('')
   const initial = (user?.name ?? 'S').trim().charAt(0).toUpperCase()
 
   useEffect(() => {
@@ -56,6 +57,29 @@ export default function HomePage({
       cancelled = true
     }
   }, [])
+
+  async function openMessage(job: ShopJob, key: WhatsAppTemplateKey) {
+    setError('')
+    setOpening(`${job.id}:${key}`)
+
+    try {
+      const bundle = await fetchWhatsAppTemplates(job.customer_id)
+      const template = bundle.templates.find((row) => row.key === key)
+
+      if (!bundle.whatsapp_number || !template?.url) {
+        setError(t('home.noPhone'))
+        return
+      }
+
+      window.location.assign(template.url)
+    } catch (err) {
+      setError(firstError(err))
+    } finally {
+      setOpening('')
+    }
+  }
+
+  const dueToday = home?.due_today ?? []
 
   return (
     <div className="dash">
@@ -124,6 +148,47 @@ export default function HomePage({
           <span className="dash-tile-note">{t('home.expenseNote')}</span>
         </button>
       </div>
+
+      <section className="card dash-upcoming">
+        <h2 className="section-title">{t('home.dueToday')}</h2>
+        <p className="status">{t('home.dueTodayNote')}</p>
+        {opening && <p className="status">{t('home.opening')}</p>}
+        {home && dueToday.length === 0 ? (
+          <p className="status">{t('home.dueNone')}</p>
+        ) : null}
+        {dueToday.length > 0 ? (
+          <ul className="admin-list">
+            {dueToday.map((job) => (
+              <li key={job.id} className="due-row">
+                <div className="admin-list-main">
+                  <strong>{job.customer_name ?? t('home.customer')}</strong>
+                  <span className="status">
+                    {job.title} · {job.outstanding_label}
+                  </span>
+                </div>
+                <div className="due-actions">
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={opening !== ''}
+                    onClick={() => openMessage(job, 'balance_reminder')}
+                  >
+                    {t('home.balance')}
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={opening !== ''}
+                    onClick={() => openMessage(job, 'outfit_ready')}
+                  >
+                    {t('home.ready')}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
 
       <section className="card dash-upcoming">
         <div className="row-between">

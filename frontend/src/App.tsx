@@ -51,27 +51,44 @@ type Screen =
   | { name: 'more' }
 
 export default function App() {
+  const { t } = useI18n()
   const [gate, setGate] = useState<Gate>('loading')
   const [appName, setAppName] = useState('Shop')
 
   useEffect(() => {
     let cancelled = false
 
-    fetchHealth()
-      .then((health) => {
+    async function connect() {
+      for (let attempt = 0; attempt < 4; attempt += 1) {
         if (cancelled) {
           return
         }
 
-        setAppName(health.app)
-        document.title = health.app
-        setGate('ready')
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setGate('offline')
+        try {
+          const health = await fetchHealth()
+          if (cancelled) {
+            return
+          }
+
+          setAppName(health.app)
+          document.title = health.app
+          setGate('ready')
+          return
+        } catch {
+          if (cancelled || attempt === 3) {
+            break
+          }
+
+          await new Promise((resolve) => window.setTimeout(resolve, 3000))
         }
-      })
+      }
+
+      if (!cancelled) {
+        setGate('offline')
+      }
+    }
+
+    void connect()
 
     return () => {
       cancelled = true
@@ -81,7 +98,10 @@ export default function App() {
   if (gate === 'loading') {
     return (
       <Shell appName={appName}>
-        <p className="status">Checking the server…</p>
+        <section className="card">
+          <h1>{t('gate.waking')}</h1>
+          <p className="lede">{t('gate.wakingNote')}</p>
+        </section>
       </Shell>
     )
   }
@@ -90,8 +110,8 @@ export default function App() {
     return (
       <Shell appName={appName}>
         <section className="card">
-          <h1>Can't reach the server.</h1>
-          <p>Start the API, then refresh this page.</p>
+          <h1>{t('gate.offlineTitle')}</h1>
+          <p>{t('gate.offlineBody')}</p>
         </section>
       </Shell>
     )

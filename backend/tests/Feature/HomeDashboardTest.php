@@ -56,7 +56,41 @@ class HomeDashboardTest extends TestCase
             ->assertJsonPath('data.received_week_label', '₦5,000.00')
             ->assertJsonPath('data.active_jobs', 2)
             ->assertJsonPath('data.due_soon', 1)
+            ->assertJsonCount(0, 'data.due_today')
             ->assertJsonPath('data.upcoming_jobs.0.title', 'Gown')
             ->assertJsonPath('data.upcoming_jobs.0.customer_name', 'Bola');
+    }
+
+    public function test_home_lists_jobs_due_today(): void
+    {
+        $user = User::factory()->create();
+        $business = Business::factory()->create(['user_id' => $user->id]);
+        $customer = Customer::factory()->create([
+            'business_id' => $business->id,
+            'name' => 'Bola',
+        ]);
+
+        CustomerJob::factory()->create([
+            'business_id' => $business->id,
+            'customer_id' => $customer->id,
+            'title' => 'Agbada',
+            'service_date' => now()->toDateString(),
+        ]);
+
+        CustomerJob::factory()->create([
+            'business_id' => $business->id,
+            'customer_id' => $customer->id,
+            'title' => 'Gown',
+            'service_date' => now()->addDay()->toDateString(),
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/home')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.due_today')
+            ->assertJsonPath('data.due_today.0.title', 'Agbada')
+            ->assertJsonPath('data.due_today.0.customer_name', 'Bola')
+            ->assertJsonPath('data.due_today.0.customer_id', $customer->id);
     }
 }

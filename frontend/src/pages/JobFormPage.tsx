@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { createJob, firstError, todayDate, type Customer } from '../api'
+import { useI18n } from '../i18n'
 
 export default function JobFormPage({
   customer,
@@ -10,6 +11,7 @@ export default function JobFormPage({
   onCancel: () => void
   onSaved: () => void
 }) {
+  const { t } = useI18n()
   const [title, setTitle] = useState('')
   const [agreedAmount, setAgreedAmount] = useState('')
   const [serviceDate, setServiceDate] = useState(todayDate())
@@ -38,24 +40,24 @@ export default function JobFormPage({
   return (
     <section className="card">
       <button type="button" className="link back-link" onClick={onCancel}>
-        Back to {customer.name}
+        {t('form.back', { name: customer.name })}
       </button>
-      <h1>New job</h1>
-      <p className="lede">What should {customer.name} pay for?</p>
+      <h1>{t('job.title')}</h1>
+      <p className="lede">{t('job.lede', { name: customer.name })}</p>
 
       <form className="form" onSubmit={onSubmit}>
         <label>
-          Job
+          {t('job.job')}
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="Gown, suit, shirt…"
+            placeholder={t('job.placeholder')}
             required
           />
         </label>
 
         <label>
-          Agreed amount (₦)
+          {t('job.amount')}
           <input
             type="number"
             inputMode="decimal"
@@ -68,7 +70,7 @@ export default function JobFormPage({
         </label>
 
         <label>
-          Date
+          {t('form.date')}
           <input
             type="date"
             value={serviceDate}
@@ -84,10 +86,10 @@ export default function JobFormPage({
         )}
 
         <button type="submit" className="primary" disabled={busy}>
-          {busy ? 'Saving…' : 'Save job'}
+          {busy ? t('form.saving') : t('job.save')}
         </button>
         <button type="button" className="secondary" onClick={onCancel}>
-          Cancel
+          {t('form.cancel')}
         </button>
       </form>
     </section>

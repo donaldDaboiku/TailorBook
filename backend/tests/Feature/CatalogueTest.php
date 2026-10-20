@@ -81,4 +81,26 @@ class CatalogueTest extends TestCase
 
         $this->assertSame(40, CatalogueItem::query()->where('business_id', $business->id)->count());
     }
+
+    public function test_a_rejected_style_does_not_keep_its_photo(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        Business::factory()->create(['user_id' => $user->id]);
+        Sanctum::actingAs($user);
+
+        CatalogueItem::creating(function (): void {
+            throw new \RuntimeException('style was not saved');
+        });
+
+        $this->post('/api/catalogue', [
+            'name' => 'Senator',
+            'price' => '45000',
+            'image' => UploadedFile::fake()->image('senator.jpg', 40, 40),
+        ])->assertStatus(500);
+
+        $this->assertSame([], Storage::disk('local')->allFiles());
+        $this->assertSame(0, CatalogueItem::query()->count());
+    }
 }

@@ -38,7 +38,7 @@ class CatalogueController extends Controller
             'image' => ['nullable', 'image', 'max:800'],
         ]);
 
-        $item = DB::transaction(function () use ($request, $business, $data) {
+        $item = DB::transaction(function () use ($business, $data) {
             Business::query()->whereKey($business->id)->lockForUpdate()->first();
 
             if (CatalogueItem::query()->where('business_id', $business->id)->count() >= 40) {
@@ -49,7 +49,6 @@ class CatalogueController extends Controller
                 'business_id' => $business->id,
                 'name' => trim($data['name']),
                 'price' => Money::normalize($data['price']),
-                'image_path' => $request->file('image')?->store('catalogue', 'local'),
             ]);
         });
 
@@ -58,6 +57,8 @@ class CatalogueController extends Controller
                 'message' => 'This shop already has 40 styles. Remove one before adding another.',
             ], 422);
         }
+
+        $this->attachImage($item, $request);
 
         return response()->json([
             'data' => $this->payload($item, $business->currency),
@@ -88,6 +89,32 @@ class CatalogueController extends Controller
         $catalogueItem->delete();
 
         return response()->json(['message' => 'Style removed.']);
+    }
+
+    private function attachImage(CatalogueItem $item, Request $request): void
+    {
+        $file = $request->file('image');
+
+        if ($file === null) {
+            return;
+        }
+
+        $path = $file->store('catalogue', 'local');
+
+        if (! is_string($path)) {
+            $item->delete();
+
+            abort(422, 'The photo could not be saved.');
+        }
+
+        try {
+            $item->forceFill(['image_path' => $path])->save();
+        } catch (\Throwable $exception) {
+            Storage::disk('local')->delete($path);
+            $item->delete();
+
+            throw $exception;
+        }
     }
 
     /**

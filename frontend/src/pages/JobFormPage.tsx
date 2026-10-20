@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react'
-import { createJob, firstError, todayDate, type Customer } from '../api'
+import { useEffect, useState, type FormEvent } from 'react'
+import { createJob, fetchCatalogue, firstError, todayDate, type CatalogueStyle, type Customer } from '../api'
 import { useI18n } from '../i18n'
 
 export default function JobFormPage({
@@ -17,6 +17,28 @@ export default function JobFormPage({
   const [serviceDate, setServiceDate] = useState(todayDate())
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [styles, setStyles] = useState<CatalogueStyle[]>([])
+  const [picked, setPicked] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+
+    fetchCatalogue()
+      .then((rows) => {
+        if (!cancelled) {
+          setStyles(rows)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStyles([])
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -46,6 +68,31 @@ export default function JobFormPage({
       <p className="lede">{t('job.lede', { name: customer.name })}</p>
 
       <form className="form" onSubmit={onSubmit}>
+        {styles.length > 0 && (
+          <div>
+            <p className="section-title">{t('job.styles')}</p>
+            <p className="status">{t('job.stylesNote')}</p>
+            <div className="style-picks">
+              {styles.map((style) => (
+                <button
+                  key={style.id}
+                  type="button"
+                  className={picked === style.id ? 'style-pick active' : 'style-pick'}
+                  onClick={() => {
+                    setPicked(style.id)
+                    setTitle(style.name)
+                    setAgreedAmount(style.price)
+                  }}
+                >
+                  {style.image_url && <img src={style.image_url} alt="" />}
+                  <strong>{style.name}</strong>
+                  <span>{style.price_label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <label>
           {t('job.job')}
           <input

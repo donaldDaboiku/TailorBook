@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Admin\ShopController as AdminShopController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillingController;
 use App\Http\Controllers\Api\BusinessController;
+use App\Http\Controllers\Api\CatalogueController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerJobController;
 use App\Http\Controllers\Api\ExpenseCategoryController;
@@ -89,6 +90,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/finance/summary', [FinanceController::class, 'summary']);
     Route::get('/home', [HomeController::class, 'show']);
     Route::get('/jobs', [HomeController::class, 'jobs']);
+    Route::get('/catalogue', [CatalogueController::class, 'index']);
+    Route::post('/catalogue', [CatalogueController::class, 'store']);
+    Route::delete('/catalogue/{catalogueItem}', [CatalogueController::class, 'destroy']);
 
     Route::middleware('admin')->prefix('admin')->group(function () {
         Route::get('/shops', [AdminShopController::class, 'index']);

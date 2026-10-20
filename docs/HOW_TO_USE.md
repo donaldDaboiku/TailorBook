@@ -92,7 +92,7 @@ Outstanding balance is always **calculated**: agreed amounts minus payments. Not
 ### Add a job
 
 1. Open a customer → **Add job**.
-2. Enter title (e.g. Gown, Suit), agreed amount in naira, and date.
+2. Enter title (e.g. Gown, Suit), agreed amount in naira, and date. Or tap a style from the design catalogue to fill the title and the usual price.
 3. Save.
 
 ### Record a payment
@@ -169,6 +169,10 @@ Update:
 - Currency (usually `NGN`)  
 
 Tap **Save shop**.
+
+### Design catalogue
+
+**More → Open catalogue.** Add a style with a name, the usual price, and an optional photo. On **Add job**, tap that style to fill the outfit and the amount. Remove a style to replace it. A shop can keep up to 40 styles.
 
 ### Measurement fields
 

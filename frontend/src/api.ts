@@ -976,6 +976,53 @@ export async function uploadShopLogo(file: File): Promise<User> {
   return data.data
 }
 
+export type CatalogueStyle = {
+  id: string
+  name: string
+  price: string
+  price_label: string
+  image_url: string | null
+}
+
+export async function fetchCatalogue(): Promise<CatalogueStyle[]> {
+  const data = await apiJson<{ data: CatalogueStyle[] }>('/api/catalogue')
+  return Array.isArray(data.data) ? data.data : []
+}
+
+export async function createCatalogueStyle(input: {
+  name: string
+  price: string
+  image?: File | null
+}): Promise<CatalogueStyle> {
+  const body = new FormData()
+  body.append('name', input.name.trim())
+  body.append('price', input.price)
+  if (input.image) {
+    body.append('image', input.image)
+  }
+
+  const response = await fetch(apiUrl('/api/catalogue'), {
+    method: 'POST',
+    headers: authHeaders(),
+    body,
+  })
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+
+  const data = (await parseJson(response)) as { data?: CatalogueStyle }
+  if (!data.data?.id || !data.data.name) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function deleteCatalogueStyle(id: string): Promise<void> {
+  await apiJson(`/api/catalogue/${id}`, { method: 'DELETE' })
+}
+
 export async function fetchShopLogo(): Promise<string | null> {
   const response = await fetch(apiUrl('/api/business/logo'), {
     headers: authHeaders(),

@@ -17,8 +17,10 @@ import SubscriptionBillingCard from './SubscriptionBillingCard'
 
 export default function MorePage({
   onShowTutorial,
+  onOpenCatalogue,
 }: {
   onShowTutorial: () => void
+  onOpenCatalogue: () => void
 }) {
   const { user, setUser, clearUser, logout, appName } = useAuth()
   const { t } = useI18n()
@@ -392,6 +394,16 @@ export default function MorePage({
             {shopBusy ? 'Saving…' : 'Save shop'}
           </button>
         </form>
+      </section>
+
+      <section className="card muted-card">
+        <h2 className="section-title">Design catalogue</h2>
+        <p className="lede">
+          Keep the styles this shop sews, with a photo and the usual price.
+        </p>
+        <button type="button" className="secondary" onClick={onOpenCatalogue}>
+          Open catalogue
+        </button>
       </section>
 
       <MeasurementFieldsSettings />

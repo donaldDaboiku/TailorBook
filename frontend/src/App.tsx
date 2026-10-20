@@ -8,6 +8,7 @@ import {
 } from './api'
 import { AuthProvider, useAuth } from './auth'
 import AdminShopsPage from './pages/AdminShopsPage'
+import CataloguePage from './pages/CataloguePage'
 import CustomerDetailPage from './pages/CustomerDetailPage'
 import CustomerFormPage from './pages/CustomerFormPage'
 import CustomersPage from './pages/CustomersPage'
@@ -48,6 +49,7 @@ type Screen =
   | { name: 'whatsapp'; customer: Customer }
   | { name: 'expenses' }
   | { name: 'expense-create' }
+  | { name: 'catalogue' }
   | { name: 'more' }
 
 export default function App() {
@@ -326,7 +328,7 @@ function AuthenticatedApp() {
         ? 'jobs'
         : screen.name === 'expenses' || screen.name === 'expense-create'
           ? 'finance'
-          : screen.name === 'more'
+          : screen.name === 'more' || screen.name === 'catalogue'
             ? 'more'
             : 'customers'
 
@@ -537,8 +539,15 @@ function AuthenticatedApp() {
         />
       )}
 
+      {screen.name === 'catalogue' && (
+        <CataloguePage onBack={() => setScreen({ name: 'more' })} />
+      )}
+
       {screen.name === 'more' && (
-        <MorePage onShowTutorial={() => setShowTutorial(true)} />
+        <MorePage
+          onShowTutorial={() => setShowTutorial(true)}
+          onOpenCatalogue={() => setScreen({ name: 'catalogue' })}
+        />
       )}
     </Shell>
   )

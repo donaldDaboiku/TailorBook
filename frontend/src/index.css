@@ -212,6 +212,73 @@ p {
   object-fit: cover;
 }
 
+.style-picks {
+  display: flex;
+  gap: 0.55rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+
+.style-pick {
+  flex: 0 0 7.5rem;
+  display: grid;
+  gap: 0.25rem;
+  min-height: 44px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.45rem;
+  font: inherit;
+  color: inherit;
+}
+
+.style-pick.active {
+  border-color: var(--accent);
+}
+
+.style-pick img,
+.style-card img {
+  width: 100%;
+  height: 5.5rem;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.style-pick span,
+.style-card .status {
+  display: block;
+}
+
+.style-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.style-card {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: 0.7rem;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.6rem;
+  background: #fff;
+}
+
+.style-card img {
+  width: 5.5rem;
+  height: 5.5rem;
+}
+
+.style-card button {
+  grid-column: 1 / -1;
+}
+
 .receipt-link {
   display: flex;
   align-items: center;

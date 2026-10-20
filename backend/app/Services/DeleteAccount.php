@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Business;
 use App\Models\BusinessMeasurementFieldPref;
+use App\Models\CatalogueItem;
 use App\Models\Customer;
 use App\Models\CustomerJob;
 use App\Models\Expense;
@@ -13,6 +14,7 @@ use App\Models\MeasurementTemplate;
 use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class DeleteAccount
 {
@@ -43,6 +45,16 @@ class DeleteAccount
         BusinessMeasurementFieldPref::query()->where('business_id', $businessId)->delete();
         MeasurementTemplate::query()->where('business_id', $businessId)->delete();
         ExpenseCategory::query()->where('business_id', $businessId)->delete();
+
+        CatalogueItem::query()
+            ->where('business_id', $businessId)
+            ->get()
+            ->each(function (CatalogueItem $item): void {
+                if (filled($item->image_path)) {
+                    Storage::disk('local')->delete($item->image_path);
+                }
+                $item->delete();
+            });
 
         $business->delete();
     }

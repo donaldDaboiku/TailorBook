@@ -32,17 +32,24 @@ class CatalogueTest extends TestCase
             ->assertJsonPath('data.price', '45000.00')
             ->assertJsonPath('data.price_label', '₦45,000.00');
 
-        $this->assertStringStartsWith('data:image/', (string) $created->json('data.image_url'));
+        $created->assertJsonPath('data.has_image', true);
+        $this->assertStringNotContainsString('base64', (string) $created->getContent());
 
-        $this->getJson('/api/catalogue')
+        $image = $this->get('/api/catalogue/'.$created->json('data.id').'/image')->assertOk();
+        $this->assertStringStartsWith('image/', (string) $image->headers->get('content-type'));
+
+        $list = $this->getJson('/api/catalogue')
             ->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.name', 'Senator');
+            ->assertJsonPath('data.0.name', 'Senator')
+            ->assertJsonPath('data.0.has_image', true);
+        $this->assertStringNotContainsString('base64', (string) $list->getContent());
 
         $other = User::factory()->create();
         Business::factory()->create(['user_id' => $other->id]);
         Sanctum::actingAs($other);
 
+        $this->get('/api/catalogue/'.$created->json('data.id').'/image')->assertNotFound();
         $this->deleteJson('/api/catalogue/'.$created->json('data.id'))->assertNotFound();
 
         Sanctum::actingAs($user);
@@ -50,5 +57,28 @@ class CatalogueTest extends TestCase
             ->assertOk();
 
         $this->assertSame(0, CatalogueItem::query()->where('business_id', $business->id)->count());
+    }
+
+    public function test_a_shop_cannot_store_a_41st_style(): void
+    {
+        $user = User::factory()->create();
+        $business = Business::factory()->create(['user_id' => $user->id]);
+        Sanctum::actingAs($user);
+
+        for ($i = 0; $i < 40; $i++) {
+            CatalogueItem::query()->create([
+                'business_id' => $business->id,
+                'name' => 'Style '.$i,
+                'price' => '1000',
+            ]);
+        }
+
+        $this->post('/api/catalogue', [
+            'name' => 'One more',
+            'price' => '1000',
+        ])->assertStatus(422)
+            ->assertJsonPath('message', 'This shop already has 40 styles. Remove one before adding another.');
+
+        $this->assertSame(40, CatalogueItem::query()->where('business_id', $business->id)->count());
     }
 }

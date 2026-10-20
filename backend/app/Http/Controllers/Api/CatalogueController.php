@@ -8,7 +8,9 @@ use App\Models\CatalogueItem;
 use App\Services\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CatalogueController extends Controller
 {
@@ -30,30 +32,48 @@ class CatalogueController extends Controller
     {
         $business = $this->business($request);
 
-        if (CatalogueItem::query()->where('business_id', $business->id)->count() >= 40) {
-            return response()->json([
-                'message' => 'This shop already has 40 styles. Remove one before adding another.',
-            ], 422);
-        }
-
         $data = $request->validate([
             'name' => ['required', 'string', 'max:80'],
             'price' => ['required', 'numeric', 'min:1'],
             'image' => ['nullable', 'image', 'max:800'],
         ]);
 
-        $path = $request->file('image')?->store('catalogue', 'local');
+        $item = DB::transaction(function () use ($request, $business, $data) {
+            Business::query()->whereKey($business->id)->lockForUpdate()->first();
 
-        $item = CatalogueItem::query()->create([
-            'business_id' => $business->id,
-            'name' => trim($data['name']),
-            'price' => Money::normalize($data['price']),
-            'image_path' => $path,
-        ]);
+            if (CatalogueItem::query()->where('business_id', $business->id)->count() >= 40) {
+                return null;
+            }
+
+            return CatalogueItem::query()->create([
+                'business_id' => $business->id,
+                'name' => trim($data['name']),
+                'price' => Money::normalize($data['price']),
+                'image_path' => $request->file('image')?->store('catalogue', 'local'),
+            ]);
+        });
+
+        if (! $item instanceof CatalogueItem) {
+            return response()->json([
+                'message' => 'This shop already has 40 styles. Remove one before adding another.',
+            ], 422);
+        }
 
         return response()->json([
             'data' => $this->payload($item, $business->currency),
         ], 201);
+    }
+
+    public function image(Request $request, CatalogueItem $catalogueItem): StreamedResponse
+    {
+        $business = $this->business($request);
+        abort_unless($catalogueItem->business_id === $business->id, 404);
+        abort_unless(
+            filled($catalogueItem->image_path) && Storage::disk('local')->exists($catalogueItem->image_path),
+            404,
+        );
+
+        return Storage::disk('local')->response($catalogueItem->image_path);
     }
 
     public function destroy(Request $request, CatalogueItem $catalogueItem): JsonResponse
@@ -80,25 +100,8 @@ class CatalogueController extends Controller
             'name' => $item->name,
             'price' => (string) $item->price,
             'price_label' => Money::format((string) $item->price, $currency),
-            'image_url' => $this->imageUrl($item),
+            'has_image' => filled($item->image_path) && Storage::disk('local')->exists($item->image_path),
         ];
-    }
-
-    private function imageUrl(CatalogueItem $item): ?string
-    {
-        if (! filled($item->image_path) || ! Storage::disk('local')->exists($item->image_path)) {
-            return null;
-        }
-
-        $bytes = Storage::disk('local')->get($item->image_path);
-
-        if (! is_string($bytes) || $bytes === '') {
-            return null;
-        }
-
-        $mime = (new \finfo(FILEINFO_MIME_TYPE))->buffer($bytes) ?: 'image/jpeg';
-
-        return 'data:'.$mime.';base64,'.base64_encode($bytes);
     }
 
     private function business(Request $request): Business

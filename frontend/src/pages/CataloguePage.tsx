@@ -6,6 +6,7 @@ import {
   firstError,
   type CatalogueStyle,
 } from '../api'
+import StylePhoto from '../StylePhoto'
 
 export default function CataloguePage({ onBack }: { onBack: () => void }) {
   const [styles, setStyles] = useState<CatalogueStyle[]>([])
@@ -136,9 +137,7 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
       <ul className="style-list">
         {styles.map((style) => (
           <li key={style.id} className="style-card">
-            {style.image_url && (
-              <img src={style.image_url} alt="" />
-            )}
+            {style.has_image && <StylePhoto id={style.id} />}
             <div>
               <strong>{style.name}</strong>
               <span className="status">{style.price_label}</span>

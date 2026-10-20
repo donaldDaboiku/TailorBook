@@ -981,7 +981,7 @@ export type CatalogueStyle = {
   name: string
   price: string
   price_label: string
-  image_url: string | null
+  has_image: boolean
 }
 
 export async function fetchCatalogue(): Promise<CatalogueStyle[]> {
@@ -1021,6 +1021,22 @@ export async function createCatalogueStyle(input: {
 
 export async function deleteCatalogueStyle(id: string): Promise<void> {
   await apiJson(`/api/catalogue/${id}`, { method: 'DELETE' })
+}
+
+export async function fetchCatalogueImage(id: string): Promise<string | null> {
+  const response = await fetch(apiUrl(`/api/catalogue/${id}/image`), {
+    headers: authHeaders(),
+  })
+
+  if (response.status === 404) {
+    return null
+  }
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+
+  return URL.createObjectURL(await response.blob())
 }
 
 export async function fetchShopLogo(): Promise<string | null> {

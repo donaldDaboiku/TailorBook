@@ -92,6 +92,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/jobs', [HomeController::class, 'jobs']);
     Route::get('/catalogue', [CatalogueController::class, 'index']);
     Route::post('/catalogue', [CatalogueController::class, 'store']);
+    Route::get('/catalogue/{catalogueItem}/image', [CatalogueController::class, 'image']);
     Route::delete('/catalogue/{catalogueItem}', [CatalogueController::class, 'destroy']);
 
     Route::middleware('admin')->prefix('admin')->group(function () {

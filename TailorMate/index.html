@@ -39,8 +39,13 @@
     .state-list{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding:0;list-style:none}.state-list li{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:.85rem}
     .feedback-form{display:grid;gap:12px}.stars{display:flex;gap:5px}.stars button{border:0;background:transparent;font-size:1.7rem;padding:2px;cursor:pointer;color:#b8c0ba}.stars button.selected{color:#d59c28}.feedback-form input,.feedback-form textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}.feedback-form textarea{min-height:95px;resize:vertical}.feedback-form .send{border:0;border-radius:10px;background:var(--green);color:#fff;font-weight:800;padding:13px;cursor:pointer}.form-note{font-size:.8rem;color:var(--muted);margin:0}
     .feature{padding:22px;border:1px solid var(--line);border-radius:18px;background:#fff}.feature .ico{font-size:1.3rem}.feature h2{font-size:1rem;margin:10px 0 6px}.feature p{font-size:.9rem;color:var(--muted);margin:0}
+    .catalogue-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .style-card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+    .swatch{height:132px;display:grid;place-items:center;font-size:2rem;color:var(--green)}
+    .style-card div{padding:14px 14px 16px}.style-card strong{display:block}.style-card span{color:var(--muted);font-size:.88rem}
+    .about-copy p{margin:0 0 12px}.about-copy ul{margin:0 0 14px;padding-left:1.1rem;color:var(--ink)}.about-copy li{margin:6px 0}
     footer{border-top:1px solid var(--line);padding:22px clamp(20px,6vw,84px);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.82rem}
-    @media(max-width:760px){main{grid-template-columns:1fr;padding-top:24px}.preview{max-width:520px;width:100%;margin:auto}.features{grid-template-columns:1fr}.intro{font-size:1rem}header{padding-top:18px;padding-bottom:18px}.social-grid,.community-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){main{grid-template-columns:1fr;padding-top:24px}.preview{max-width:520px;width:100%;margin:auto}.features,.catalogue-grid{grid-template-columns:1fr 1fr}.intro{font-size:1rem}header{padding-top:18px;padding-bottom:18px}.social-grid,.community-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -73,6 +78,19 @@
     <article class="feature"><div class="ico" aria-hidden="true">📏</div><h2>Customer measurements</h2><p>Keep measurement history accessible when it is time to sew.</p></article>
     <article class="feature"><div class="ico" aria-hidden="true">🪡</div><h2>Jobs and orders</h2><p>Organise customer jobs and service dates in one workspace.</p></article>
     <article class="feature"><div class="ico" aria-hidden="true">📊</div><h2>Business finances</h2><p>Keep an eye on payments, expenses and your business summary.</p></article>
+  </section>
+  <section class="section" id="catalogue" aria-labelledby="catalogue-title">
+    <div class="section-head">
+      <div class="eyebrow"><span class="dot"></span> Design catalogue</div>
+      <h2 id="catalogue-title">Styles the shop already sews</h2>
+      <p>Each shop keeps its own catalogue inside the app: a photo, a name, and the usual price. While a client is in the shop, the tailor taps a style and it fills the job. These four are examples, not a live shop’s prices.</p>
+    </div>
+    <div class="catalogue-grid">
+      <article class="style-card"><div class="swatch" style="background:#e7f0ea" aria-hidden="true">👔</div><div><strong>Senator</strong><span>Example · ₦45,000</span></div></article>
+      <article class="style-card"><div class="swatch" style="background:#f3ead6" aria-hidden="true">🧥</div><div><strong>Agbada</strong><span>Example · ₦80,000</span></div></article>
+      <article class="style-card"><div class="swatch" style="background:#efe4ea" aria-hidden="true">👗</div><div><strong>Gown</strong><span>Example · ₦55,000</span></div></article>
+      <article class="style-card"><div class="swatch" style="background:#e4ecec" aria-hidden="true">🧕</div><div><strong>Kaftan</strong><span>Example · ₦35,000</span></div></article>
+    </div>
   </section>
   <section class="section" aria-labelledby="price-title">
     <div class="panel">
@@ -123,12 +141,20 @@
     </div>
   </section>
   <section class="section" id="about" aria-labelledby="about-title">
-    <div class="panel">
+    <div class="panel about-copy">
       <div class="eyebrow"><span class="dot"></span> About the app</div>
-      <h2 id="about-title">TailorMate</h2>
-      <p>TailorMate is a phone-friendly workspace for one fashion shop: customers, measurements, jobs, payments, and expenses.</p>
+      <h2 id="about-title">What TailorMate does</h2>
+      <p>TailorMate is the phone a fashion shop uses while the client is still standing there. One login is one shop. The records stay with that shop: clients, measurements, jobs, payments, and expenses.</p>
+      <p>A new visit starts with the client’s name and phone. Measurements are kept in inches or centimetres, and an older set stays when a new one is saved. The design catalogue holds the styles that shop already sews. Tap a style, and the job title and usual price are filled in. A deposit is recorded as cash, transfer, or POS. The balance is the agreed amounts minus what has been paid.</p>
+      <p>When the outfit is due, Home lists that client. One tap opens their WhatsApp with the balance or a ready-for-pickup note. The receipt can go to that same chat, or to the email saved on their record. The picture can be shared from the phone as well.</p>
+      <ul>
+        <li>English, Yoruba, Igbo, Hausa, and French on the screens used with a client.</li>
+        <li>A new shop can try TailorMate for 14 days, then pay the monthly plan inside the app.</li>
+        <li>The shop can download its records before closing the account.</li>
+      </ul>
+      <p>Saving needs the internet. The app opens on the phone like an installed app after it is added to the home screen.</p>
       <p><strong>Built by gitsystemng</strong></p>
-      <p class="fine"><a id="about-app" href="https://tailormate-web.onrender.com">Open the app</a></p>
+      <p class="fine"><a class="btn primary" id="about-app" href="https://tailormate-web.onrender.com">Open the app</a></p>
     </div>
   </section>
   <footer><span>© <span id="year">2026</span> TailorMate</span><span>Built by gitsystemng</span></footer>

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { createJob, fetchCatalogue, firstError, todayDate, type CatalogueStyle, type Customer } from '../api'
 import { useI18n } from '../i18n'
+import StylePhoto from '../StylePhoto'
 
 export default function JobFormPage({
   customer,
@@ -84,7 +85,7 @@ export default function JobFormPage({
                     setAgreedAmount(style.price)
                   }}
                 >
-                  {style.image_url && <img src={style.image_url} alt="" />}
+                  {style.has_image && <StylePhoto id={style.id} />}
                   <strong>{style.name}</strong>
                   <span>{style.price_label}</span>
                 </button>

@@ -70,6 +70,7 @@ class PaymentController extends Controller
             'amount' => (int) $payment->amount,
             'amount_label' => $payment->amountLabel(),
             'currency' => $payment->currency,
+            'purpose' => $payment->purpose ?: 'plan',
             'channel' => $payment->channel,
             'status' => $payment->status,
             'gateway_response' => $payment->gateway_response,

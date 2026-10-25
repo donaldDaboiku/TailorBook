@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Api\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Api\Admin\ShopController as AdminShopController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillingController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Api\MeasurementTemplateController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\ReceiptController;
+use App\Http\Controllers\Api\ShopReviewController;
 use App\Http\Controllers\Api\WhatsAppController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,6 +41,7 @@ Route::post('/billing/webhook', [BillingController::class, 'webhook'])
     ->middleware('throttle:60,1');
 
 Route::get('/public/presence', [PublicController::class, 'presence']);
+Route::get('/public/reviews', [PublicController::class, 'reviews']);
 Route::post('/public/feedback', [PublicController::class, 'feedback'])
     ->middleware('throttle:5,1');
 
@@ -51,6 +54,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::put('/business', [BusinessController::class, 'update']);
     Route::post('/business/logo', [BusinessController::class, 'uploadLogo']);
     Route::get('/business/logo', [BusinessController::class, 'logo']);
+    Route::get('/review', [ShopReviewController::class, 'show']);
+    Route::put('/review', [ShopReviewController::class, 'update']);
 
     Route::get('/billing/plan', [BillingController::class, 'plan']);
     Route::post('/billing/checkout', [BillingController::class, 'checkout'])
@@ -92,6 +97,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/jobs', [HomeController::class, 'jobs']);
     Route::get('/catalogue', [CatalogueController::class, 'index']);
     Route::post('/catalogue', [CatalogueController::class, 'store']);
+    Route::post('/catalogue/extra', [CatalogueController::class, 'extra'])
+        ->middleware('throttle:10,1');
     Route::get('/catalogue/{catalogueItem}/image', [CatalogueController::class, 'image']);
     Route::delete('/catalogue/{catalogueItem}', [CatalogueController::class, 'destroy']);
 
@@ -101,9 +108,13 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/shops/{user}/unsuspend', [AdminShopController::class, 'unsuspend']);
         Route::put('/shops/{user}/state', [AdminShopController::class, 'updateState']);
         Route::put('/shops/{user}/subscription', [AdminShopController::class, 'updateSubscription']);
+        Route::put('/shops/{user}/catalogue', [AdminShopController::class, 'updateCatalogue']);
+        Route::put('/catalogue-price', [AdminShopController::class, 'updateCataloguePrice']);
         Route::put('/shops/{user}/password', [AdminShopController::class, 'resetPassword']);
         Route::get('/shops/{user}/payments', [AdminPaymentController::class, 'forShop']);
         Route::get('/payments', [AdminPaymentController::class, 'index']);
         Route::get('/feedback', [AdminFeedbackController::class, 'index']);
+        Route::get('/reviews', [AdminReviewController::class, 'index']);
+        Route::put('/reviews/{shopReview}', [AdminReviewController::class, 'update']);
     });
 });

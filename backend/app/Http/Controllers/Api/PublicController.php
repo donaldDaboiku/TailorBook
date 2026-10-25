@@ -6,6 +6,7 @@ use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\FeedbackMessage;
+use App\Models\ShopReview;
 use App\Models\User;
 use App\Services\PaystackBilling;
 use App\Services\PhoneNormalizer;
@@ -65,6 +66,27 @@ class PublicController extends Controller
                 'contact' => $this->contact(),
                 'social' => $this->social(),
             ],
+        ]);
+    }
+
+    public function reviews(): JsonResponse
+    {
+        $rows = ShopReview::query()
+            ->where('approved', true)
+            ->with('business:id,name,state')
+            ->orderByDesc('updated_at')
+            ->limit(20)
+            ->get()
+            ->map(fn (ShopReview $review) => [
+                'shop_name' => $review->business?->name,
+                'state' => $review->business?->state,
+                'rating' => $review->rating,
+                'body' => $review->body,
+            ])
+            ->values();
+
+        return response()->json([
+            'data' => $rows,
         ]);
     }
 

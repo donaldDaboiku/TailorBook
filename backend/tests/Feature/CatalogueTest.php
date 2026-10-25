@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Enums\SubscriptionStatus;
 use App\Models\Business;
 use App\Models\CatalogueItem;
 use App\Models\User;
+use App\Services\PaystackBilling;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -77,9 +80,126 @@ class CatalogueTest extends TestCase
             'name' => 'One more',
             'price' => '1000',
         ])->assertStatus(422)
-            ->assertJsonPath('message', 'This shop already has 40 styles. Remove one before adding another.');
+            ->assertJsonPath('message', 'This shop is full at 40 styles. 10 more cost ₦1,000.00.')
+            ->assertJsonPath('catalogue_full', true);
 
         $this->assertSame(40, CatalogueItem::query()->where('business_id', $business->id)->count());
+    }
+
+    public function test_paid_slots_allow_styles_past_the_free_forty(): void
+    {
+        $user = User::factory()->create();
+        $business = Business::factory()->create([
+            'user_id' => $user->id,
+            'catalogue_extra' => 10,
+        ]);
+        Sanctum::actingAs($user);
+
+        for ($i = 0; $i < 40; $i++) {
+            CatalogueItem::query()->create([
+                'business_id' => $business->id,
+                'name' => 'Style '.$i,
+                'price' => '1000',
+            ]);
+        }
+
+        $this->post('/api/catalogue', [
+            'name' => 'Paid style',
+            'price' => '1000',
+        ])->assertCreated();
+
+        $this->getJson('/api/catalogue')
+            ->assertOk()
+            ->assertJsonCount(41, 'data')
+            ->assertJsonPath('allowance.limit', 50)
+            ->assertJsonPath('allowance.used', 41);
+    }
+
+    public function test_a_full_shop_pays_one_thousand_naira_for_ten_styles(): void
+    {
+        config([
+            'services.paystack.secret_key' => 'sk_test_dummy',
+            'services.paystack.callback_url' => 'http://localhost:5173/?billing=1',
+        ]);
+
+        $until = now()->addDays(20)->toDateString();
+        $user = User::factory()->create([
+            'subscription_status' => SubscriptionStatus::Subscribed,
+            'subscribed_until' => $until,
+        ]);
+        $business = Business::factory()->create(['user_id' => $user->id]);
+        Sanctum::actingAs($user);
+
+        for ($i = 0; $i < 40; $i++) {
+            CatalogueItem::query()->create([
+                'business_id' => $business->id,
+                'name' => 'Style '.$i,
+                'price' => '1000',
+            ]);
+        }
+
+        Http::fake([
+            'api.paystack.co/transaction/initialize' => Http::response([
+                'status' => true,
+                'data' => [
+                    'authorization_url' => 'https://checkout.paystack.com/styles',
+                ],
+            ]),
+        ]);
+
+        $checkout = $this->postJson('/api/catalogue/extra')
+            ->assertOk()
+            ->assertJsonPath('data.authorization_url', 'https://checkout.paystack.com/styles');
+
+        $reference = $checkout->json('data.reference');
+        $this->assertDatabaseHas('subscription_payments', [
+            'reference' => $reference,
+            'amount' => 100000,
+            'purpose' => 'catalogue',
+            'status' => 'pending',
+        ]);
+
+        Http::fake([
+            'api.paystack.co/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'amount' => 100000,
+                    'currency' => 'NGN',
+                    'reference' => $reference,
+                ],
+            ]),
+        ]);
+
+        $this->postJson('/api/billing/verify', ['reference' => $reference])
+            ->assertOk()
+            ->assertJsonPath('data.subscription_status', 'subscribed');
+
+        $fresh = $user->fresh();
+        $this->assertSame($until, $fresh->subscribed_until->toDateString());
+        $this->assertSame(10, $fresh->business->catalogue_extra);
+
+        app(PaystackBilling::class)->markRefunded($reference);
+
+        $refunded = $user->fresh();
+        $this->assertSame(SubscriptionStatus::Subscribed, $refunded->subscription_status);
+        $this->assertSame($until, $refunded->subscribed_until->toDateString());
+        $this->assertSame(0, $refunded->business->catalogue_extra);
+    }
+
+    public function test_a_shop_with_room_cannot_buy_styles_yet(): void
+    {
+        config(['services.paystack.secret_key' => 'sk_test_dummy']);
+
+        $user = User::factory()->create();
+        Business::factory()->create(['user_id' => $user->id]);
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/catalogue/extra')
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'This shop can still add styles before paying.');
+
+        $this->assertDatabaseCount('subscription_payments', 0);
     }
 
     public function test_a_rejected_style_does_not_keep_its_photo(): void

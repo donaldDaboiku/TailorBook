@@ -198,6 +198,7 @@ function AuthenticatedApp() {
     }
 
     const reference = params.get('reference') || params.get('trxref')
+    const cataloguePack = params.get('kind') === 'catalogue'
     window.history.replaceState({}, '', window.location.pathname)
 
     if (!reference) {
@@ -215,8 +216,12 @@ function AuthenticatedApp() {
           return
         }
         setUser(next)
-        setBillingMessage('Subscription activated. Thank you.')
-        setScreen({ name: 'more' })
+        setBillingMessage(
+          cataloguePack
+            ? '10 more styles are ready.'
+            : 'Subscription activated. Thank you.',
+        )
+        setScreen(cataloguePack ? { name: 'catalogue' } : { name: 'more' })
       })
       .catch((err) => {
         if (!cancelled) {

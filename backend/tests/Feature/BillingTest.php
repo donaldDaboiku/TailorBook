@@ -8,6 +8,7 @@ use App\Models\SubscriptionPayment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -44,16 +45,6 @@ class BillingTest extends TestCase
                     'authorization_url' => 'https://checkout.paystack.com/test',
                     'access_code' => 'access',
                     'reference' => 'ignored',
-                ],
-            ]),
-            'api.paystack.co/transaction/verify/*' => Http::response([
-                'status' => true,
-                'message' => 'Verification successful',
-                'data' => [
-                    'status' => 'success',
-                    'amount' => 500000,
-                    'currency' => 'NGN',
-                    'reference' => 'will-replace',
                 ],
             ]),
         ]);
@@ -473,7 +464,7 @@ class BillingTest extends TestCase
     /**
      * @param  array<string, mixed>  $data
      */
-    private function signedWebhook(string $event, array $data): \Illuminate\Testing\TestResponse
+    private function signedWebhook(string $event, array $data): TestResponse
     {
         $body = json_encode(['event' => $event, 'data' => $data], JSON_THROW_ON_ERROR);
 
@@ -483,7 +474,7 @@ class BillingTest extends TestCase
     /**
      * @param  array<string, mixed>  $data
      */
-    private function postWebhook(string $event, array $data, string $signature, ?string $body = null): \Illuminate\Testing\TestResponse
+    private function postWebhook(string $event, array $data, string $signature, ?string $body = null): TestResponse
     {
         $body ??= json_encode(['event' => $event, 'data' => $data], JSON_THROW_ON_ERROR);
 

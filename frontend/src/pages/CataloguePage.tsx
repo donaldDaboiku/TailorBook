@@ -4,12 +4,15 @@ import {
   deleteCatalogueStyle,
   fetchCatalogue,
   firstError,
+  startCatalogueCheckout,
+  type CatalogueAllowance,
   type CatalogueStyle,
 } from '../api'
 import StylePhoto from '../StylePhoto'
 
 export default function CataloguePage({ onBack }: { onBack: () => void }) {
   const [styles, setStyles] = useState<CatalogueStyle[]>([])
+  const [allowance, setAllowance] = useState<CatalogueAllowance | null>(null)
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [image, setImage] = useState<File | null>(null)
@@ -22,9 +25,10 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
     let cancelled = false
 
     fetchCatalogue()
-      .then((rows) => {
+      .then((list) => {
         if (!cancelled) {
-          setStyles(rows)
+          setStyles(list.styles)
+          setAllowance(list.allowance)
         }
       })
       .catch((err) => {
@@ -54,6 +58,9 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
       setStyles((current) =>
         [...current, saved].sort((a, b) => a.name.localeCompare(b.name)),
       )
+      setAllowance((current) =>
+        current ? { ...current, used: current.used + 1 } : current,
+      )
       setName('')
       setPrice('')
       setImage(null)
@@ -65,12 +72,28 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
     }
   }
 
+  async function onBuyPack() {
+    setBusy(true)
+    setError('')
+
+    try {
+      const checkout = await startCatalogueCheckout()
+      window.location.assign(checkout.authorization_url)
+    } catch (err) {
+      setError(firstError(err))
+      setBusy(false)
+    }
+  }
+
   async function onRemove(style: CatalogueStyle) {
     setError('')
 
     try {
       await deleteCatalogueStyle(style.id)
       setStyles((current) => current.filter((row) => row.id !== style.id))
+      setAllowance((current) =>
+        current ? { ...current, used: Math.max(0, current.used - 1) } : current,
+      )
     } catch (err) {
       setError(firstError(err))
     }
@@ -84,8 +107,30 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
       <h1>Design catalogue</h1>
       <p className="lede">
         Styles for this shop. A photo, a name, and the usual price. On a new
-        job, tap a style to fill the outfit and the amount.
+        job, tap a style to fill the outfit and the amount. The first 40 are
+        free. After that, 10 more cost ₦1,000.
       </p>
+
+      {allowance && allowance.used >= allowance.limit && (
+        <div className="form">
+          <p className="status">
+            This shop is full at {allowance.limit} styles. {allowance.pack} more
+            cost {allowance.pack_label}.
+          </p>
+          {allowance.pack_enabled ? (
+            <button
+              type="button"
+              className="primary"
+              disabled={busy}
+              onClick={() => void onBuyPack()}
+            >
+              {busy ? 'Opening Paystack…' : `Pay ${allowance.pack_label} for ${allowance.pack} styles`}
+            </button>
+          ) : (
+            <p className="status">Paystack is not turned on yet, so more styles cannot be bought.</p>
+          )}
+        </div>
+      )}
 
       <form className="form" onSubmit={onSubmit}>
         <label>

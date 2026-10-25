@@ -3,14 +3,20 @@ import {
   fetchPresence,
   firstError,
   listAdminFeedback,
+  listAdminReviews,
+  updateAdminReview,
   listAdminPayments,
   listAdminShops,
   resetAdminShopPassword,
   suspendAdminShop,
   unsuspendAdminShop,
+  updateAdminCataloguePrice,
+  updateAdminShopCatalogue,
   updateAdminShopState,
   updateAdminShopSubscription,
+  type AdminCatalogueOffer,
   type AdminPayment,
+  type AdminShopReview,
   type FeedbackNote,
   type AdminShop,
   type PaymentStatus,
@@ -23,6 +29,7 @@ export default function AdminShopsPage() {
   const [shops, setShops] = useState<AdminShop[]>([])
   const [payments, setPayments] = useState<AdminPayment[]>([])
   const [feedback, setFeedback] = useState<FeedbackNote[]>([])
+  const [reviews, setReviews] = useState<AdminShopReview[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [q, setQ] = useState('')
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | ''>('')
@@ -32,6 +39,8 @@ export default function AdminShopsPage() {
   const [actionId, setActionId] = useState<number | null>(null)
   const [place, setPlace] = useState<string | null>(null)
   const [stateOptions, setStateOptions] = useState<string[]>([])
+  const [catalogue, setCatalogue] = useState<AdminCatalogueOffer | null>(null)
+  const [packPrice, setPackPrice] = useState('1000')
 
   const places = useMemo(() => {
     const counts = new Map<string, number>()
@@ -65,14 +74,18 @@ export default function AdminShopsPage() {
   async function reload(search = q, status = paymentFilter) {
     setLoading(true)
     try {
-      const [rows, paymentRows, notes] = await Promise.all([
+      const [shopList, paymentRows, notes, reviewRows] = await Promise.all([
         listAdminShops(search),
         listAdminPayments({ q: search, status }),
         listAdminFeedback(),
+        listAdminReviews(),
       ])
-      setShops(rows)
+      setShops(shopList.shops)
+      setCatalogue(shopList.catalogue)
+      setPackPrice(String(shopList.catalogue.amount))
       setPayments(paymentRows)
       setFeedback(notes)
+      setReviews(reviewRows)
       setError('')
     } catch (err) {
       setError(firstError(err))
@@ -193,6 +206,49 @@ export default function AdminShopsPage() {
     }
   }
 
+  async function onToggleReview(review: AdminShopReview) {
+    setError('')
+
+    try {
+      const updated = await updateAdminReview(review.id, !review.approved)
+      setReviews((current) =>
+        current.map((row) => (row.id === updated.id ? updated : row)),
+      )
+    } catch (err) {
+      setError(firstError(err))
+    }
+  }
+
+  async function onSaveCatalogue(shop: AdminShop, extra: number) {
+    setActionId(shop.id)
+    setError('')
+
+    try {
+      const updated = await updateAdminShopCatalogue(shop.id, extra)
+      replaceShop(updated)
+    } catch (err) {
+      setError(firstError(err))
+    } finally {
+      setActionId(null)
+    }
+  }
+
+  async function onSavePackPrice(event: FormEvent) {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+
+    try {
+      const updated = await updateAdminCataloguePrice(Number(packPrice))
+      setCatalogue(updated)
+      setPackPrice(String(updated.amount))
+    } catch (err) {
+      setError(firstError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function onResetPassword(
     shop: AdminShop,
     password: string,
@@ -223,6 +279,28 @@ export default function AdminShopsPage() {
         <p className="lede">
           {appName} shops. Signed in as {user?.email}.
         </p>
+        <form className="form" onSubmit={(event) => void onSavePackPrice(event)}>
+          <label>
+            Price for {catalogue?.pack ?? 10} more styles (₦)
+            <input
+              type="number"
+              min="1"
+              max="100000"
+              step="1"
+              value={packPrice}
+              onChange={(event) => setPackPrice(event.target.value)}
+              required
+            />
+          </label>
+          <p className="status">
+            Every shop pays this for the next {catalogue?.pack ?? 10} styles
+            after the free {catalogue?.free ?? 40}.
+            {catalogue ? ` Now ${catalogue.amount_label}.` : ''}
+          </p>
+          <button type="submit" className="secondary" disabled={busy}>
+            {busy ? 'Saving…' : 'Save price'}
+          </button>
+        </form>
         <label className="search-label">
           Search
           <input
@@ -306,6 +384,42 @@ export default function AdminShopsPage() {
                     <span className={paymentBadgeClass(payment.status)}>
                       {payment.status}
                     </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {!loading && (
+        <section className="card muted-card">
+          <div className="row-between">
+            <h2 className="section-title">Shop reviews</h2>
+            <span className="status">{reviews.length}</span>
+          </div>
+          <p className="status">
+            Choose which shop reviews appear on the TailorMate site.
+          </p>
+          {reviews.length === 0 ? (
+            <p className="status">No shop reviews yet.</p>
+          ) : (
+            <ul className="plain-list">
+              {reviews.map((review) => (
+                <li key={review.id}>
+                  <strong>{review.shop_name ?? 'Shop'}</strong>
+                  {review.state ? ` · ${review.state}` : ''}
+                  {review.owner_email ? ` · ${review.owner_email}` : ''}
+                  <br />
+                  {'★'.repeat(review.rating)}
+                  {'☆'.repeat(Math.max(0, 5 - review.rating))} {review.body}
+                  <br />
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => void onToggleReview(review)}
+                  >
+                    {review.approved ? 'Hide from the site' : 'Show on the site'}
                   </button>
                 </li>
               ))}
@@ -420,6 +534,9 @@ export default function AdminShopsPage() {
                       >
                         {subscriptionLabel(shop.subscription_access)}
                       </span>
+                      <span className="badge">
+                        {shop.catalogue_used ?? 0}/{shop.catalogue_limit ?? 40} styles
+                      </span>
                     </span>
                   </button>
                 </li>
@@ -451,6 +568,7 @@ export default function AdminShopsPage() {
           onSaveSubscription={(status, until) =>
             void onSaveSubscription(selectedShop, status, until)
           }
+          onSaveCatalogue={(extra) => void onSaveCatalogue(selectedShop, extra)}
           onResetPassword={(password, confirmation) =>
             void onResetPassword(selectedShop, password, confirmation)
           }
@@ -468,6 +586,7 @@ function ShopModal({
   onToggleSuspend,
   onSaveState,
   onSaveSubscription,
+  onSaveCatalogue,
   onResetPassword,
 }: {
   shop: AdminShop
@@ -477,12 +596,14 @@ function ShopModal({
   onToggleSuspend: () => void
   onSaveState: (state: string) => Promise<void>
   onSaveSubscription: (status: SubscriptionStatus, until: string) => void
+  onSaveCatalogue: (extra: number) => void
   onResetPassword: (password: string, confirmation: string) => void
 }) {
   const [status, setStatus] = useState<SubscriptionStatus>(
     shop.subscription_status === 'subscribed' ? 'subscribed' : 'free',
   )
   const [until, setUntil] = useState(shop.subscribed_until ?? defaultUntil())
+  const [extra, setExtra] = useState(String(shop.catalogue_extra ?? 0))
   const [newPassword, setNewPassword] = useState('')
   const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('')
   const [stateName, setStateName] = useState(shop.state ?? '')
@@ -492,10 +613,11 @@ function ShopModal({
   useEffect(() => {
     setStatus(shop.subscription_status === 'subscribed' ? 'subscribed' : 'free')
     setUntil(shop.subscribed_until ?? defaultUntil())
+    setExtra(String(shop.catalogue_extra ?? 0))
     setStateName(shop.state ?? '')
     setStateSaved(false)
     setStateError('')
-  }, [shop.id, shop.subscription_status, shop.subscribed_until, shop.state])
+  }, [shop.id, shop.subscription_status, shop.subscribed_until, shop.catalogue_extra, shop.state])
 
   function onSubmitState(event: FormEvent) {
     event.preventDefault()
@@ -633,7 +755,8 @@ function ShopModal({
             <ul className="plain-list">
               {shop.payments?.map((payment) => (
                 <li key={payment.id}>
-                  {payment.amount_label} ·{' '}
+                  {payment.amount_label}
+                  {payment.purpose === 'catalogue' ? ' · 10 catalogue styles' : ''} ·{' '}
                   <span className={paymentBadgeClass(payment.status)}>
                     {payment.status}
                   </span>
@@ -686,6 +809,35 @@ function ShopModal({
 
           <button type="submit" className="primary" disabled={busy}>
             {busy ? 'Saving…' : 'Save subscription'}
+          </button>
+        </form>
+
+        <form
+          className="form"
+          onSubmit={(event) => {
+            event.preventDefault()
+            onSaveCatalogue(Number(extra))
+          }}
+        >
+          <h3 className="section-title">Catalogue styles</h3>
+          <p className="status">
+            {shop.catalogue_used ?? 0} of {shop.catalogue_limit ?? 40} styles
+            are in use. The first 40 are free. Extra styles are added on top.
+          </p>
+          <label>
+            Extra styles above 40
+            <input
+              type="number"
+              min="0"
+              max="500"
+              step="1"
+              value={extra}
+              onChange={(event) => setExtra(event.target.value)}
+              required
+            />
+          </label>
+          <button type="submit" className="secondary" disabled={busy}>
+            {busy ? 'Saving…' : 'Save style allowance'}
           </button>
         </form>
 

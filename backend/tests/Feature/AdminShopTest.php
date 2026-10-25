@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\Business;
 use App\Models\User;
+use App\Services\PaystackBilling;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -192,6 +193,45 @@ class AdminShopTest extends TestCase
 
         $this->putJson("/api/admin/shops/{$tailor->id}/state", [
             'state' => 'Oyo',
+        ])->assertForbidden();
+    }
+
+    public function test_admin_can_raise_style_allowance_and_the_pack_price(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $tailor = User::factory()->create();
+        $shop = Business::factory()->create(['user_id' => $tailor->id]);
+
+        Sanctum::actingAs($admin);
+
+        $this->putJson("/api/admin/shops/{$tailor->id}/catalogue", [
+            'extra' => 10,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.catalogue_extra', 10)
+            ->assertJsonPath('data.catalogue_limit', 50)
+            ->assertJsonPath('data.catalogue_used', 0);
+
+        $this->assertSame(10, $shop->fresh()->catalogue_extra);
+
+        $this->putJson('/api/admin/catalogue-price', [
+            'amount' => 2500,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.amount', 2500)
+            ->assertJsonPath('data.amount_label', '₦2,500.00')
+            ->assertJsonPath('data.pack', 10);
+
+        $this->assertSame(250000, app(PaystackBilling::class)->cataloguePack()['amount']);
+
+        Sanctum::actingAs($tailor);
+
+        $this->putJson('/api/admin/catalogue-price', [
+            'amount' => 500,
+        ])->assertForbidden();
+
+        $this->putJson("/api/admin/shops/{$tailor->id}/catalogue", [
+            'extra' => 20,
         ])->assertForbidden();
     }
 }

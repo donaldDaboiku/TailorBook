@@ -6,29 +6,36 @@ use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Models\CatalogueItem;
 use App\Services\Money;
+use App\Services\PaystackBilling;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CatalogueController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, PaystackBilling $billing): JsonResponse
     {
         $business = $this->business($request);
+        $used = CatalogueItem::query()->where('business_id', $business->id)->count();
 
         $items = CatalogueItem::query()
             ->where('business_id', $business->id)
             ->orderBy('name')
-            ->limit(40)
+            ->limit($billing->catalogueLimit($business))
             ->get()
             ->map(fn (CatalogueItem $item) => $this->payload($item, $business->currency));
 
-        return response()->json(['data' => $items]);
+        return response()->json([
+            'data' => $items,
+            'allowance' => $this->allowance($business, $used, $billing),
+        ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, PaystackBilling $billing): JsonResponse
     {
         $business = $this->business($request);
 
@@ -39,9 +46,15 @@ class CatalogueController extends Controller
         ]);
 
         $item = DB::transaction(function () use ($business, $data) {
-            Business::query()->whereKey($business->id)->lockForUpdate()->first();
+            $locked = Business::query()->whereKey($business->id)->lockForUpdate()->first();
 
-            if (CatalogueItem::query()->where('business_id', $business->id)->count() >= 40) {
+            if (! $locked instanceof Business) {
+                return false;
+            }
+
+            $limit = (int) config('services.paystack.catalogue_free') + (int) $locked->catalogue_extra;
+
+            if (CatalogueItem::query()->where('business_id', $business->id)->count() >= $limit) {
                 return null;
             }
 
@@ -52,9 +65,18 @@ class CatalogueController extends Controller
             ]);
         });
 
+        if ($item === false) {
+            abort(403, 'Set up your shop first.');
+        }
+
         if (! $item instanceof CatalogueItem) {
+            $business->refresh();
+            $pack = $billing->cataloguePack();
+            $limit = $billing->catalogueLimit($business);
+
             return response()->json([
-                'message' => 'This shop already has 40 styles. Remove one before adding another.',
+                'message' => "This shop is full at {$limit} styles. {$pack['slots']} more cost {$pack['amount_label']}.",
+                'catalogue_full' => true,
             ], 422);
         }
 
@@ -63,6 +85,21 @@ class CatalogueController extends Controller
         return response()->json([
             'data' => $this->payload($item, $business->currency),
         ], 201);
+    }
+
+    public function extra(Request $request, PaystackBilling $billing): JsonResponse
+    {
+        try {
+            $checkout = $billing->initializeCatalogue($request->user());
+        } catch (RuntimeException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => $checkout,
+        ]);
     }
 
     public function image(Request $request, CatalogueItem $catalogueItem): StreamedResponse
@@ -74,7 +111,10 @@ class CatalogueController extends Controller
             404,
         );
 
-        return Storage::disk('local')->response($catalogueItem->image_path);
+        $disk = Storage::disk('local');
+        abort_unless($disk instanceof FilesystemAdapter, 404);
+
+        return $disk->response($catalogueItem->image_path);
     }
 
     public function destroy(Request $request, CatalogueItem $catalogueItem): JsonResponse
@@ -128,6 +168,24 @@ class CatalogueController extends Controller
             'price' => (string) $item->price,
             'price_label' => Money::format((string) $item->price, $currency),
             'has_image' => filled($item->image_path) && Storage::disk('local')->exists($item->image_path),
+        ];
+    }
+
+    /**
+     * @return array{free: int, extra: int, limit: int, used: int, pack: int, pack_label: string, pack_enabled: bool}
+     */
+    private function allowance(Business $business, int $used, PaystackBilling $billing): array
+    {
+        $pack = $billing->cataloguePack();
+
+        return [
+            'free' => (int) config('services.paystack.catalogue_free'),
+            'extra' => (int) $business->catalogue_extra,
+            'limit' => $billing->catalogueLimit($business),
+            'used' => $used,
+            'pack' => $pack['slots'],
+            'pack_label' => $pack['amount_label'],
+            'pack_enabled' => $billing->configured(),
         ];
     }
 

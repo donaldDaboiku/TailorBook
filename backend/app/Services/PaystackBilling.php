@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Enums\SubscriptionStatus;
+use App\Models\Business;
+use App\Models\CatalogueItem;
+use App\Models\Setting;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -54,6 +57,7 @@ class PaystackBilling
             'reference' => $reference,
             'amount' => $plan['amount'],
             'currency' => 'NGN',
+            'purpose' => 'plan',
             'status' => 'pending',
         ]);
 
@@ -90,6 +94,98 @@ class PaystackBilling
             'authorization_url' => (string) $response->json('data.authorization_url'),
             'reference' => $reference,
         ];
+    }
+
+    /**
+     * @return array{authorization_url: string, reference: string}
+     */
+    public function initializeCatalogue(User $user): array
+    {
+        if (! $this->configured()) {
+            throw new RuntimeException('Paystack is not configured.');
+        }
+
+        if ($user->isAdmin()) {
+            throw new RuntimeException('Admin accounts do not buy catalogue space.');
+        }
+
+        $business = $user->business;
+
+        if (! $business instanceof Business) {
+            throw new RuntimeException('Set up your shop first.');
+        }
+
+        $limit = $this->catalogueLimit($business);
+        $used = CatalogueItem::query()->where('business_id', $business->id)->count();
+
+        if ($used < $limit) {
+            throw new RuntimeException('This shop can still add styles before paying.');
+        }
+
+        $pack = $this->cataloguePack();
+        $reference = 'tc_'.Str::lower(Str::ulid());
+        $callback = (string) config('services.paystack.callback_url');
+        $callback .= (str_contains($callback, '?') ? '&' : '?').'kind=catalogue';
+
+        SubscriptionPayment::query()->create([
+            'user_id' => $user->id,
+            'reference' => $reference,
+            'amount' => $pack['amount'],
+            'currency' => 'NGN',
+            'purpose' => 'catalogue',
+            'status' => 'pending',
+        ]);
+
+        $response = Http::withToken((string) config('services.paystack.secret_key'))
+            ->acceptJson()
+            ->post('https://api.paystack.co/transaction/initialize', [
+                'email' => $user->email,
+                'amount' => $pack['amount'],
+                'currency' => 'NGN',
+                'reference' => $reference,
+                'callback_url' => $callback,
+                'metadata' => [
+                    'user_id' => $user->id,
+                    'purpose' => 'catalogue',
+                    'slots' => $pack['slots'],
+                ],
+            ]);
+
+        if (! $response->successful() || ! $response->json('status')) {
+            SubscriptionPayment::query()->where('reference', $reference)->delete();
+
+            throw new RuntimeException(
+                $response->json('message') ?? 'Could not start Paystack checkout.',
+            );
+        }
+
+        return [
+            'authorization_url' => (string) $response->json('data.authorization_url'),
+            'reference' => $reference,
+        ];
+    }
+
+    /**
+     * @return array{slots: int, amount: int, amount_label: string}
+     */
+    public function cataloguePack(): array
+    {
+        $stored = Setting::valueFor('catalogue_pack_amount');
+        $amount = is_numeric($stored)
+            ? (int) $stored
+            : (int) config('services.paystack.catalogue_pack_amount');
+        $naira = number_format($amount / 100, 2, '.', ',');
+
+        return [
+            'slots' => (int) config('services.paystack.catalogue_pack'),
+            'amount' => $amount,
+            'amount_label' => "₦{$naira}",
+        ];
+    }
+
+    public function catalogueLimit(Business $business): int
+    {
+        return (int) config('services.paystack.catalogue_free') + (int) $business->catalogue_extra;
     }
 
     public function verifyAndActivate(string $reference, ?User $expectedUser = null): User
@@ -271,6 +367,19 @@ class PaystackBilling
 
             /** @var User $user */
             $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->purpose === 'catalogue') {
+                $shop = Business::query()->where('user_id', $user->id)->lockForUpdate()->first();
+
+                if ($shop instanceof Business) {
+                    $pack = (int) config('services.paystack.catalogue_pack');
+                    $shop->forceFill([
+                        'catalogue_extra' => max(0, (int) $shop->catalogue_extra - $pack),
+                    ])->save();
+                }
+
+                return;
+            }
             $days = (int) config('services.paystack.plan_days');
 
             if ($user->subscribed_until === null) {
@@ -324,15 +433,28 @@ class PaystackBilling
 
             /** @var User $user */
             $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->firstOrFail();
-            $days = (int) config('services.paystack.plan_days');
-            $base = $user->subscribed_until !== null && $user->subscribed_until->copy()->endOfDay()->isFuture()
-                ? $user->subscribed_until->copy()
-                : now();
 
-            $user->forceFill([
-                'subscription_status' => SubscriptionStatus::Subscribed,
-                'subscribed_until' => $base->addDays($days)->toDateString(),
-            ])->save();
+            if ($locked->purpose === 'catalogue') {
+                $shop = Business::query()->where('user_id', $user->id)->lockForUpdate()->first();
+
+                if (! $shop instanceof Business) {
+                    throw new RuntimeException('Set up your shop first.');
+                }
+
+                $shop->forceFill([
+                    'catalogue_extra' => (int) $shop->catalogue_extra + (int) config('services.paystack.catalogue_pack'),
+                ])->save();
+            } else {
+                $days = (int) config('services.paystack.plan_days');
+                $base = $user->subscribed_until !== null && $user->subscribed_until->copy()->endOfDay()->isFuture()
+                    ? $user->subscribed_until->copy()
+                    : now();
+
+                $user->forceFill([
+                    'subscription_status' => SubscriptionStatus::Subscribed,
+                    'subscribed_until' => $base->addDays($days)->toDateString(),
+                ])->save();
+            }
 
             $locked->forceFill([
                 'status' => 'success',

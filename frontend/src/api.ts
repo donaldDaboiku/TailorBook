@@ -52,6 +52,7 @@ export type AdminPayment = {
   amount: number
   amount_label: string
   currency: string
+  purpose?: string
   channel: string | null
   status: PaymentStatus
   gateway_response: string | null
@@ -80,6 +81,9 @@ export type AdminShop = {
   subscription_status: SubscriptionStatus
   subscription_access: SubscriptionAccess
   subscribed_until: string | null
+  catalogue_extra?: number
+  catalogue_used?: number
+  catalogue_limit?: number
   latest_payment_status?: PaymentStatus | null
   latest_payment_at?: string | null
   payments?: AdminPayment[]
@@ -342,6 +346,69 @@ export async function sendFeedback(payload: {
   return data.message ?? 'The TailorMate admin received your message.'
 }
 
+export type ShopReview = {
+  id: string
+  rating: number
+  body: string
+  approved: boolean
+}
+
+export type PublicShopReview = {
+  shop_name: string | null
+  state: string | null
+  rating: number
+  body: string
+}
+
+export type AdminShopReview = ShopReview & {
+  shop_name: string | null
+  state: string | null
+  owner_email: string | null
+}
+
+export async function fetchShopReview(): Promise<ShopReview | null> {
+  const data = await apiJson<{ data: ShopReview | null }>('/api/review')
+
+  return data.data ?? null
+}
+
+export async function saveShopReview(input: {
+  rating: number
+  body: string
+}): Promise<ShopReview> {
+  const data = await apiJson<{ data: ShopReview; message: string }>('/api/review', {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+
+  if (!data.data?.id) {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
+export async function listAdminReviews(): Promise<AdminShopReview[]> {
+  const data = await apiJson<{ data: AdminShopReview[] }>('/api/admin/reviews')
+
+  return Array.isArray(data.data) ? data.data : []
+}
+
+export async function updateAdminReview(
+  id: string,
+  approved: boolean,
+): Promise<AdminShopReview> {
+  const data = await apiJson<{ data: AdminShopReview }>(
+    `/api/admin/reviews/${id}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({ approved }),
+    },
+  )
+
+  return data.data
+}
+
 export async function listAdminFeedback(): Promise<FeedbackNote[]> {
   const data = await apiJson<{ data: FeedbackNote[] }>('/api/admin/feedback')
 
@@ -435,15 +502,36 @@ export async function fetchMe(): Promise<User> {
   return data.data
 }
 
-export async function listAdminShops(q = ''): Promise<AdminShop[]> {
+export type AdminCatalogueOffer = {
+  free: number
+  pack: number
+  amount: number
+  amount_label: string
+}
+
+export async function listAdminShops(q = ''): Promise<{
+  shops: AdminShop[]
+  catalogue: AdminCatalogueOffer
+}> {
   const query = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''
-  const data = await apiJson<{ data: AdminShop[] }>(`/api/admin/shops${query}`)
+  const data = await apiJson<{
+    data: AdminShop[]
+    catalogue?: AdminCatalogueOffer
+  }>(`/api/admin/shops${query}`)
 
   if (!Array.isArray(data.data)) {
     throw new Error('bad response')
   }
 
-  return data.data
+  return {
+    shops: data.data,
+    catalogue: data.catalogue ?? {
+      free: 40,
+      pack: 10,
+      amount: 1000,
+      amount_label: '₦1,000.00',
+    },
+  }
 }
 
 export async function listAdminPayments(options?: {
@@ -537,6 +625,35 @@ export async function updateAdminShopState(
     {
       method: 'PUT',
       body: JSON.stringify({ state }),
+    },
+  )
+
+  return data.data
+}
+
+export async function updateAdminShopCatalogue(
+  userId: number,
+  extra: number,
+): Promise<AdminShop> {
+  const data = await apiJson<{ data: AdminShop }>(
+    `/api/admin/shops/${userId}/catalogue`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({ extra }),
+    },
+  )
+
+  return data.data
+}
+
+export async function updateAdminCataloguePrice(
+  amount: number,
+): Promise<AdminCatalogueOffer> {
+  const data = await apiJson<{ data: AdminCatalogueOffer }>(
+    '/api/admin/catalogue-price',
+    {
+      method: 'PUT',
+      body: JSON.stringify({ amount }),
     },
   )
 
@@ -984,9 +1101,38 @@ export type CatalogueStyle = {
   has_image: boolean
 }
 
-export async function fetchCatalogue(): Promise<CatalogueStyle[]> {
-  const data = await apiJson<{ data: CatalogueStyle[] }>('/api/catalogue')
-  return Array.isArray(data.data) ? data.data : []
+export type CatalogueAllowance = {
+  free: number
+  extra: number
+  limit: number
+  used: number
+  pack: number
+  pack_label: string
+  pack_enabled: boolean
+}
+
+export async function fetchCatalogue(): Promise<{
+  styles: CatalogueStyle[]
+  allowance: CatalogueAllowance
+}> {
+  const data = await apiJson<{
+    data: CatalogueStyle[]
+    allowance?: CatalogueAllowance
+  }>('/api/catalogue')
+  const styles = Array.isArray(data.data) ? data.data : []
+
+  return {
+    styles,
+    allowance: data.allowance ?? {
+      free: 40,
+      extra: 0,
+      limit: 40,
+      used: styles.length,
+      pack: 10,
+      pack_label: '₦1,000.00',
+      pack_enabled: false,
+    },
+  }
 }
 
 export async function createCatalogueStyle(input: {
@@ -1021,6 +1167,21 @@ export async function createCatalogueStyle(input: {
 
 export async function deleteCatalogueStyle(id: string): Promise<void> {
   await apiJson(`/api/catalogue/${id}`, { method: 'DELETE' })
+}
+
+export async function startCatalogueCheckout(): Promise<{
+  authorization_url: string
+  reference: string
+}> {
+  const data = await apiJson<{
+    data: { authorization_url: string; reference: string }
+  }>('/api/catalogue/extra', { method: 'POST' })
+
+  if (!data.data?.authorization_url || !data.data.reference) {
+    throw new Error('bad response')
+  }
+
+  return data.data
 }
 
 export async function fetchCatalogueImage(id: string): Promise<string | null> {

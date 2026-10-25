@@ -52,6 +52,9 @@ return [
         'plan_days' => (int) env('PAYSTACK_PLAN_DAYS', 30),
         'trial_days' => (int) env('TRIAL_DAYS', 14),
         'plan_label' => env('PAYSTACK_PLAN_LABEL', 'Monthly shop plan'),
+        'catalogue_free' => 40,
+        'catalogue_pack' => 10,
+        'catalogue_pack_amount' => 100000,
         'callback_url' => rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/').'/?billing=1',
     ],
 

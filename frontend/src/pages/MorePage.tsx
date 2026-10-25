@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../auth'
 import { LanguageSelect, useI18n } from '../i18n'
 import CommunityPanel from './CommunityPanel'
+import ShopReviewCard from './ShopReviewCard'
 import MeasurementFieldsSettings from './MeasurementFieldsSettings'
 import SubscriptionBillingCard from './SubscriptionBillingCard'
 
@@ -245,6 +246,8 @@ export default function MorePage({
           Open tutorial
         </button>
       </section>
+
+      <ShopReviewCard />
 
       <CommunityPanel
         defaultName={user?.name ?? ''}

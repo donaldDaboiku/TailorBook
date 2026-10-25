@@ -15,6 +15,7 @@ class SubscriptionPayment extends Model
         'reference',
         'amount',
         'currency',
+        'purpose',
         'channel',
         'gateway_response',
         'failure_message',

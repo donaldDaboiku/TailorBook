@@ -9,8 +9,11 @@ use App\Http\Requests\Admin\ResetShopPasswordRequest;
 use App\Http\Requests\Admin\UpdateShopStateRequest;
 use App\Http\Requests\Admin\UpdateShopSubscriptionRequest;
 use App\Models\Business;
+use App\Models\CatalogueItem;
+use App\Models\Setting;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
+use App\Services\PaystackBilling;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -45,19 +48,31 @@ class ShopController extends Controller
             ->groupBy('user_id')
             ->map(fn ($rows) => $rows->take(5)->values());
 
+        $businessIds = $users->map(fn (User $user) => $user->business?->id)->filter()->values();
+        $usedByBusiness = CatalogueItem::query()
+            ->whereIn('business_id', $businessIds)
+            ->selectRaw('business_id, count(*) as aggregate')
+            ->groupBy('business_id')
+            ->pluck('aggregate', 'business_id');
+
         $shops = $users
-            ->map(function (User $user) use ($paymentsByUser) {
+            ->map(function (User $user) use ($paymentsByUser, $usedByBusiness) {
                 $user->setRelation(
                     'subscriptionPayments',
                     $paymentsByUser->get($user->id, collect()),
                 );
 
-                return $this->shopPayload($user);
+                $used = $user->business
+                    ? (int) $usedByBusiness->get($user->business->id, 0)
+                    : 0;
+
+                return $this->shopPayload($user, $used);
             })
             ->values();
 
         return response()->json([
             'data' => $shops,
+            'catalogue' => $this->catalogueOffer(),
         ]);
     }
 
@@ -127,6 +142,44 @@ class ShopController extends Controller
         ]);
     }
 
+    public function updateCatalogue(Request $request, User $user): JsonResponse
+    {
+        abort_unless($user->role === UserRole::Tailor, 404);
+
+        $data = $request->validate([
+            'extra' => ['required', 'integer', 'min:0', 'max:500'],
+        ]);
+
+        $business = $user->business;
+        abort_unless($business instanceof Business, 422, 'This account has no shop yet.');
+
+        $business->forceFill([
+            'catalogue_extra' => (int) $data['extra'],
+        ])->save();
+
+        return response()->json([
+            'message' => 'Catalogue allowance updated.',
+            'data' => $this->shopPayload($user->fresh()->load('business')),
+        ]);
+    }
+
+    public function updateCataloguePrice(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'amount' => ['required', 'integer', 'min:1', 'max:100000'],
+        ]);
+
+        Setting::query()->updateOrCreate(
+            ['key' => 'catalogue_pack_amount'],
+            ['value' => (string) ((int) $data['amount'] * 100)],
+        );
+
+        return response()->json([
+            'message' => 'Catalogue price updated.',
+            'data' => $this->catalogueOffer(),
+        ]);
+    }
+
     public function resetPassword(
         ResetShopPasswordRequest $request,
         User $user,
@@ -147,13 +200,37 @@ class ShopController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function shopPayload(User $user): array
+    /**
+     * @return array{free: int, pack: int, amount: int, amount_label: string}
+     */
+    private function catalogueOffer(): array
+    {
+        $pack = app(PaystackBilling::class)->cataloguePack();
+
+        return [
+            'free' => (int) config('services.paystack.catalogue_free'),
+            'pack' => $pack['slots'],
+            'amount' => (int) ($pack['amount'] / 100),
+            'amount_label' => $pack['amount_label'],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function shopPayload(User $user, ?int $used = null): array
     {
         $payments = $user->relationLoaded('subscriptionPayments')
             ? $user->subscriptionPayments
             : $user->subscriptionPayments()->orderByDesc('created_at')->limit(5)->get();
 
         $latest = $payments->first();
+        $extra = (int) ($user->business?->catalogue_extra ?? 0);
+        $free = (int) config('services.paystack.catalogue_free');
+
+        if ($used === null && $user->business !== null) {
+            $used = CatalogueItem::query()->where('business_id', $user->business->id)->count();
+        }
 
         return [
             'id' => $user->id,
@@ -170,6 +247,9 @@ class ShopController extends Controller
             'subscription_status' => $user->subscription_status?->value ?? 'free',
             'subscription_access' => $user->subscriptionAccessStatus(),
             'subscribed_until' => $user->subscribed_until?->toDateString(),
+            'catalogue_extra' => $extra,
+            'catalogue_used' => $used ?? 0,
+            'catalogue_limit' => $free + $extra,
             'latest_payment_status' => $latest?->status,
             'latest_payment_at' => $latest?->created_at?->toIso8601String(),
             'payments' => $payments

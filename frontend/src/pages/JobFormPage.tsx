@@ -25,9 +25,9 @@ export default function JobFormPage({
     let cancelled = false
 
     fetchCatalogue()
-      .then((rows) => {
+      .then((list) => {
         if (!cancelled) {
-          setStyles(rows)
+          setStyles(list.styles)
         }
       })
       .catch(() => {

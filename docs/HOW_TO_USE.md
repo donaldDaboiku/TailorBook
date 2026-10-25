@@ -172,7 +172,7 @@ Tap **Save shop**.
 
 ### Design catalogue
 
-**More → Open catalogue.** Add a style with a name, the usual price, and an optional photo. On **Add job**, tap that style to fill the outfit and the amount. Remove a style to replace it. A shop can keep up to 40 styles.
+**More → Open catalogue.** Add a style with a name, the usual price, and an optional photo. On **Add job**, tap that style to fill the outfit and the amount. Remove a style to replace it. The first 40 styles are free. After that, every 10 more styles cost ₦1,000.
 
 ### Measurement fields
 

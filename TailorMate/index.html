@@ -340,7 +340,21 @@
         const quote = document.createElement('p')
         quote.textContent = row.body || ''
         const who = document.createElement('strong')
-        who.textContent = (row.shop_name || 'A shop') + (row.state ? ' · ' + row.state : '')
+        let when = ''
+        if (row.submitted_at) {
+          const date = new Date(row.submitted_at)
+          if (!Number.isNaN(date.getTime())) {
+            when = date.toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })
+          }
+        }
+        who.textContent =
+          (row.shop_name || 'A shop') +
+          (row.state ? ' · ' + row.state : '') +
+          (when ? ' · ' + when : '')
         article.append(stars, quote, who)
         list.append(article)
       }

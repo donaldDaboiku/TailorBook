@@ -7,6 +7,7 @@ use App\Models\Business;
 use App\Models\ShopReview;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class ShopReviewController extends Controller
 {
@@ -27,18 +28,29 @@ class ShopReviewController extends Controller
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
             'body' => ['required', 'string', 'max:400'],
         ]);
+        $body = trim($data['body']);
+
+        if ($body === '') {
+            throw ValidationException::withMessages([
+                'body' => 'Tell us how TailorMate helps your shop.',
+            ]);
+        }
 
         $review = ShopReview::query()->updateOrCreate(
             ['business_id' => $business->id],
             [
                 'rating' => (int) $data['rating'],
-                'body' => trim($data['body']),
-                'approved' => false,
+                'body' => $body,
+                'status' => 'pending',
+                'submitted_at' => now(),
+                'moderated_at' => null,
+                'moderated_by' => null,
+                'rejection_reason' => null,
             ],
         );
 
         return response()->json([
-            'message' => 'Saved. It stays off the site until the admin posts it.',
+            'message' => 'Submitted. Status: Pending.',
             'data' => $this->payload($review),
         ]);
     }
@@ -52,8 +64,10 @@ class ShopReviewController extends Controller
             'id' => $review->id,
             'rating' => $review->rating,
             'body' => $review->body,
-            'approved' => $review->approved,
-            'updated_at' => $review->updated_at?->toIso8601String(),
+            'status' => $review->status,
+            'status_label' => $review->statusLabel(),
+            'rejection_reason' => $review->rejection_reason,
+            'submitted_at' => $review->submitted_at?->toIso8601String(),
         ];
     }
 

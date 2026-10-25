@@ -346,11 +346,16 @@ export async function sendFeedback(payload: {
   return data.message ?? 'The TailorMate admin received your message.'
 }
 
+export type ReviewStatus = 'pending' | 'published' | 'rejected'
+
 export type ShopReview = {
   id: string
   rating: number
   body: string
-  approved: boolean
+  status: ReviewStatus
+  status_label: string
+  rejection_reason: string | null
+  submitted_at: string | null
 }
 
 export type PublicShopReview = {
@@ -358,12 +363,14 @@ export type PublicShopReview = {
   state: string | null
   rating: number
   body: string
+  submitted_at: string | null
 }
 
 export type AdminShopReview = ShopReview & {
   shop_name: string | null
   state: string | null
   owner_email: string | null
+  moderated_at: string | null
 }
 
 export async function fetchShopReview(): Promise<ShopReview | null> {
@@ -396,13 +403,14 @@ export async function listAdminReviews(): Promise<AdminShopReview[]> {
 
 export async function updateAdminReview(
   id: string,
-  approved: boolean,
+  action: 'approve' | 'reject' | 'hide',
+  reason?: string,
 ): Promise<AdminShopReview> {
   const data = await apiJson<{ data: AdminShopReview }>(
     `/api/admin/reviews/${id}`,
     {
       method: 'PUT',
-      body: JSON.stringify({ approved }),
+      body: JSON.stringify({ action, reason: reason ?? null }),
     },
   )
 

@@ -17,6 +17,7 @@ import {
   type AdminCatalogueOffer,
   type AdminPayment,
   type AdminShopReview,
+  type ReviewStatus,
   type FeedbackNote,
   type AdminShop,
   type PaymentStatus,
@@ -30,6 +31,8 @@ export default function AdminShopsPage() {
   const [payments, setPayments] = useState<AdminPayment[]>([])
   const [feedback, setFeedback] = useState<FeedbackNote[]>([])
   const [reviews, setReviews] = useState<AdminShopReview[]>([])
+  const [reviewQuery, setReviewQuery] = useState('')
+  const [reviewStatus, setReviewStatus] = useState<ReviewStatus | ''>('')
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [q, setQ] = useState('')
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | ''>('')
@@ -206,11 +209,15 @@ export default function AdminShopsPage() {
     }
   }
 
-  async function onToggleReview(review: AdminShopReview) {
+  async function onModerate(
+    review: AdminShopReview,
+    action: 'approve' | 'reject' | 'hide',
+    reason?: string,
+  ) {
     setError('')
 
     try {
-      const updated = await updateAdminReview(review.id, !review.approved)
+      const updated = await updateAdminReview(review.id, action, reason)
       setReviews((current) =>
         current.map((row) => (row.id === updated.id ? updated : row)),
       )
@@ -218,6 +225,21 @@ export default function AdminShopsPage() {
       setError(firstError(err))
     }
   }
+
+  const visibleReviews = reviews.filter((review) => {
+    if (reviewStatus && review.status !== reviewStatus) {
+      return false
+    }
+
+    const needle = reviewQuery.trim().toLowerCase()
+    if (!needle) {
+      return true
+    }
+
+    return `${review.shop_name ?? ''} ${review.owner_email ?? ''} ${review.body}`
+      .toLowerCase()
+      .includes(needle)
+  })
 
   async function onSaveCatalogue(shop: AdminShop, extra: number) {
     setActionId(shop.id)
@@ -399,29 +421,45 @@ export default function AdminShopsPage() {
             <span className="status">{reviews.length}</span>
           </div>
           <p className="status">
-            Choose which shop reviews appear on the TailorMate site.
+            Approve a review to put it on the TailorMate site. Reject or hide
+            keeps it off the site.
           </p>
+          <div className="form">
+            <label>
+              Search reviews
+              <input
+                value={reviewQuery}
+                onChange={(event) => setReviewQuery(event.target.value)}
+                placeholder="Shop, email, or words"
+              />
+            </label>
+            <label>
+              Status
+              <select
+                value={reviewStatus}
+                onChange={(event) =>
+                  setReviewStatus(event.target.value as ReviewStatus | '')
+                }
+              >
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="published">Published</option>
+                <option value="rejected">Not approved</option>
+              </select>
+            </label>
+          </div>
           {reviews.length === 0 ? (
             <p className="status">No shop reviews yet.</p>
+          ) : visibleReviews.length === 0 ? (
+            <p className="status">No reviews match this search.</p>
           ) : (
             <ul className="plain-list">
-              {reviews.map((review) => (
-                <li key={review.id}>
-                  <strong>{review.shop_name ?? 'Shop'}</strong>
-                  {review.state ? ` · ${review.state}` : ''}
-                  {review.owner_email ? ` · ${review.owner_email}` : ''}
-                  <br />
-                  {'★'.repeat(review.rating)}
-                  {'☆'.repeat(Math.max(0, 5 - review.rating))} {review.body}
-                  <br />
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => void onToggleReview(review)}
-                  >
-                    {review.approved ? 'Hide from the site' : 'Show on the site'}
-                  </button>
-                </li>
+              {visibleReviews.map((review) => (
+                <ReviewRow
+                  key={review.id}
+                  review={review}
+                  onModerate={onModerate}
+                />
               ))}
             </ul>
           )}
@@ -944,4 +982,107 @@ function paymentBadgeClass(status: PaymentStatus): string {
     return 'badge ok'
   }
   return 'badge'
+}
+
+function reviewDate(iso: string | null): string {
+  if (!iso) {
+    return ''
+  }
+
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function ReviewRow({
+  review,
+  onModerate,
+}: {
+  review: AdminShopReview
+  onModerate: (
+    review: AdminShopReview,
+    action: 'approve' | 'reject' | 'hide',
+    reason?: string,
+  ) => Promise<void>
+}) {
+  const [reason, setReason] = useState(review.rejection_reason ?? '')
+  const [busy, setBusy] = useState(false)
+  const submitted = reviewDate(review.submitted_at)
+
+  useEffect(() => {
+    setReason(review.rejection_reason ?? '')
+  }, [review.rejection_reason, review.status])
+
+  async function run(action: 'approve' | 'reject' | 'hide') {
+    setBusy(true)
+    await onModerate(review, action, reason)
+    setBusy(false)
+  }
+
+  return (
+    <li>
+      <strong>{review.shop_name ?? 'Shop'}</strong>
+      {review.state ? ` · ${review.state}` : ''}
+      {review.owner_email ? ` · ${review.owner_email}` : ''}
+      <br />
+      {'★'.repeat(review.rating)}
+      {'☆'.repeat(Math.max(0, 5 - review.rating))} {review.body}
+      <br />
+      <span className="status">
+        {review.status_label}
+        {submitted ? ` · ${submitted}` : ''}
+        {review.rejection_reason ? ` · ${review.rejection_reason}` : ''}
+      </span>
+      <div className="form">
+        <label>
+          Reason if not approved
+          <input
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            maxLength={200}
+            placeholder="Optional"
+          />
+        </label>
+      </div>
+      <div className="home-actions">
+        {review.status !== 'published' && (
+          <button
+            type="button"
+            className="secondary"
+            disabled={busy}
+            onClick={() => void run('approve')}
+          >
+            Approve
+          </button>
+        )}
+        {review.status !== 'rejected' && (
+          <button
+            type="button"
+            className="secondary"
+            disabled={busy}
+            onClick={() => void run('reject')}
+          >
+            Reject
+          </button>
+        )}
+        {review.status === 'published' && (
+          <button
+            type="button"
+            className="secondary"
+            disabled={busy}
+            onClick={() => void run('hide')}
+          >
+            Hide
+          </button>
+        )}
+      </div>
+    </li>
+  )
 }

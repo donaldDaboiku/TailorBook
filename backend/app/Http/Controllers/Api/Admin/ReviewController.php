@@ -9,11 +9,29 @@ use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $status = (string) $request->query('status', '');
+        $term = trim((string) $request->query('q', ''));
+
         $rows = ShopReview::query()
             ->with('business.user:id,name,email')
-            ->orderByDesc('updated_at')
+            ->when(in_array($status, ['pending', 'published', 'rejected'], true), function ($query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->when($term !== '', function ($query) use ($term) {
+                $like = '%'.$term.'%';
+                $query->where(function ($inner) use ($like) {
+                    $inner->where('body', 'ilike', $like)
+                        ->orWhereHas('business', function ($business) use ($like) {
+                            $business->where('name', 'ilike', $like)
+                                ->orWhereHas('user', function ($user) use ($like) {
+                                    $user->where('email', 'ilike', $like);
+                                });
+                        });
+                });
+            })
+            ->orderByDesc('submitted_at')
             ->limit(100)
             ->get()
             ->map(fn (ShopReview $review) => $this->payload($review))
@@ -27,18 +45,33 @@ class ReviewController extends Controller
     public function update(Request $request, ShopReview $shopReview): JsonResponse
     {
         $data = $request->validate([
-            'approved' => ['required', 'boolean'],
+            'action' => ['required', 'in:approve,reject,hide'],
+            'reason' => ['nullable', 'string', 'max:200'],
         ]);
+        $reason = trim((string) ($data['reason'] ?? ''));
+
+        $status = match ($data['action']) {
+            'approve' => 'published',
+            'reject' => 'rejected',
+            default => 'pending',
+        };
 
         $shopReview->forceFill([
-            'approved' => $data['approved'],
+            'status' => $status,
+            'rejection_reason' => $status === 'rejected' && $reason !== '' ? $reason : null,
+            'moderated_at' => now(),
+            'moderated_by' => $request->user()?->id,
         ])->save();
         $shopReview->load('business.user:id,name,email');
 
+        $message = match ($status) {
+            'published' => 'This review is on the site.',
+            'rejected' => 'This review was not approved.',
+            default => 'This review is hidden.',
+        };
+
         return response()->json([
-            'message' => $shopReview->approved
-                ? 'This review is on the site.'
-                : 'This review is hidden.',
+            'message' => $message,
             'data' => $this->payload($shopReview),
         ]);
     }
@@ -57,8 +90,11 @@ class ReviewController extends Controller
             'owner_email' => $business?->user?->email,
             'rating' => $review->rating,
             'body' => $review->body,
-            'approved' => $review->approved,
-            'updated_at' => $review->updated_at?->toIso8601String(),
+            'status' => $review->status,
+            'status_label' => $review->statusLabel(),
+            'rejection_reason' => $review->rejection_reason,
+            'submitted_at' => $review->submitted_at?->toIso8601String(),
+            'moderated_at' => $review->moderated_at?->toIso8601String(),
         ];
     }
 }

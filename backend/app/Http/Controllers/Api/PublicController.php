@@ -72,9 +72,9 @@ class PublicController extends Controller
     public function reviews(): JsonResponse
     {
         $rows = ShopReview::query()
-            ->where('approved', true)
+            ->where('status', 'published')
             ->with('business:id,name,state')
-            ->orderByDesc('updated_at')
+            ->orderByDesc('submitted_at')
             ->limit(20)
             ->get()
             ->map(fn (ShopReview $review) => [
@@ -82,6 +82,7 @@ class PublicController extends Controller
                 'state' => $review->business?->state,
                 'rating' => $review->rating,
                 'body' => $review->body,
+                'submitted_at' => $review->submitted_at?->toIso8601String(),
             ])
             ->values();
 

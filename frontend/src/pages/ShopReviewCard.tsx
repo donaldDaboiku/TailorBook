@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { fetchShopReview, firstError, saveShopReview } from '../api'
+import { fetchShopReview, firstError, saveShopReview, type ShopReview } from '../api'
 
 export default function ShopReviewCard() {
-  const [rating, setRating] = useState(5)
+  const [rating, setRating] = useState(0)
   const [body, setBody] = useState('')
-  const [approved, setApproved] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [review, setReview] = useState<ShopReview | null>(null)
+  const [loading, setLoading] = useState(true)
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -14,16 +14,24 @@ export default function ShopReviewCard() {
     let cancelled = false
 
     fetchShopReview()
-      .then((review) => {
-        if (cancelled || !review) {
+      .then((saved) => {
+        if (cancelled || !saved) {
           return
         }
-        setRating(review.rating)
-        setBody(review.body)
-        setApproved(review.approved)
-        setSaved(true)
+        setReview(saved)
+        setRating(saved.rating)
+        setBody(saved.body)
       })
-      .catch(() => {})
+      .catch((err) => {
+        if (!cancelled) {
+          setError(firstError(err))
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      })
 
     return () => {
       cancelled = true
@@ -32,15 +40,25 @@ export default function ShopReviewCard() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
-    setBusy(true)
     setError('')
     setNote('')
 
+    if (rating < 1) {
+      setError('Choose a star rating.')
+      return
+    }
+
+    if (body.trim() === '') {
+      setError('Tell us how TailorMate helps your shop.')
+      return
+    }
+
+    setBusy(true)
+
     try {
-      const review = await saveShopReview({ rating, body })
-      setApproved(review.approved)
-      setSaved(true)
-      setNote('Saved. It stays off the site until the admin posts it.')
+      const saved = await saveShopReview({ rating, body: body.trim() })
+      setReview(saved)
+      setNote('Submitted. Status: Pending.')
     } catch (err) {
       setError(firstError(err))
     } finally {
@@ -50,21 +68,24 @@ export default function ShopReviewCard() {
 
   return (
     <section className="card muted-card">
-      <h2 className="section-title">Your review</h2>
+      <h2 className="section-title">Review TailorMate</h2>
       <p className="status">
-        Say what TailorMate does for your shop. The admin chooses which
-        reviews appear on the TailorMate site. Your shop name is shown with
-        the review.
+        Help other tailors discover how TailorMate can improve their business.
       </p>
-      {saved && (
+      <p className="status">
+        Your shop name appears on the TailorMate site if this review is approved.
+      </p>
+      {loading && <p className="status">Loading your review…</p>}
+      {!loading && review && (
         <p className="status">
-          {approved
-            ? 'This review is on the TailorMate site.'
-            : 'Waiting for the admin to post this review.'}
+          Status: {review.status_label}
+          {review.status === 'rejected' && review.rejection_reason
+            ? `. ${review.rejection_reason}`
+            : ''}
         </p>
       )}
       <form className="form" onSubmit={(event) => void onSubmit(event)}>
-        <div className="star-pick" role="group" aria-label="Rating">
+        <div className="star-pick" role="group" aria-label="Rating from 1 to 5 stars">
           {[1, 2, 3, 4, 5].map((value) => (
             <button
               key={value}
@@ -84,7 +105,7 @@ export default function ShopReviewCard() {
             onChange={(event) => setBody(event.target.value)}
             maxLength={400}
             required
-            placeholder="What should other tailors know?"
+            placeholder="Tell us how TailorMate helps you manage your tailoring business..."
           />
         </label>
         {error && (
@@ -93,8 +114,8 @@ export default function ShopReviewCard() {
           </p>
         )}
         {note && <p className="status">{note}</p>}
-        <button type="submit" className="secondary" disabled={busy}>
-          {busy ? 'Saving…' : 'Save review'}
+        <button type="submit" className="secondary" disabled={busy || loading}>
+          {busy ? 'Submitting…' : 'Submit Review'}
         </button>
       </form>
     </section>

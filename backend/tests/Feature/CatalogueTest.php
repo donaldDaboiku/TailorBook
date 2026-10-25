@@ -223,4 +223,34 @@ class CatalogueTest extends TestCase
         $this->assertSame([], Storage::disk('local')->allFiles());
         $this->assertSame(0, CatalogueItem::query()->count());
     }
+
+    public function test_a_style_can_keep_front_back_and_side_photos(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        Business::factory()->create(['user_id' => $user->id]);
+        Sanctum::actingAs($user);
+
+        $created = $this->post('/api/catalogue', [
+            'name' => 'Agbada',
+            'price' => '80000',
+            'image' => UploadedFile::fake()->image('front.jpg', 40, 40),
+            'image_back' => UploadedFile::fake()->image('back.jpg', 40, 40),
+            'image_side' => UploadedFile::fake()->image('side.jpg', 40, 40),
+        ])->assertCreated()
+            ->assertJsonPath('data.has_image', true)
+            ->assertJsonPath('data.has_back', true)
+            ->assertJsonPath('data.has_side', true);
+
+        $id = $created->json('data.id');
+        $this->assertCount(3, Storage::disk('local')->allFiles());
+        $this->get('/api/catalogue/'.$id.'/image')->assertOk();
+        $this->get('/api/catalogue/'.$id.'/image?view=back')->assertOk();
+        $this->get('/api/catalogue/'.$id.'/image?view=side')->assertOk();
+        $this->get('/api/catalogue/'.$id.'/image?view=top')->assertNotFound();
+
+        $this->deleteJson('/api/catalogue/'.$id)->assertOk();
+        $this->assertSame([], Storage::disk('local')->allFiles());
+    }
 }

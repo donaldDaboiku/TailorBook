@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react'
 import { fetchCatalogueImage } from './api'
 
-export default function StylePhoto({ id }: { id: string }) {
+export default function StylePhoto({
+  id,
+  view = 'front',
+}: {
+  id: string
+  view?: 'front' | 'back' | 'side'
+}) {
   const [src, setSrc] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
     let objectUrl: string | null = null
 
-    fetchCatalogueImage(id)
+    fetchCatalogueImage(id, view)
       .then((url) => {
         if (!active) {
           if (url) {
@@ -32,7 +38,7 @@ export default function StylePhoto({ id }: { id: string }) {
         URL.revokeObjectURL(objectUrl)
       }
     }
-  }, [id])
+  }, [id, view])
 
   if (!src) {
     return null

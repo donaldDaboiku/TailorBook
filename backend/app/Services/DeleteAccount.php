@@ -50,8 +50,8 @@ class DeleteAccount
             ->where('business_id', $businessId)
             ->get()
             ->each(function (CatalogueItem $item): void {
-                if (filled($item->image_path)) {
-                    Storage::disk('local')->delete($item->image_path);
+                foreach ($item->storedImages() as $path) {
+                    Storage::disk('local')->delete($path);
                 }
                 $item->delete();
             });

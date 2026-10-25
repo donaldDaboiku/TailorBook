@@ -260,23 +260,36 @@ p {
 }
 
 .style-card {
-  display: grid;
-  grid-template-columns: 5.5rem 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 0.7rem;
-  align-items: center;
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 0.6rem;
   background: #fff;
 }
 
+.style-angles {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.style-angles figure {
+  margin: 0;
+  width: 5.5rem;
+}
+
+.style-angles figcaption {
+  display: block;
+  margin-top: 0.2rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 .style-card img {
   width: 5.5rem;
   height: 5.5rem;
-}
-
-.style-card button {
-  grid-column: 1 / -1;
 }
 
 .receipt-link {
@@ -496,6 +509,25 @@ p {
   gap: 0.55rem;
   min-height: 44px;
   font-weight: 500;
+}
+
+.star-pick {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.star-pick button {
+  border: 0;
+  background: transparent;
+  color: #b8c0ba;
+  font-size: 1.7rem;
+  line-height: 1;
+  padding: 0.1rem;
+  cursor: pointer;
+}
+
+.star-pick button[aria-pressed='true'] {
+  color: #d59c28;
 }
 
 .primary,

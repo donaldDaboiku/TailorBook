@@ -15,7 +15,21 @@ class CatalogueItem extends Model
         'name',
         'price',
         'image_path',
+        'image_back_path',
+        'image_side_path',
     ];
+
+    /**
+     * @return list<string>
+     */
+    public function storedImages(): array
+    {
+        return array_values(array_filter([
+            $this->image_path,
+            $this->image_back_path,
+            $this->image_side_path,
+        ], fn (mixed $path): bool => is_string($path) && $path !== ''));
+    }
 
     /**
      * @return array<string, string>

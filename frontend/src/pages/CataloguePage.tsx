@@ -15,7 +15,9 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
   const [allowance, setAllowance] = useState<CatalogueAllowance | null>(null)
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
-  const [image, setImage] = useState<File | null>(null)
+  const [front, setFront] = useState<File | null>(null)
+  const [back, setBack] = useState<File | null>(null)
+  const [side, setSide] = useState<File | null>(null)
   const [imageKey, setImageKey] = useState(0)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -53,8 +55,18 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
     setError('')
 
     try {
-      const photo = image ? await shrinkStylePhoto(image).catch(() => image) : null
-      const saved = await createCatalogueStyle({ name, price, image: photo })
+      const [photo, photoBack, photoSide] = await Promise.all([
+        shrinkOrNull(front),
+        shrinkOrNull(back),
+        shrinkOrNull(side),
+      ])
+      const saved = await createCatalogueStyle({
+        name,
+        price,
+        image: photo,
+        imageBack: photoBack,
+        imageSide: photoSide,
+      })
       setStyles((current) =>
         [...current, saved].sort((a, b) => a.name.localeCompare(b.name)),
       )
@@ -63,7 +75,9 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
       )
       setName('')
       setPrice('')
-      setImage(null)
+      setFront(null)
+      setBack(null)
+      setSide(null)
       setImageKey((current) => current + 1)
     } catch (err) {
       setError(firstError(err))
@@ -106,9 +120,9 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
       </button>
       <h1>Design catalogue</h1>
       <p className="lede">
-        Styles for this shop. A photo, a name, and the usual price. On a new
-        job, tap a style to fill the outfit and the amount. The first 40 are
-        free. After that, 10 more cost ₦1,000.
+        Styles for this shop. Front, back, and side photos, a name, and the
+        usual price. On a new job, tap a style to fill the outfit and the
+        amount. The first 40 are free. After that, 10 more cost ₦1,000.
       </p>
 
       {allowance && allowance.used >= allowance.limit && (
@@ -155,12 +169,30 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
           />
         </label>
         <label>
-          Photo
+          Front
           <input
-            key={imageKey}
+            key={`front-${imageKey}`}
             type="file"
             accept="image/png,image/jpeg,image/webp"
-            onChange={(event) => setImage(event.target.files?.[0] ?? null)}
+            onChange={(event) => setFront(event.target.files?.[0] ?? null)}
+          />
+        </label>
+        <label>
+          Back
+          <input
+            key={`back-${imageKey}`}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(event) => setBack(event.target.files?.[0] ?? null)}
+          />
+        </label>
+        <label>
+          Side
+          <input
+            key={`side-${imageKey}`}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(event) => setSide(event.target.files?.[0] ?? null)}
           />
         </label>
         {error && (
@@ -182,7 +214,28 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
       <ul className="style-list">
         {styles.map((style) => (
           <li key={style.id} className="style-card">
-            {style.has_image && <StylePhoto id={style.id} />}
+            {(style.has_image || style.has_back || style.has_side) && (
+              <div className="style-angles">
+                {style.has_image && (
+                  <figure>
+                    <StylePhoto id={style.id} />
+                    <figcaption>Front</figcaption>
+                  </figure>
+                )}
+                {style.has_back && (
+                  <figure>
+                    <StylePhoto id={style.id} view="back" />
+                    <figcaption>Back</figcaption>
+                  </figure>
+                )}
+                {style.has_side && (
+                  <figure>
+                    <StylePhoto id={style.id} view="side" />
+                    <figcaption>Side</figcaption>
+                  </figure>
+                )}
+              </div>
+            )}
             <div>
               <strong>{style.name}</strong>
               <span className="status">{style.price_label}</span>
@@ -199,6 +252,14 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
       </ul>
     </section>
   )
+}
+
+async function shrinkOrNull(file: File | null): Promise<File | null> {
+  if (!file) {
+    return null
+  }
+
+  return shrinkStylePhoto(file).catch(() => file)
 }
 
 async function shrinkStylePhoto(file: File): Promise<File> {

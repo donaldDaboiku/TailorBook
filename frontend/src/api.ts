@@ -1099,6 +1099,8 @@ export type CatalogueStyle = {
   price: string
   price_label: string
   has_image: boolean
+  has_back: boolean
+  has_side: boolean
 }
 
 export type CatalogueAllowance = {
@@ -1139,12 +1141,20 @@ export async function createCatalogueStyle(input: {
   name: string
   price: string
   image?: File | null
+  imageBack?: File | null
+  imageSide?: File | null
 }): Promise<CatalogueStyle> {
   const body = new FormData()
   body.append('name', input.name.trim())
   body.append('price', input.price)
   if (input.image) {
     body.append('image', input.image)
+  }
+  if (input.imageBack) {
+    body.append('image_back', input.imageBack)
+  }
+  if (input.imageSide) {
+    body.append('image_side', input.imageSide)
   }
 
   const response = await fetch(apiUrl('/api/catalogue'), {
@@ -1184,8 +1194,12 @@ export async function startCatalogueCheckout(): Promise<{
   return data.data
 }
 
-export async function fetchCatalogueImage(id: string): Promise<string | null> {
-  const response = await fetch(apiUrl(`/api/catalogue/${id}/image`), {
+export async function fetchCatalogueImage(
+  id: string,
+  view: 'front' | 'back' | 'side' = 'front',
+): Promise<string | null> {
+  const query = view === 'front' ? '' : `?view=${view}`
+  const response = await fetch(apiUrl(`/api/catalogue/${id}/image${query}`), {
     headers: authHeaders(),
   })
 

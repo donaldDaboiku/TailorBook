@@ -43,6 +43,8 @@ class CatalogueController extends Controller
             'name' => ['required', 'string', 'max:80'],
             'price' => ['required', 'numeric', 'min:1'],
             'image' => ['nullable', 'image', 'max:800'],
+            'image_back' => ['nullable', 'image', 'max:800'],
+            'image_side' => ['nullable', 'image', 'max:800'],
         ]);
 
         $item = DB::transaction(function () use ($business, $data) {
@@ -106,15 +108,14 @@ class CatalogueController extends Controller
     {
         $business = $this->business($request);
         abort_unless($catalogueItem->business_id === $business->id, 404);
-        abort_unless(
-            filled($catalogueItem->image_path) && Storage::disk('local')->exists($catalogueItem->image_path),
-            404,
-        );
+
+        $path = $this->imagePath($catalogueItem, (string) $request->query('view', 'front'));
+        abort_unless(filled($path) && Storage::disk('local')->exists($path), 404);
 
         $disk = Storage::disk('local');
         abort_unless($disk instanceof FilesystemAdapter, 404);
 
-        return $disk->response($catalogueItem->image_path);
+        return $disk->response($path);
     }
 
     public function destroy(Request $request, CatalogueItem $catalogueItem): JsonResponse
@@ -122,8 +123,8 @@ class CatalogueController extends Controller
         $business = $this->business($request);
         abort_unless($catalogueItem->business_id === $business->id, 404);
 
-        if (filled($catalogueItem->image_path)) {
-            Storage::disk('local')->delete($catalogueItem->image_path);
+        foreach ($catalogueItem->storedImages() as $path) {
+            Storage::disk('local')->delete($path);
         }
 
         $catalogueItem->delete();
@@ -133,28 +134,62 @@ class CatalogueController extends Controller
 
     private function attachImage(CatalogueItem $item, Request $request): void
     {
-        $file = $request->file('image');
-
-        if ($file === null) {
-            return;
-        }
-
-        $path = $file->store('catalogue', 'local');
-
-        if (! is_string($path)) {
-            $item->delete();
-
-            abort(422, 'The photo could not be saved.');
-        }
+        $slots = [
+            'image' => 'image_path',
+            'image_back' => 'image_back_path',
+            'image_side' => 'image_side_path',
+        ];
+        $stored = [];
 
         try {
-            $item->forceFill(['image_path' => $path])->save();
+            foreach ($slots as $field => $column) {
+                $file = $request->file($field);
+
+                if ($file === null) {
+                    continue;
+                }
+
+                $path = $file->store('catalogue', 'local');
+
+                if (! is_string($path)) {
+                    throw new RuntimeException('The photo could not be saved.');
+                }
+
+                $stored[$column] = $path;
+            }
+
+            if ($stored !== []) {
+                $item->forceFill($stored)->save();
+            }
         } catch (\Throwable $exception) {
-            Storage::disk('local')->delete($path);
+            foreach ($stored as $path) {
+                Storage::disk('local')->delete($path);
+            }
             $item->delete();
+
+            if ($exception instanceof RuntimeException && $exception->getMessage() === 'The photo could not be saved.') {
+                abort(422, $exception->getMessage());
+            }
 
             throw $exception;
         }
+    }
+
+    private function imageExists(mixed $path): bool
+    {
+        return is_string($path) && $path !== '' && Storage::disk('local')->exists($path);
+    }
+
+    private function imagePath(CatalogueItem $item, string $view): ?string
+    {
+        $path = match ($view) {
+            'front' => $item->image_path,
+            'back' => $item->image_back_path,
+            'side' => $item->image_side_path,
+            default => null,
+        };
+
+        return is_string($path) && $path !== '' ? $path : null;
     }
 
     /**
@@ -167,7 +202,9 @@ class CatalogueController extends Controller
             'name' => $item->name,
             'price' => (string) $item->price,
             'price_label' => Money::format((string) $item->price, $currency),
-            'has_image' => filled($item->image_path) && Storage::disk('local')->exists($item->image_path),
+            'has_image' => $this->imageExists($item->image_path),
+            'has_back' => $this->imageExists($item->image_back_path),
+            'has_side' => $this->imageExists($item->image_side_path),
         ];
     }
 

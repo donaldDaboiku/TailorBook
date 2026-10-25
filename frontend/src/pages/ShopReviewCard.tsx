@@ -64,17 +64,17 @@ export default function ShopReviewCard() {
         </p>
       )}
       <form className="form" onSubmit={(event) => void onSubmit(event)}>
-        <div className="unit-field" role="group" aria-label="Rating">
+        <div className="star-pick" role="group" aria-label="Rating">
           {[1, 2, 3, 4, 5].map((value) => (
-            <label key={value} className="choice">
-              <input
-                type="radio"
-                name="shop-review-rating"
-                checked={rating === value}
-                onChange={() => setRating(value)}
-              />
-              {value} {value === 1 ? 'star' : 'stars'}
-            </label>
+            <button
+              key={value}
+              type="button"
+              aria-label={`${value} ${value === 1 ? 'star' : 'stars'}`}
+              aria-pressed={value <= rating}
+              onClick={() => setRating(value)}
+            >
+              ★
+            </button>
           ))}
         </div>
         <label>

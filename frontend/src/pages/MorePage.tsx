@@ -402,7 +402,7 @@ export default function MorePage({
       <section className="card muted-card">
         <h2 className="section-title">Design catalogue</h2>
         <p className="lede">
-          Keep the styles this shop sews, with a photo and the usual price.
+          Keep the styles this shop sews, with front, back, and side photos and the usual price.
         </p>
         <button type="button" className="secondary" onClick={onOpenCatalogue}>
           Open catalogue

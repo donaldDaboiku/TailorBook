@@ -174,7 +174,7 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
           <input
             key={`front-${imageKey}`}
             type="file"
-            accept="image/*"
+            accept="image/png,image/jpeg,image/webp"
             capture="environment"
             onChange={(event) => setFront(event.target.files?.[0] ?? null)}
           />
@@ -184,7 +184,7 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
           <input
             key={`back-${imageKey}`}
             type="file"
-            accept="image/*"
+            accept="image/png,image/jpeg,image/webp"
             capture="environment"
             onChange={(event) => setBack(event.target.files?.[0] ?? null)}
           />
@@ -194,7 +194,7 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
           <input
             key={`side-${imageKey}`}
             type="file"
-            accept="image/*"
+            accept="image/png,image/jpeg,image/webp"
             capture="environment"
             onChange={(event) => setSide(event.target.files?.[0] ?? null)}
           />
@@ -263,7 +263,15 @@ async function shrinkOrNull(file: File | null): Promise<File | null> {
     return null
   }
 
-  return shrinkStylePhoto(file).catch(() => file)
+  try {
+    return await shrinkStylePhoto(file)
+  } catch {
+    if (file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp') {
+      return file
+    }
+
+    throw new Error('Use a JPEG, PNG, or WebP photo.')
+  }
 }
 
 async function shrinkStylePhoto(file: File): Promise<File> {
@@ -276,7 +284,7 @@ async function shrinkStylePhoto(file: File): Promise<File> {
   const context = canvas.getContext('2d')
 
   if (!context) {
-    return file
+    throw new Error('Use a JPEG, PNG, or WebP photo.')
   }
 
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
@@ -284,5 +292,9 @@ async function shrinkStylePhoto(file: File): Promise<File> {
     canvas.toBlob(resolve, 'image/jpeg', 0.72)
   })
 
-  return blob ? new File([blob], 'style.jpg', { type: 'image/jpeg' }) : file
+  if (!blob) {
+    throw new Error('Use a JPEG, PNG, or WebP photo.')
+  }
+
+  return new File([blob], 'style.jpg', { type: 'image/jpeg' })
 }

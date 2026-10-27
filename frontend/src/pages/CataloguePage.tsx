@@ -120,9 +120,10 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
       </button>
       <h1>Design catalogue</h1>
       <p className="lede">
-        Styles for this shop. Front, back, and side photos, a name, and the
-        usual price. On a new job, tap a style to fill the outfit and the
-        amount. The first 40 are free. After that, 10 more cost ₦1,000.
+        Styles for this shop. Take a front, back, and side photo, plus a name
+        and the usual price. On a phone, each photo opens the camera. On a new
+        job, tap a style to fill the outfit and the amount. The first 40 are
+        free. After that, 10 more cost ₦1,000.
       </p>
 
       {allowance && allowance.used >= allowance.limit && (
@@ -173,7 +174,8 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
           <input
             key={`front-${imageKey}`}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/*"
+            capture="environment"
             onChange={(event) => setFront(event.target.files?.[0] ?? null)}
           />
         </label>
@@ -182,7 +184,8 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
           <input
             key={`back-${imageKey}`}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/*"
+            capture="environment"
             onChange={(event) => setBack(event.target.files?.[0] ?? null)}
           />
         </label>
@@ -191,7 +194,8 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
           <input
             key={`side-${imageKey}`}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/*"
+            capture="environment"
             onChange={(event) => setSide(event.target.files?.[0] ?? null)}
           />
         </label>

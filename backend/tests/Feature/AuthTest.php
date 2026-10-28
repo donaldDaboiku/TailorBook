@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\SubscriptionStatus;
+use App\Mail\ShopNoticeMail;
 use App\Models\Business;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -16,6 +18,8 @@ class AuthTest extends TestCase
 
     public function test_a_tailor_can_register_with_a_shop_and_receive_a_token(): void
     {
+        Mail::fake();
+
         $response = $this->postJson('/api/auth/register', $this->registrationPayload());
 
         $response->assertCreated()
@@ -38,6 +42,13 @@ class AuthTest extends TestCase
             'name' => 'Ada Atelier',
             'user_id' => User::query()->where('email', 'ada@example.com')->value('id'),
         ]);
+
+        Mail::assertSent(ShopNoticeMail::class, function (ShopNoticeMail $mail) {
+            return $mail->hasTo('ada@example.com')
+                && $mail->subjectLine === 'Welcome to TailorMate'
+                && str_contains($mail->bodyText, 'Ada Atelier')
+                && str_contains($mail->bodyText, now()->addDays(14)->toDateString());
+        });
     }
 
     public function test_a_finished_trial_cannot_open_the_shop(): void

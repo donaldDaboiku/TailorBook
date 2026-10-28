@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'title',
     'agreed_amount',
     'service_date',
+    'finish_days',
 ])]
 class CustomerJob extends Model
 {
@@ -35,6 +36,7 @@ class CustomerJob extends Model
         return [
             'agreed_amount' => 'decimal:2',
             'service_date' => 'date',
+            'finish_days' => 'integer',
         ];
     }
 

@@ -53,7 +53,14 @@ export default function HowToUseTutorial({
         {user?.name ? ` · ${user.name}` : ''}
       </p>
       <h1>{current.title}</h1>
-      <p className="lede">{current.body}</p>
+      <p className="lede">
+        {current.body}
+        {step === 0 &&
+        user?.subscription_access === 'trial' &&
+        user.subscribed_until
+          ? ` Your free trial runs until ${user.subscribed_until}.`
+          : ''}
+      </p>
 
       <p className="status">
         Step {step + 1} of {STEPS.length}

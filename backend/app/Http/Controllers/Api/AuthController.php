@@ -16,6 +16,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Business;
 use App\Models\User;
 use App\Services\DeleteAccount;
+use App\Services\ShopNotices;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -59,11 +60,13 @@ class AuthController extends Controller
 
         $user->forceFill(['last_login_at' => now()])->save();
         $token = $user->createToken('phone')->plainTextToken;
+        $user = $user->fresh()->load('business');
+        app(ShopNotices::class)->welcomeTrial($user);
 
         return response()->json([
             'token' => $token,
             'token_type' => 'Bearer',
-            'user' => UserResource::make($user->fresh()->load('business')),
+            'user' => UserResource::make($user),
         ], 201);
     }
 

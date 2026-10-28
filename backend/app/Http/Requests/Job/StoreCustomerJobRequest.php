@@ -12,6 +12,12 @@ class StoreCustomerJobRequest extends FormRequest
     {
         $customer = $this->route('customer');
 
+        $job = $this->route('job');
+
+        if ($job instanceof CustomerJob) {
+            return $this->user()?->can('update', $job) ?? false;
+        }
+
         return $customer instanceof Customer
             && ($this->user()?->can('create', [CustomerJob::class, $customer]) ?? false);
     }
@@ -25,6 +31,7 @@ class StoreCustomerJobRequest extends FormRequest
             'title' => ['required', 'string', 'max:120'],
             'agreed_amount' => ['required', 'numeric', 'gt:0'],
             'service_date' => ['required', 'date'],
+            'finish_days' => ['nullable', 'integer', 'min:0', 'max:365'],
         ];
     }
 

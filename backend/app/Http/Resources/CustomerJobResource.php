@@ -34,6 +34,7 @@ class CustomerJobResource extends JsonResource
             'outstanding' => $outstanding,
             'outstanding_label' => Money::format($outstanding, $currency),
             'service_date' => $this->service_date?->toDateString(),
+            'finish_days' => $this->finish_days,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

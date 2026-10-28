@@ -145,6 +145,56 @@ class JobPaymentTest extends TestCase
         ])->assertUnprocessable();
     }
 
+    public function test_a_shop_sets_the_due_date_from_days_and_can_edit_it(): void
+    {
+        $user = $this->tailor();
+        $customer = Customer::factory()->create(['business_id' => $user->business->id]);
+
+        Sanctum::actingAs($user);
+
+        $due = now()->addDays(7)->toDateString();
+
+        $jobId = $this->postJson("/api/customers/{$customer->id}/jobs", [
+            'title' => 'Agbada',
+            'agreed_amount' => '20000',
+            'service_date' => $due,
+            'finish_days' => 7,
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.service_date', $due)
+            ->assertJsonPath('data.finish_days', 7)
+            ->json('data.id');
+
+        $edited = now()->addDays(3)->toDateString();
+
+        $this->putJson("/api/customers/{$customer->id}/jobs/{$jobId}", [
+            'title' => 'Agbada',
+            'agreed_amount' => '25000',
+            'service_date' => $edited,
+            'finish_days' => 3,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.service_date', $edited)
+            ->assertJsonPath('data.finish_days', 3)
+            ->assertJsonPath('data.agreed_amount', '25000.00');
+
+        $this->putJson("/api/customers/{$customer->id}/jobs/{$jobId}", [
+            'title' => 'Agbada',
+            'agreed_amount' => '25000',
+            'service_date' => $edited,
+            'finish_days' => 400,
+        ])->assertUnprocessable();
+
+        Sanctum::actingAs($this->tailor('bola@example.com'));
+
+        $this->putJson("/api/customers/{$customer->id}/jobs/{$jobId}", [
+            'title' => 'Agbada',
+            'agreed_amount' => '25000',
+            'service_date' => $edited,
+            'finish_days' => 1,
+        ])->assertForbidden();
+    }
+
     private function tailor(string $email = 'ada@example.com'): User
     {
         $user = User::factory()->create([

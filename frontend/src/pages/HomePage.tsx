@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchHome, fetchWhatsAppTemplates, firstError, type HomeDashboard, type ShopJob, type WhatsAppTemplateKey } from '../api'
+import { fetchHome, fetchWhatsAppTemplates, firstError, type HomeDashboard, type ShopJob, type User, type WhatsAppTemplateKey } from '../api'
 import { useAuth } from '../auth'
 import { useI18n } from '../i18n'
 
@@ -12,6 +12,32 @@ function timeGreeting(t: (key: string) => string, now = new Date()): string {
     return t('home.afternoon')
   }
   return t('home.evening')
+}
+
+function planNotice(user: User | null): string {
+  const until = user?.subscribed_until
+  const access = user?.subscription_access
+
+  if (!until || (access !== 'trial' && access !== 'subscribed')) {
+    return ''
+  }
+
+  const [year, month, day] = until.split('-').map(Number)
+  const target = new Date(year, month - 1, day)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  target.setHours(0, 0, 0, 0)
+  const days = Math.round((target.getTime() - today.getTime()) / 86400000)
+
+  if (days < 0 || days > 3) {
+    return ''
+  }
+
+  if (access === 'trial') {
+    return `Your free trial ends on ${until}. Subscribe before that day to keep the shop open.`
+  }
+
+  return `Your plan ends on ${until}. Renew before that day to keep the shop open.`
 }
 
 export default function HomePage({
@@ -80,6 +106,7 @@ export default function HomePage({
   }
 
   const dueToday = home?.due_today ?? []
+  const notice = planNotice(user)
 
   return (
     <div className="dash">
@@ -98,6 +125,8 @@ export default function HomePage({
           {initial}
         </button>
       </header>
+
+      {notice && <p className="status">{notice}</p>}
 
       <section className="balance-card">
         <p className="balance-label">{t('home.outstanding')}</p>

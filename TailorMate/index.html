@@ -55,7 +55,7 @@
 <div class="wrap">
   <header>
     <a class="brand" href="#top" aria-label="TailorMate home" style="text-decoration:none"><span class="mark" aria-hidden="true">✂</span><span>TailorMate</span></a>
-    <a class="toplink" id="open-app" href="https://tailormate-web.onrender.com">Open the app</a>
+    <a class="toplink" id="open-app" href="https://tailormate-web.onrender.com" target="_blank" rel="noopener noreferrer">Open the app</a>
   </header>
   <main id="top">
     <section>
@@ -63,7 +63,7 @@
       <h1>Your craft.<br><span>Your customers.</span><br>All organised.</h1>
       <p class="intro">Keep customer measurements, tailoring jobs, payments and everyday business records together — so you can spend more time creating great outfits.</p>
       <div class="actions">
-        <a class="btn primary" id="launch-app" href="https://tailormate-web.onrender.com">Launch TailorMate</a>
+        <a class="btn primary" id="launch-app" href="https://tailormate-web.onrender.com" target="_blank" rel="noopener noreferrer">Launch TailorMate</a>
         <a class="btn secondary" href="#about">About the app</a>
       </div>
       <p class="fine">Sign in or create an account inside the app.</p>
@@ -110,7 +110,7 @@
       <p>A new shop can use TailorMate for 14 days. Then the paid plan is one price, paid inside the app.</p>
       <div class="stat" id="plan-price">…</div>
       <p id="plan-note">Loading the paid plan…</p>
-      <p class="fine"><a class="btn primary" id="price-app" href="https://tailormate-web.onrender.com">Open the app to subscribe</a></p>
+      <p class="fine"><a class="btn primary" id="price-app" href="https://tailormate-web.onrender.com" target="_blank" rel="noopener noreferrer">Open the app to subscribe</a></p>
     </div>
   </section>
   <section class="section" aria-labelledby="connect-title">
@@ -165,7 +165,7 @@
       </ul>
       <p>Saving needs the internet. The app opens on the phone like an installed app after it is added to the home screen.</p>
       <p><strong>Built by gitsystemng</strong></p>
-      <p class="fine"><a class="btn primary" id="about-app" href="https://tailormate-web.onrender.com">Open the app</a></p>
+      <p class="fine"><a class="btn primary" id="about-app" href="https://tailormate-web.onrender.com" target="_blank" rel="noopener noreferrer">Open the app</a></p>
     </div>
   </section>
   <footer><span>© <span id="year">2026</span> TailorMate</span><span>Built by gitsystemng</span></footer>
@@ -176,7 +176,10 @@
 
   document.getElementById('year').textContent = String(new Date().getFullYear())
   for (const id of ['open-app', 'launch-app', 'about-app', 'price-app']) {
-    document.getElementById(id).href = APP_URL
+    const link = document.getElementById(id)
+    link.href = APP_URL
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
   }
 
   let selectedRating = 0

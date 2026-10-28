@@ -21,9 +21,23 @@ use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\ShopReviewController;
 use App\Http\Controllers\Api\WhatsAppController;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
+    // ponytail: Render has no cron. The daily health ping is the clock. shop_notices stops a second email the same day.
+    if (Cache::add('shop-notices:'.now()->toDateString(), true, now()->endOfDay())) {
+        try {
+            Artisan::call('shops:notify');
+        } catch (Throwable $exception) {
+            Log::warning('Shop notices could not be sent.', [
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
     return response()->json([
         'status' => 'ok',
         'app' => config('app.name'),
@@ -78,6 +92,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::get('/customers/{customer}/jobs', [CustomerJobController::class, 'index']);
     Route::post('/customers/{customer}/jobs', [CustomerJobController::class, 'store']);
+    Route::put('/customers/{customer}/jobs/{job}', [CustomerJobController::class, 'update']);
     Route::get('/customers/{customer}/jobs/{job}', [CustomerJobController::class, 'show']);
     Route::delete('/customers/{customer}/jobs/{job}', [CustomerJobController::class, 'destroy']);
 

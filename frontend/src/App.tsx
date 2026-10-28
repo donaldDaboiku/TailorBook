@@ -4,6 +4,7 @@ import {
   firstError,
   verifyBillingPayment,
   type Customer,
+  type CustomerJob,
   type Measurement,
 } from './api'
 import { AuthProvider, useAuth } from './auth'
@@ -45,6 +46,7 @@ type Screen =
   | { name: 'measurement-create'; customer: Customer; seed?: Measurement | null }
   | { name: 'measurement-detail'; customer: Customer; measurementId: string }
   | { name: 'job-create'; customer: Customer }
+  | { name: 'job-edit'; customer: Customer; job: CustomerJob }
   | { name: 'payment-create'; customer: Customer; jobId?: string }
   | { name: 'whatsapp'; customer: Customer }
   | { name: 'expenses' }
@@ -219,7 +221,7 @@ function AuthenticatedApp() {
         setBillingMessage(
           cataloguePack
             ? '10 more styles are ready.'
-            : 'Subscription activated. Thank you.',
+            : `Welcome. Your shop is subscribed until ${next.subscribed_until}.`,
         )
         setScreen(cataloguePack ? { name: 'catalogue' } : { name: 'more' })
       })
@@ -446,6 +448,9 @@ function AuthenticatedApp() {
             })
           }
           onAddJob={(customer) => setScreen({ name: 'job-create', customer })}
+          onEditJob={(customer, job) =>
+            setScreen({ name: 'job-edit', customer, job })
+          }
           onAddPayment={(customer, jobId) =>
             setScreen({ name: 'payment-create', customer, jobId })
           }
@@ -508,9 +513,10 @@ function AuthenticatedApp() {
         />
       )}
 
-      {screen.name === 'job-create' && (
+      {(screen.name === 'job-create' || screen.name === 'job-edit') && (
         <JobFormPage
           customer={screen.customer}
+          job={screen.name === 'job-edit' ? screen.job : undefined}
           onCancel={() =>
             setScreen({ name: 'customer-detail', id: screen.customer.id })
           }

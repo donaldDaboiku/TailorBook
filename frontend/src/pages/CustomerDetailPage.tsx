@@ -32,6 +32,7 @@ export default function CustomerDetailPage({
   onOpenMeasurement,
   onDuplicateMeasurement,
   onAddJob,
+  onEditJob,
   onAddPayment,
   onWhatsApp,
 }: {
@@ -43,6 +44,7 @@ export default function CustomerDetailPage({
   onOpenMeasurement: (customer: Customer, measurementId: string) => void
   onDuplicateMeasurement: (customer: Customer, measurement: Measurement) => void
   onAddJob: (customer: Customer) => void
+  onEditJob: (customer: Customer, job: CustomerJob) => void
   onAddPayment: (customer: Customer, jobId?: string) => void
   onWhatsApp: (customer: Customer) => void
 }) {
@@ -230,10 +232,18 @@ export default function CustomerDetailPage({
                 <div className="list-item static">
                   <span className="list-title">{job.title}</span>
                   <span className="list-meta">
-                    {job.agreed_amount_label} · owes {job.outstanding_label}
+                    {job.agreed_amount_label} · owes {job.outstanding_label} · due{' '}
+                    {job.service_date}
                   </span>
                 </div>
                 <div className="action-row tight">
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => onEditJob(customer, job)}
+                  >
+                    Edit
+                  </button>
                   <button
                     type="button"
                     className="secondary"

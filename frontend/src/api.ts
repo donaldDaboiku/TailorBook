@@ -158,6 +158,7 @@ export type CustomerJob = {
   outstanding: string
   outstanding_label: string
   service_date: string
+  finish_days: number | null
   created_at: string | null
 }
 
@@ -1003,12 +1004,34 @@ export async function createJob(
     title: string
     agreed_amount: string
     service_date: string
+    finish_days: number
   },
 ): Promise<CustomerJob> {
   const data = await apiJson<{ data: CustomerJob }>(
     `/api/customers/${customerId}/jobs`,
     {
       method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  )
+
+  return data.data
+}
+
+export async function updateJob(
+  customerId: string,
+  jobId: string,
+  payload: {
+    title: string
+    agreed_amount: string
+    service_date: string
+    finish_days: number
+  },
+): Promise<CustomerJob> {
+  const data = await apiJson<{ data: CustomerJob }>(
+    `/api/customers/${customerId}/jobs/${jobId}`,
+    {
+      method: 'PUT',
       body: JSON.stringify(payload),
     },
   )

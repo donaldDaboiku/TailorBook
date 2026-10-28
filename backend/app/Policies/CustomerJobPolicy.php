@@ -23,6 +23,11 @@ class CustomerJobPolicy
         return $user->business?->id === $customer->business_id;
     }
 
+    public function update(User $user, CustomerJob $job): bool
+    {
+        return $user->business?->id === $job->business_id;
+    }
+
     public function delete(User $user, CustomerJob $job): bool
     {
         return $user->business?->id === $job->business_id;

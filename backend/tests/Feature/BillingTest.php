@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Enums\SubscriptionStatus;
+use App\Mail\ShopNoticeMail;
 use App\Models\Business;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -121,6 +123,8 @@ class BillingTest extends TestCase
 
     public function test_webhook_activates_subscription_with_valid_signature(): void
     {
+        Mail::fake();
+
         $user = User::factory()->create([
             'subscription_status' => SubscriptionStatus::Free,
         ]);
@@ -170,6 +174,11 @@ class BillingTest extends TestCase
 
         $this->assertSame('success', $payment->fresh()->status);
         $this->assertSame(SubscriptionStatus::Subscribed, $user->fresh()->subscription_status);
+
+        Mail::assertSent(ShopNoticeMail::class, function (ShopNoticeMail $mail) use ($user) {
+            return $mail->hasTo($user->email)
+                && $mail->subjectLine === 'Welcome. Your TailorMate plan is active';
+        });
     }
 
     public function test_webhook_marks_failed_payments(): void

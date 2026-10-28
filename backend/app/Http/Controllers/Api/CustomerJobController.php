@@ -40,11 +40,28 @@ class CustomerJobController extends Controller
             'title' => $data['title'],
             'agreed_amount' => Money::normalize($data['agreed_amount']),
             'service_date' => $data['service_date'],
+            'finish_days' => $data['finish_days'] ?? null,
         ]);
 
         return CustomerJobResource::make($job)
             ->response()
             ->setStatusCode(201);
+    }
+
+    public function update(StoreCustomerJobRequest $request, Customer $customer, CustomerJob $job): CustomerJobResource
+    {
+        abort_unless($job->customer_id === $customer->id, 404);
+
+        $data = $request->validated();
+
+        $job->update([
+            'title' => $data['title'],
+            'agreed_amount' => Money::normalize($data['agreed_amount']),
+            'service_date' => $data['service_date'],
+            'finish_days' => $data['finish_days'] ?? null,
+        ]);
+
+        return CustomerJobResource::make($job->refresh());
     }
 
     public function show(Request $request, Customer $customer, CustomerJob $job): CustomerJobResource

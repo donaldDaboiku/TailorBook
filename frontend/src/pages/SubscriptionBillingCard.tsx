@@ -60,6 +60,7 @@ export default function SubscriptionBillingCard({
 
   const access = user?.subscription_access ?? 'free'
   const until = user?.subscribed_until
+  const daysLeft = until ? daysUntil(until) : null
 
   return (
     <section className="card muted-card">
@@ -71,13 +72,16 @@ export default function SubscriptionBillingCard({
       )}
       {access === 'trial' && (
         <p className="status">
-          Your trial runs until {until}. Subscribe before that day to keep the
-          shop open.
+          {daysLeft !== null && daysLeft <= 3
+            ? `Your free trial ends on ${until}. Subscribe before that day to keep the shop open.`
+            : `Your trial runs until ${until}. Subscribe before that day to keep the shop open.`}
         </p>
       )}
       {access === 'subscribed' && (
         <p className="status">
-          Subscribed{until ? ` until ${until}` : ''}.
+          {daysLeft !== null && daysLeft <= 3
+            ? `Your plan ends on ${until}. Renew before that day to keep the shop open.`
+            : `Subscribed${until ? ` until ${until}` : ''}.`}
         </p>
       )}
       {access === 'expired' && (
@@ -122,4 +126,14 @@ export default function SubscriptionBillingCard({
       )}
     </section>
   )
+}
+
+function daysUntil(iso: string): number {
+  const [year, month, day] = iso.split('-').map(Number)
+  const target = new Date(year, month - 1, day)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  target.setHours(0, 0, 0, 0)
+
+  return Math.round((target.getTime() - today.getTime()) / 86400000)
 }

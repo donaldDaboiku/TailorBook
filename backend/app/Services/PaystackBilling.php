@@ -416,7 +416,9 @@ class PaystackBilling
      */
     private function markPaid(SubscriptionPayment $payment, array $data = []): User
     {
-        return DB::transaction(function () use ($payment, $data) {
+        $notice = null;
+
+        $user = DB::transaction(function () use ($payment, $data, &$notice) {
             /** @var SubscriptionPayment $locked */
             $locked = SubscriptionPayment::query()
                 ->whereKey($payment->id)
@@ -446,7 +448,11 @@ class PaystackBilling
                 ])->save();
             } else {
                 $days = (int) config('services.paystack.plan_days');
-                $base = $user->subscribed_until !== null && $user->subscribed_until->copy()->endOfDay()->isFuture()
+                $extending = $user->subscription_status === SubscriptionStatus::Subscribed
+                    && $user->subscribed_until !== null
+                    && $user->subscribed_until->copy()->endOfDay()->isFuture();
+                $notice = $extending ? 'renewed' : 'welcome';
+                $base = $extending
                     ? $user->subscribed_until->copy()
                     : now();
 
@@ -468,6 +474,14 @@ class PaystackBilling
 
             return $user->fresh()->load('business');
         });
+
+        if ($notice === 'welcome') {
+            app(ShopNotices::class)->welcomeSubscriber($user);
+        } elseif ($notice === 'renewed') {
+            app(ShopNotices::class)->renewalConfirmed($user);
+        }
+
+        return $user;
     }
 
     private function revokeIfPaystackConfirmsRefund(string $reference): void

@@ -148,14 +148,28 @@ class ShopController extends Controller
 
         $data = $request->validate([
             'extra' => ['required', 'integer', 'min:0', 'max:500'],
+            'free' => ['sometimes', 'integer', 'min:0', 'max:500'],
+            'amount' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:100000'],
         ]);
 
         $business = $user->business;
         abort_unless($business instanceof Business, 422, 'This account has no shop yet.');
 
-        $business->forceFill([
+        $fill = [
             'catalogue_extra' => (int) $data['extra'],
-        ])->save();
+        ];
+
+        if (array_key_exists('free', $data)) {
+            $fill['catalogue_free'] = (int) $data['free'];
+        }
+
+        if (array_key_exists('amount', $data)) {
+            $fill['catalogue_pack_amount'] = $data['amount'] === null
+                ? null
+                : (int) $data['amount'] * 100;
+        }
+
+        $business->forceFill($fill)->save();
 
         return response()->json([
             'message' => 'Catalogue allowance updated.',
@@ -226,7 +240,10 @@ class ShopController extends Controller
 
         $latest = $payments->first();
         $extra = (int) ($user->business?->catalogue_extra ?? 0);
-        $free = (int) config('services.paystack.catalogue_free');
+        $free = $user->business instanceof Business
+            ? app(PaystackBilling::class)->catalogueFree($user->business)
+            : (int) config('services.paystack.catalogue_free');
+        $packKobo = $user->business?->catalogue_pack_amount;
 
         if ($used === null && $user->business !== null) {
             $used = CatalogueItem::query()->where('business_id', $user->business->id)->count();
@@ -247,7 +264,9 @@ class ShopController extends Controller
             'subscription_status' => $user->subscription_status?->value ?? 'free',
             'subscription_access' => $user->subscriptionAccessStatus(),
             'subscribed_until' => $user->subscribed_until?->toDateString(),
+            'catalogue_free' => $free,
             'catalogue_extra' => $extra,
+            'catalogue_pack_amount' => $packKobo === null ? null : (int) round(((int) $packKobo) / 100),
             'catalogue_used' => $used ?? 0,
             'catalogue_limit' => $free + $extra,
             'latest_payment_status' => $latest?->status,

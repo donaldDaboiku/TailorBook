@@ -122,8 +122,9 @@ export default function CataloguePage({ onBack }: { onBack: () => void }) {
       <p className="lede">
         Styles for this shop. Take a front, back, and side photo, plus a name
         and the usual price. On a phone, each photo opens the camera. On a new
-        job, tap a style to fill the outfit and the amount. The first 40 are
-        free. After that, 10 more cost ₦1,000.
+        job, tap a style to fill the outfit and the amount. The first{' '}
+        {allowance?.free ?? 40} are free. After that, {allowance?.pack ?? 10}{' '}
+        more cost {allowance?.pack_label ?? '₦1,000.00'}.
       </p>
 
       {allowance && allowance.used >= allowance.limit && (

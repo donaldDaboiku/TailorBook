@@ -241,12 +241,15 @@ export default function AdminShopsPage() {
       .includes(needle)
   })
 
-  async function onSaveCatalogue(shop: AdminShop, extra: number) {
+  async function onSaveCatalogue(
+    shop: AdminShop,
+    payload: { free: number; extra: number; amount: number | null },
+  ) {
     setActionId(shop.id)
     setError('')
 
     try {
-      const updated = await updateAdminShopCatalogue(shop.id, extra)
+      const updated = await updateAdminShopCatalogue(shop.id, payload)
       replaceShop(updated)
     } catch (err) {
       setError(firstError(err))
@@ -606,7 +609,7 @@ export default function AdminShopsPage() {
           onSaveSubscription={(status, until) =>
             void onSaveSubscription(selectedShop, status, until)
           }
-          onSaveCatalogue={(extra) => void onSaveCatalogue(selectedShop, extra)}
+          onSaveCatalogue={(payload) => void onSaveCatalogue(selectedShop, payload)}
           onResetPassword={(password, confirmation) =>
             void onResetPassword(selectedShop, password, confirmation)
           }
@@ -634,14 +637,22 @@ function ShopModal({
   onToggleSuspend: () => void
   onSaveState: (state: string) => Promise<void>
   onSaveSubscription: (status: SubscriptionStatus, until: string) => void
-  onSaveCatalogue: (extra: number) => void
+  onSaveCatalogue: (payload: {
+    free: number
+    extra: number
+    amount: number | null
+  }) => void
   onResetPassword: (password: string, confirmation: string) => void
 }) {
   const [status, setStatus] = useState<SubscriptionStatus>(
     shop.subscription_status === 'subscribed' ? 'subscribed' : 'free',
   )
   const [until, setUntil] = useState(shop.subscribed_until ?? defaultUntil())
+  const [free, setFree] = useState(String(shop.catalogue_free ?? 40))
   const [extra, setExtra] = useState(String(shop.catalogue_extra ?? 0))
+  const [styleAmount, setStyleAmount] = useState(
+    shop.catalogue_pack_amount == null ? '' : String(shop.catalogue_pack_amount),
+  )
   const [newPassword, setNewPassword] = useState('')
   const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('')
   const [stateName, setStateName] = useState(shop.state ?? '')
@@ -651,11 +662,15 @@ function ShopModal({
   useEffect(() => {
     setStatus(shop.subscription_status === 'subscribed' ? 'subscribed' : 'free')
     setUntil(shop.subscribed_until ?? defaultUntil())
+    setFree(String(shop.catalogue_free ?? 40))
     setExtra(String(shop.catalogue_extra ?? 0))
+    setStyleAmount(
+      shop.catalogue_pack_amount == null ? '' : String(shop.catalogue_pack_amount),
+    )
     setStateName(shop.state ?? '')
     setStateSaved(false)
     setStateError('')
-  }, [shop.id, shop.subscription_status, shop.subscribed_until, shop.catalogue_extra, shop.state])
+  }, [shop.id, shop.subscription_status, shop.subscribed_until, shop.catalogue_free, shop.catalogue_extra, shop.catalogue_pack_amount, shop.state])
 
   function onSubmitState(event: FormEvent) {
     event.preventDefault()
@@ -854,16 +869,34 @@ function ShopModal({
           className="form"
           onSubmit={(event) => {
             event.preventDefault()
-            onSaveCatalogue(Number(extra))
+            const amount = styleAmount.trim()
+            onSaveCatalogue({
+              free: Number(free),
+              extra: Number(extra),
+              amount: amount === '' ? null : Number(amount),
+            })
           }}
         >
           <h3 className="section-title">Catalogue styles</h3>
           <p className="status">
             {shop.catalogue_used ?? 0} of {shop.catalogue_limit ?? 40} styles
-            are in use. The first 40 are free. Extra styles are added on top.
+            are in use. {shop.catalogue_free ?? 40} are free and{' '}
+            {shop.catalogue_extra ?? 0} are paid.
           </p>
           <label>
-            Extra styles above 40
+            Free styles
+            <input
+              type="number"
+              min="0"
+              max="500"
+              step="1"
+              value={free}
+              onChange={(event) => setFree(event.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Paid styles
             <input
               type="number"
               min="0"
@@ -874,8 +907,24 @@ function ShopModal({
               required
             />
           </label>
+          <label>
+            Price for the next 10 styles (₦)
+            <input
+              type="number"
+              min="1"
+              max="100000"
+              step="1"
+              value={styleAmount}
+              onChange={(event) => setStyleAmount(event.target.value)}
+              placeholder="Shared price"
+            />
+          </label>
+          <p className="status">
+            Leave the price empty to use the shared price at the top of this
+            page.
+          </p>
           <button type="submit" className="secondary" disabled={busy}>
-            {busy ? 'Saving…' : 'Save style allowance'}
+            {busy ? 'Saving…' : 'Save styles and price'}
           </button>
         </form>
 

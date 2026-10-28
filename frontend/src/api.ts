@@ -81,7 +81,9 @@ export type AdminShop = {
   subscription_status: SubscriptionStatus
   subscription_access: SubscriptionAccess
   subscribed_until: string | null
+  catalogue_free?: number
   catalogue_extra?: number
+  catalogue_pack_amount?: number | null
   catalogue_used?: number
   catalogue_limit?: number
   latest_payment_status?: PaymentStatus | null
@@ -642,13 +644,13 @@ export async function updateAdminShopState(
 
 export async function updateAdminShopCatalogue(
   userId: number,
-  extra: number,
+  payload: { free: number; extra: number; amount: number | null },
 ): Promise<AdminShop> {
   const data = await apiJson<{ data: AdminShop }>(
     `/api/admin/shops/${userId}/catalogue`,
     {
       method: 'PUT',
-      body: JSON.stringify({ extra }),
+      body: JSON.stringify(payload),
     },
   )
 

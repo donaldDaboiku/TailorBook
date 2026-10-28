@@ -47,14 +47,14 @@ class CatalogueController extends Controller
             'image_side' => ['nullable', 'image', 'max:800'],
         ]);
 
-        $item = DB::transaction(function () use ($business, $data) {
+        $item = DB::transaction(function () use ($business, $data, $billing) {
             $locked = Business::query()->whereKey($business->id)->lockForUpdate()->first();
 
             if (! $locked instanceof Business) {
                 return false;
             }
 
-            $limit = (int) config('services.paystack.catalogue_free') + (int) $locked->catalogue_extra;
+            $limit = $billing->catalogueLimit($locked);
 
             if (CatalogueItem::query()->where('business_id', $business->id)->count() >= $limit) {
                 return null;
@@ -73,7 +73,7 @@ class CatalogueController extends Controller
 
         if (! $item instanceof CatalogueItem) {
             $business->refresh();
-            $pack = $billing->cataloguePack();
+            $pack = $billing->cataloguePack($business);
             $limit = $billing->catalogueLimit($business);
 
             return response()->json([
@@ -213,10 +213,10 @@ class CatalogueController extends Controller
      */
     private function allowance(Business $business, int $used, PaystackBilling $billing): array
     {
-        $pack = $billing->cataloguePack();
+        $pack = $billing->cataloguePack($business);
 
         return [
-            'free' => (int) config('services.paystack.catalogue_free'),
+            'free' => $billing->catalogueFree($business),
             'extra' => (int) $business->catalogue_extra,
             'limit' => $billing->catalogueLimit($business),
             'used' => $used,

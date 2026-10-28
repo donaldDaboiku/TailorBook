@@ -122,7 +122,7 @@ class PaystackBilling
             throw new RuntimeException('This shop can still add styles before paying.');
         }
 
-        $pack = $this->cataloguePack();
+        $pack = $this->cataloguePack($business);
         $reference = 'tc_'.Str::lower(Str::ulid());
         $callback = (string) config('services.paystack.callback_url');
         $callback .= (str_contains($callback, '?') ? '&' : '?').'kind=catalogue';
@@ -168,12 +168,15 @@ class PaystackBilling
     /**
      * @return array{slots: int, amount: int, amount_label: string}
      */
-    public function cataloguePack(): array
+    public function cataloguePack(?Business $business = null): array
     {
+        $shopAmount = $business?->catalogue_pack_amount;
         $stored = Setting::valueFor('catalogue_pack_amount');
-        $amount = is_numeric($stored)
-            ? (int) $stored
-            : (int) config('services.paystack.catalogue_pack_amount');
+        $amount = is_numeric($shopAmount)
+            ? (int) $shopAmount
+            : (is_numeric($stored)
+                ? (int) $stored
+                : (int) config('services.paystack.catalogue_pack_amount'));
         $naira = number_format($amount / 100, 2, '.', ',');
 
         return [
@@ -183,9 +186,16 @@ class PaystackBilling
         ];
     }
 
+    public function catalogueFree(Business $business): int
+    {
+        return $business->catalogue_free === null
+            ? (int) config('services.paystack.catalogue_free')
+            : (int) $business->catalogue_free;
+    }
+
     public function catalogueLimit(Business $business): int
     {
-        return (int) config('services.paystack.catalogue_free') + (int) $business->catalogue_extra;
+        return $this->catalogueFree($business) + (int) $business->catalogue_extra;
     }
 
     public function verifyAndActivate(string $reference, ?User $expectedUser = null): User

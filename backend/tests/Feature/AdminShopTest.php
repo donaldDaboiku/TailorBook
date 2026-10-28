@@ -214,6 +214,28 @@ class AdminShopTest extends TestCase
 
         $this->assertSame(10, $shop->fresh()->catalogue_extra);
 
+        $this->putJson("/api/admin/shops/{$tailor->id}/catalogue", [
+            'free' => 25,
+            'extra' => 15,
+            'amount' => 1800,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.catalogue_free', 25)
+            ->assertJsonPath('data.catalogue_extra', 15)
+            ->assertJsonPath('data.catalogue_limit', 40)
+            ->assertJsonPath('data.catalogue_pack_amount', 1800);
+
+        $fresh = $shop->fresh();
+        $this->assertSame(180000, app(PaystackBilling::class)->cataloguePack($fresh)['amount']);
+        $this->assertSame(40, app(PaystackBilling::class)->catalogueLimit($fresh));
+
+        $this->putJson("/api/admin/shops/{$tailor->id}/catalogue", [
+            'extra' => 15,
+            'amount' => null,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.catalogue_pack_amount', null);
+
         $this->putJson('/api/admin/catalogue-price', [
             'amount' => 2500,
         ])

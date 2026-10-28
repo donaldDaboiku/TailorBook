@@ -148,28 +148,14 @@ class ShopController extends Controller
 
         $data = $request->validate([
             'extra' => ['required', 'integer', 'min:0', 'max:500'],
-            'free' => ['sometimes', 'integer', 'min:0', 'max:500'],
-            'amount' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:100000'],
         ]);
 
         $business = $user->business;
         abort_unless($business instanceof Business, 422, 'This account has no shop yet.');
 
-        $fill = [
+        $business->forceFill([
             'catalogue_extra' => (int) $data['extra'],
-        ];
-
-        if (array_key_exists('free', $data)) {
-            $fill['catalogue_free'] = (int) $data['free'];
-        }
-
-        if (array_key_exists('amount', $data)) {
-            $fill['catalogue_pack_amount'] = $data['amount'] === null
-                ? null
-                : (int) $data['amount'] * 100;
-        }
-
-        $business->forceFill($fill)->save();
+        ])->save();
 
         return response()->json([
             'message' => 'Catalogue allowance updated.',
@@ -180,9 +166,19 @@ class ShopController extends Controller
     public function updateCataloguePrice(Request $request): JsonResponse
     {
         $data = $request->validate([
+            'free' => ['required', 'integer', 'min:0', 'max:500'],
+            'pack' => ['required', 'integer', 'min:1', 'max:500'],
             'amount' => ['required', 'integer', 'min:1', 'max:100000'],
         ]);
 
+        Setting::query()->updateOrCreate(
+            ['key' => 'catalogue_free'],
+            ['value' => (string) ((int) $data['free'])],
+        );
+        Setting::query()->updateOrCreate(
+            ['key' => 'catalogue_pack_slots'],
+            ['value' => (string) ((int) $data['pack'])],
+        );
         Setting::query()->updateOrCreate(
             ['key' => 'catalogue_pack_amount'],
             ['value' => (string) ((int) $data['amount'] * 100)],
@@ -219,10 +215,11 @@ class ShopController extends Controller
      */
     private function catalogueOffer(): array
     {
-        $pack = app(PaystackBilling::class)->cataloguePack();
+        $billing = app(PaystackBilling::class);
+        $pack = $billing->cataloguePack();
 
         return [
-            'free' => (int) config('services.paystack.catalogue_free'),
+            'free' => $billing->sharedCatalogueFree(),
             'pack' => $pack['slots'],
             'amount' => (int) ($pack['amount'] / 100),
             'amount_label' => $pack['amount_label'],

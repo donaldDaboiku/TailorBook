@@ -170,17 +170,17 @@ class PaystackBilling
      */
     public function cataloguePack(?Business $business = null): array
     {
-        $shopAmount = $business?->catalogue_pack_amount;
-        $stored = Setting::valueFor('catalogue_pack_amount');
-        $amount = is_numeric($shopAmount)
-            ? (int) $shopAmount
-            : (is_numeric($stored)
-                ? (int) $stored
-                : (int) config('services.paystack.catalogue_pack_amount'));
+        $amount = $this->storedInt(
+            'catalogue_pack_amount',
+            (int) config('services.paystack.catalogue_pack_amount'),
+        );
         $naira = number_format($amount / 100, 2, '.', ',');
 
         return [
-            'slots' => (int) config('services.paystack.catalogue_pack'),
+            'slots' => $this->storedInt(
+                'catalogue_pack_slots',
+                (int) config('services.paystack.catalogue_pack'),
+            ),
             'amount' => $amount,
             'amount_label' => "₦{$naira}",
         ];
@@ -188,9 +188,22 @@ class PaystackBilling
 
     public function catalogueFree(Business $business): int
     {
-        return $business->catalogue_free === null
-            ? (int) config('services.paystack.catalogue_free')
-            : (int) $business->catalogue_free;
+        return $this->sharedCatalogueFree();
+    }
+
+    public function sharedCatalogueFree(): int
+    {
+        return $this->storedInt(
+            'catalogue_free',
+            (int) config('services.paystack.catalogue_free'),
+        );
+    }
+
+    private function storedInt(string $key, int $fallback): int
+    {
+        $stored = Setting::valueFor($key);
+
+        return is_numeric($stored) ? (int) $stored : $fallback;
     }
 
     public function catalogueLimit(Business $business): int
@@ -382,7 +395,7 @@ class PaystackBilling
                 $shop = Business::query()->where('user_id', $user->id)->lockForUpdate()->first();
 
                 if ($shop instanceof Business) {
-                    $pack = (int) config('services.paystack.catalogue_pack');
+                    $pack = $this->cataloguePack()['slots'];
                     $shop->forceFill([
                         'catalogue_extra' => max(0, (int) $shop->catalogue_extra - $pack),
                     ])->save();
@@ -454,7 +467,7 @@ class PaystackBilling
                 }
 
                 $shop->forceFill([
-                    'catalogue_extra' => (int) $shop->catalogue_extra + (int) config('services.paystack.catalogue_pack'),
+                    'catalogue_extra' => (int) $shop->catalogue_extra + $this->cataloguePack()['slots'],
                 ])->save();
             } else {
                 $days = (int) config('services.paystack.plan_days');

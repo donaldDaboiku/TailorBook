@@ -642,29 +642,16 @@ export async function updateAdminShopState(
   return data.data
 }
 
-export async function updateAdminShopCatalogue(
-  userId: number,
-  payload: { free: number; extra: number; amount: number | null },
-): Promise<AdminShop> {
-  const data = await apiJson<{ data: AdminShop }>(
-    `/api/admin/shops/${userId}/catalogue`,
-    {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    },
-  )
-
-  return data.data
-}
-
-export async function updateAdminCataloguePrice(
-  amount: number,
-): Promise<AdminCatalogueOffer> {
+export async function updateAdminCataloguePrice(payload: {
+  free: number
+  pack: number
+  amount: number
+}): Promise<AdminCatalogueOffer> {
   const data = await apiJson<{ data: AdminCatalogueOffer }>(
     '/api/admin/catalogue-price',
     {
       method: 'PUT',
-      body: JSON.stringify({ amount }),
+      body: JSON.stringify(payload),
     },
   )
 

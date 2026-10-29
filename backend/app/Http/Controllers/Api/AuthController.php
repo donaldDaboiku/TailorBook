@@ -16,6 +16,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Business;
 use App\Models\User;
 use App\Services\DeleteAccount;
+use App\Services\Referrals;
 use App\Services\ShopNotices;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
@@ -33,8 +34,10 @@ class AuthController extends Controller
     {
         $data = $request->validated();
         $phone = $data['phone'];
+        $referrals = app(Referrals::class);
+        $referrer = $referrals->resolve($data['invite_code'] ?? null);
 
-        $user = DB::transaction(function () use ($data, $phone) {
+        $user = DB::transaction(function () use ($data, $phone, $referrals, $referrer) {
             $user = User::query()->create([
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -44,7 +47,7 @@ class AuthController extends Controller
                 'subscribed_until' => now()->addDays((int) config('services.paystack.trial_days'))->toDateString(),
             ]);
 
-            Business::query()->create([
+            $business = Business::query()->create([
                 'user_id' => $user->id,
                 'name' => $data['business_name'],
                 'phone' => $phone,
@@ -54,6 +57,9 @@ class AuthController extends Controller
                 'measurement_unit' => MeasurementUnit::from($data['measurement_unit']),
                 'currency' => strtoupper($data['currency']),
             ]);
+
+            $referrals->assign($business, $referrer);
+            $referrals->ensureCode($business);
 
             return $user->load('business');
         });

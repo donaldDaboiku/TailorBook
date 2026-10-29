@@ -86,6 +86,12 @@ export type AdminShop = {
   catalogue_pack_amount?: number | null
   catalogue_used?: number
   catalogue_limit?: number
+  invite_code?: string | null
+  referred_by?: string | null
+  referral_signed_up?: number
+  referral_paid?: number
+  referral_commission_label?: string
+  referral_shops?: { name: string; email: string | null; paid: boolean }[]
   latest_payment_status?: PaymentStatus | null
   latest_payment_at?: string | null
   payments?: AdminPayment[]
@@ -441,6 +447,7 @@ export async function register(payload: {
   state: string
   measurement_unit: 'cm' | 'in'
   currency: string
+  invite_code?: string
 }): Promise<AuthResponse> {
   return authRequest('/api/auth/register', payload)
 }
@@ -654,6 +661,70 @@ export async function updateAdminCataloguePrice(payload: {
       body: JSON.stringify(payload),
     },
   )
+
+  return data.data
+}
+
+export type ShopReferral = {
+  code: string
+  link: string
+  signed_up: number
+  paid: number
+  commission_label: string
+  skip: number
+  amount: number
+}
+
+export type AdminReferralOffer = {
+  skip: number
+  amount: number
+  amount_label: string
+}
+
+export type AdminSalesperson = {
+  id: string
+  name: string
+  code: string
+  signed_up: number
+  paid: number
+  commission_label: string
+  shops: { name: string; email: string | null; paid: boolean }[]
+}
+
+export async function fetchReferral(): Promise<ShopReferral> {
+  const data = await apiJson<{ data: ShopReferral }>('/api/referral')
+
+  return data.data
+}
+
+export async function listAdminReferrals(): Promise<{
+  offer: AdminReferralOffer
+  salespeople: AdminSalesperson[]
+}> {
+  const data = await apiJson<{
+    data: { offer: AdminReferralOffer; salespeople: AdminSalesperson[] }
+  }>('/api/admin/referrals')
+
+  return data.data
+}
+
+export async function updateAdminReferral(payload: {
+  skip: number
+  amount: number
+}): Promise<AdminReferralOffer> {
+  const data = await apiJson<{ data: AdminReferralOffer }>('/api/admin/referrals', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+
+  return data.data
+}
+
+export async function createAdminSalesperson(name: string): Promise<AdminSalesperson> {
+  const data = await apiJson<{ data: AdminSalesperson }>('/api/admin/salespeople', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  })
 
   return data.data
 }

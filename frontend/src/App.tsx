@@ -134,7 +134,11 @@ function AuthenticatedApp() {
     'login' | 'register' | 'forgot' | 'reset'
   >(() => {
     const params = new URLSearchParams(window.location.search)
-    return params.get('reset') === '1' ? 'reset' : 'login'
+    if (params.get('reset') === '1') {
+      return 'reset'
+    }
+
+    return params.get('invite') ? 'register' : 'login'
   })
   const [resetEmail, setResetEmail] = useState(() => {
     const params = new URLSearchParams(window.location.search)

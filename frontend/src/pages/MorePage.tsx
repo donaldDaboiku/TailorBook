@@ -3,6 +3,7 @@ import {
   deleteAccount,
   downloadShopRecords,
   fetchPresence,
+  fetchReferral,
   fetchShopLogo,
   firstError,
   updateBusiness,
@@ -27,6 +28,13 @@ export default function MorePage({
   const { t } = useI18n()
   const business = user?.business
 
+  const [referralCode, setReferralCode] = useState('')
+  const [referralLink, setReferralLink] = useState('')
+  const [referralSignedUp, setReferralSignedUp] = useState(0)
+  const [referralPaid, setReferralPaid] = useState(0)
+  const [referralCommission, setReferralCommission] = useState('₦0.00')
+  const [referralCopied, setReferralCopied] = useState(false)
+  const [referralError, setReferralError] = useState('')
   const [name, setName] = useState(user?.name ?? '')
   const [email, setEmail] = useState(user?.email ?? '')
   const [shopName, setShopName] = useState(business?.name ?? '')
@@ -76,6 +84,31 @@ export default function MorePage({
         }
       })
       .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    fetchReferral()
+      .then((referral) => {
+        if (cancelled) {
+          return
+        }
+        setReferralCode(referral.code)
+        setReferralLink(referral.link)
+        setReferralSignedUp(referral.signed_up)
+        setReferralPaid(referral.paid)
+        setReferralCommission(referral.commission_label)
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setReferralError(firstError(err))
+        }
+      })
 
     return () => {
       cancelled = true
@@ -233,7 +266,12 @@ export default function MorePage({
           TailorMate keeps one shop’s customers, measurements, jobs, payments,
           and expenses on the phone.
         </p>
-        <p className="status">Built by gitsystemng</p>
+        <p className="status">
+          Built by{' '}
+          <a href="https://www.gitsystemng.com" target="_blank" rel="noreferrer">
+            gitsystemng
+          </a>
+        </p>
       </section>
 
       <section className="card muted-card">
@@ -245,6 +283,47 @@ export default function MorePage({
         <button type="button" className="secondary" onClick={onShowTutorial}>
           Open tutorial
         </button>
+      </section>
+
+      <section className="card muted-card">
+        <h2 className="section-title">Invite a shop</h2>
+        <p className="lede">
+          Share this code with another tailor. They enter it when they register.
+          The shop counts after they pay the monthly plan. The admin pays the
+          commission.
+        </p>
+        {referralError ? (
+          <p className="form-error" role="alert">
+            {referralError}
+          </p>
+        ) : (
+          <>
+            <p className="status">Your code: {referralCode || '…'}</p>
+            <div className="form">
+              <label>
+                Invite link
+                <input readOnly value={referralLink} />
+              </label>
+            </div>
+            <p className="status">
+              {referralSignedUp} signed up. {referralPaid} paid. Commission due{' '}
+              {referralCommission}.
+            </p>
+            <button
+              type="button"
+              className="secondary"
+              disabled={!referralLink}
+              onClick={() => {
+                void navigator.clipboard.writeText(referralLink).then(
+                  () => setReferralCopied(true),
+                  () => setReferralCopied(false),
+                )
+              }}
+            >
+              {referralCopied ? 'Link copied' : 'Copy invite link'}
+            </button>
+          </>
+        )}
       </section>
 
       <ShopReviewCard />

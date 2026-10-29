@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Api\Admin\ReferralController as AdminReferralController;
 use App\Http\Controllers\Api\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Api\Admin\ShopController as AdminShopController;
 use App\Http\Controllers\Api\AuthController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Api\MeasurementTemplateController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\ReceiptController;
+use App\Http\Controllers\Api\ReferralController;
 use App\Http\Controllers\Api\ShopReviewController;
 use App\Http\Controllers\Api\WhatsAppController;
 use Illuminate\Support\Facades\Artisan;
@@ -114,6 +116,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('/catalogue', [CatalogueController::class, 'store']);
     Route::post('/catalogue/extra', [CatalogueController::class, 'extra'])
         ->middleware('throttle:10,1');
+    Route::get('/referral', [ReferralController::class, 'show']);
     Route::get('/catalogue/{catalogueItem}/image', [CatalogueController::class, 'image']);
     Route::delete('/catalogue/{catalogueItem}', [CatalogueController::class, 'destroy']);
 
@@ -125,6 +128,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::put('/shops/{user}/subscription', [AdminShopController::class, 'updateSubscription']);
         Route::put('/shops/{user}/catalogue', [AdminShopController::class, 'updateCatalogue']);
         Route::put('/catalogue-price', [AdminShopController::class, 'updateCataloguePrice']);
+        Route::get('/referrals', [AdminReferralController::class, 'index']);
+        Route::put('/referrals', [AdminReferralController::class, 'update']);
+        Route::post('/salespeople', [AdminReferralController::class, 'storeSalesperson']);
         Route::put('/shops/{user}/password', [AdminShopController::class, 'resetPassword']);
         Route::get('/shops/{user}/payments', [AdminPaymentController::class, 'forShop']);
         Route::get('/payments', [AdminPaymentController::class, 'index']);

@@ -46,7 +46,12 @@
     .about-copy p{margin:0 0 12px}.about-copy ul{margin:0 0 14px;padding-left:1.1rem;color:var(--ink)}.about-copy li{margin:6px 0}
     .review-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
     .review{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px}
-    .review p{margin:8px 0}.review-stars{color:#d59c28;letter-spacing:.08em;font-size:1.05rem}
+    .review p{margin:8px 0}    .review-stars{color:#d59c28;letter-spacing:.08em;font-size:1.05rem}
+    .ad{background:var(--green);color:#fff;border-radius:20px;padding:28px;box-shadow:0 16px 40px #173f3520}
+    .ad .eyebrow{color:#e8bd65}
+    .ad h2{color:#fff;margin:8px 0 12px}
+    .ad p{color:#e7eee9;max-width:640px}
+    .ad .btn.secondary{background:#fff;color:var(--green);margin-top:8px}
     footer{border-top:1px solid var(--line);padding:22px clamp(20px,6vw,84px);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.82rem}
     @media(max-width:760px){main{grid-template-columns:1fr;padding-top:24px}.preview{max-width:520px;width:100%;margin:auto}.features,.catalogue-grid{grid-template-columns:1fr 1fr}.review-grid{grid-template-columns:1fr}.intro{font-size:1rem}header{padding-top:18px;padding-bottom:18px}.social-grid,.community-grid{grid-template-columns:1fr}}
   </style>
@@ -113,6 +118,14 @@
       <p class="fine"><a class="btn primary" id="price-app" href="https://tailormate-web.onrender.com" target="_blank" rel="noopener noreferrer">Open the app to subscribe</a></p>
     </div>
   </section>
+  <section class="section" id="referral" aria-labelledby="referral-title">
+    <div class="ad">
+      <div class="eyebrow"><span class="dot"></span> Invite a shop</div>
+      <h2 id="referral-title">Bring another tailor onto TailorMate</h2>
+      <p>Each shop has an invite code under More. A new shop enters that code when they register. They count toward the referral only after they pay the monthly plan. The admin pays the commission. A salesperson uses a different code, given from the admin screen.</p>
+      <a class="btn secondary" id="referral-app" href="https://tailormate-web.onrender.com" target="_blank" rel="noopener noreferrer">Open the app</a>
+    </div>
+  </section>
   <section class="section" aria-labelledby="connect-title">
     <div class="section-head"><div class="eyebrow"><span class="dot"></span> Stay connected</div><h2 id="connect-title">Reach the admin</h2><p>Questions about TailorMate go to the admin. Shop customers still message their tailor inside the app.</p></div>
     <div class="social-grid" id="social-grid"></div>
@@ -164,18 +177,18 @@
         <li>The shop can download its records before closing the account.</li>
       </ul>
       <p>Saving needs the internet. The app opens on the phone like an installed app after it is added to the home screen.</p>
-      <p><strong>Built by gitsystemng</strong></p>
+      <p><strong>Built by <a href="https://www.gitsystemng.com" target="_blank" rel="noopener noreferrer">gitsystemng</a></strong></p>
       <p class="fine"><a class="btn primary" id="about-app" href="https://tailormate-web.onrender.com" target="_blank" rel="noopener noreferrer">Open the app</a></p>
     </div>
   </section>
-  <footer><span>© <span id="year">2026</span> TailorMate</span><span>Built by gitsystemng</span></footer>
+  <footer><span>© <span id="year">2026</span> TailorMate</span><span>Built by <a href="https://www.gitsystemng.com" target="_blank" rel="noopener noreferrer">gitsystemng</a></span></footer>
 </div>
 <script>
   const APP_URL = 'https://tailormate-web.onrender.com'
   const API_URL = 'https://tailormate-api.onrender.com'
 
   document.getElementById('year').textContent = String(new Date().getFullYear())
-  for (const id of ['open-app', 'launch-app', 'about-app', 'price-app']) {
+  for (const id of ['open-app', 'launch-app', 'about-app', 'price-app', 'referral-app']) {
     const link = document.getElementById(id)
     link.href = APP_URL
     link.target = '_blank'

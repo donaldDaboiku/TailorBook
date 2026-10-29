@@ -33,6 +33,7 @@ type AuthContextValue = {
     state: string
     measurement_unit: 'cm' | 'in'
     currency: string
+    invite_code?: string
   }) => Promise<void>
   setUser: (user: User) => void
   clearUser: () => void
@@ -104,6 +105,7 @@ export function AuthProvider({
     state: string
     measurement_unit: 'cm' | 'in'
     currency: string
+    invite_code?: string
   }) {
     const result = await apiRegister(payload)
     markTutorialUnseen(result.user.id)

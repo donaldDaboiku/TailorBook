@@ -35,6 +35,16 @@ class Business extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function referredByBusiness(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'referred_by_business_id');
+    }
+
+    public function referredBySalesperson(): BelongsTo
+    {
+        return $this->belongsTo(Salesperson::class, 'referred_by_salesperson_id');
+    }
+
     public function customers(): HasMany
     {
         return $this->hasMany(Customer::class);

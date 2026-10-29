@@ -14,6 +14,7 @@ use App\Models\Setting;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
 use App\Services\PaystackBilling;
+use App\Services\Referrals;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -25,7 +26,10 @@ class ShopController extends Controller
 
         $users = User::query()
             ->where('role', UserRole::Tailor)
-            ->with('business')
+            ->with([
+                'business.referredByBusiness:id,name',
+                'business.referredBySalesperson:id,name',
+            ])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('name', 'ilike', "%{$search}%")
@@ -55,8 +59,12 @@ class ShopController extends Controller
             ->groupBy('business_id')
             ->pluck('aggregate', 'business_id');
 
+        $referralStats = app(Referrals::class)->countsForBusinesses(
+            $users->map(fn (User $user) => $user->business)->filter()->values(),
+        );
+
         $shops = $users
-            ->map(function (User $user) use ($paymentsByUser, $usedByBusiness) {
+            ->map(function (User $user) use ($paymentsByUser, $usedByBusiness, $referralStats) {
                 $user->setRelation(
                     'subscriptionPayments',
                     $paymentsByUser->get($user->id, collect()),
@@ -66,7 +74,11 @@ class ShopController extends Controller
                     ? (int) $usedByBusiness->get($user->business->id, 0)
                     : 0;
 
-                return $this->shopPayload($user, $used);
+                $stats = $user->business
+                    ? ($referralStats[$user->business->id] ?? null)
+                    : null;
+
+                return $this->shopPayload($user, $used, $stats);
             })
             ->values();
 
@@ -227,9 +239,10 @@ class ShopController extends Controller
     }
 
     /**
+     * @param  array{signed_up: int, paid: int, commission_label: string, shops: list<array{name: string, email: string|null, paid: bool}>}|null  $referralStats
      * @return array<string, mixed>
      */
-    private function shopPayload(User $user, ?int $used = null): array
+    private function shopPayload(User $user, ?int $used = null, ?array $referralStats = null): array
     {
         $payments = $user->relationLoaded('subscriptionPayments')
             ? $user->subscriptionPayments
@@ -245,6 +258,16 @@ class ShopController extends Controller
         if ($used === null && $user->business !== null) {
             $used = CatalogueItem::query()->where('business_id', $user->business->id)->count();
         }
+
+        $business = $user->business;
+        if ($referralStats === null && $business instanceof Business) {
+            $referralStats = app(Referrals::class)->countsForBusinesses(collect([$business]))[$business->id] ?? null;
+        }
+
+        $referredBy = $business?->referredBySalesperson?->name;
+        $referredBy = is_string($referredBy) && $referredBy !== ''
+            ? 'Salesperson '.$referredBy
+            : $business?->referredByBusiness?->name;
 
         return [
             'id' => $user->id,
@@ -266,6 +289,12 @@ class ShopController extends Controller
             'catalogue_pack_amount' => $packKobo === null ? null : (int) round(((int) $packKobo) / 100),
             'catalogue_used' => $used ?? 0,
             'catalogue_limit' => $free + $extra,
+            'invite_code' => $business?->invite_code,
+            'referred_by' => $referredBy,
+            'referral_signed_up' => $referralStats['signed_up'] ?? 0,
+            'referral_paid' => $referralStats['paid'] ?? 0,
+            'referral_commission_label' => $referralStats['commission_label'] ?? '₦0.00',
+            'referral_shops' => $referralStats['shops'] ?? [],
             'latest_payment_status' => $latest?->status,
             'latest_payment_at' => $latest?->created_at?->toIso8601String(),
             'payments' => $payments

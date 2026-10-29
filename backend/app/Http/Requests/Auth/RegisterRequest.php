@@ -30,7 +30,20 @@ class RegisterRequest extends FormRequest
             'state' => ['required', 'string', Rule::in(NigerianStates::all())],
             'measurement_unit' => ['required', Rule::enum(MeasurementUnit::class)],
             'currency' => ['required', 'string', 'size:3'],
+            'invite_code' => ['nullable', 'string', 'max:12'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (! $this->exists('invite_code')) {
+            return;
+        }
+
+        $code = strtoupper(trim((string) $this->input('invite_code')));
+        $this->merge([
+            'invite_code' => $code === '' ? null : $code,
+        ]);
     }
 
     /**
@@ -45,6 +58,7 @@ class RegisterRequest extends FormRequest
             'phone.required' => 'Enter your shop phone number.',
             'state.required' => 'Choose the state your shop is in.',
             'state.in' => 'Choose a Nigerian state.',
+            'invite_code.max' => 'That invite code is not recognised.',
         ];
     }
 }

@@ -17,6 +17,10 @@ export default function RegisterPage({
   const [unit, setUnit] = useState<'in' | 'cm'>('in')
   const [stateName, setStateName] = useState('')
   const [stateOptions, setStateOptions] = useState<string[]>([])
+  const [inviteCode, setInviteCode] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return (params.get('invite') ?? '').trim().toUpperCase()
+  })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -57,6 +61,7 @@ export default function RegisterPage({
         state: stateName,
         measurement_unit: unit,
         currency: 'NGN',
+        invite_code: inviteCode.trim().toUpperCase() || undefined,
       })
     } catch (err) {
       setError(firstError(err))
@@ -150,6 +155,17 @@ export default function RegisterPage({
             autoComplete="new-password"
             required
             minLength={8}
+          />
+        </label>
+
+        <label>
+          Invite code (optional)
+          <input
+            value={inviteCode}
+            onChange={(event) => setInviteCode(event.target.value.toUpperCase())}
+            maxLength={12}
+            autoCapitalize="characters"
+            placeholder="From the shop or salesperson who invited you"
           />
         </label>
 

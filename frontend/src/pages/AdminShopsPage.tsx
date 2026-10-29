@@ -11,10 +11,15 @@ import {
   suspendAdminShop,
   unsuspendAdminShop,
   updateAdminCataloguePrice,
+  updateAdminReferral,
+  createAdminSalesperson,
+  listAdminReferrals,
   updateAdminShopState,
   updateAdminShopSubscription,
   type AdminCatalogueOffer,
   type AdminPayment,
+  type AdminReferralOffer,
+  type AdminSalesperson,
   type AdminShopReview,
   type ReviewStatus,
   type FeedbackNote,
@@ -45,6 +50,11 @@ export default function AdminShopsPage() {
   const [freeStyles, setFreeStyles] = useState('40')
   const [packStyles, setPackStyles] = useState('10')
   const [packPrice, setPackPrice] = useState('1000')
+  const [referralOffer, setReferralOffer] = useState<AdminReferralOffer | null>(null)
+  const [referralSkip, setReferralSkip] = useState('0')
+  const [referralAmount, setReferralAmount] = useState('0')
+  const [salespeople, setSalespeople] = useState<AdminSalesperson[]>([])
+  const [salespersonName, setSalespersonName] = useState('')
 
   const places = useMemo(() => {
     const counts = new Map<string, number>()
@@ -78,11 +88,12 @@ export default function AdminShopsPage() {
   async function reload(search = q, status = paymentFilter) {
     setLoading(true)
     try {
-      const [shopList, paymentRows, notes, reviewRows] = await Promise.all([
+      const [shopList, paymentRows, notes, reviewRows, referralRows] = await Promise.all([
         listAdminShops(search),
         listAdminPayments({ q: search, status }),
         listAdminFeedback(),
         listAdminReviews(),
+        listAdminReferrals(),
       ])
       setShops(shopList.shops)
       setCatalogue(shopList.catalogue)
@@ -92,6 +103,10 @@ export default function AdminShopsPage() {
       setPayments(paymentRows)
       setFeedback(notes)
       setReviews(reviewRows)
+      setReferralOffer(referralRows.offer)
+      setReferralSkip(String(referralRows.offer.skip))
+      setReferralAmount(String(referralRows.offer.amount))
+      setSalespeople(referralRows.salespeople)
       setError('')
     } catch (err) {
       setError(firstError(err))
@@ -267,6 +282,43 @@ export default function AdminShopsPage() {
     }
   }
 
+  async function onSaveReferral(event: FormEvent) {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+
+    try {
+      const updated = await updateAdminReferral({
+        skip: Number(referralSkip),
+        amount: Number(referralAmount),
+      })
+      setReferralOffer(updated)
+      setReferralSkip(String(updated.skip))
+      setReferralAmount(String(updated.amount))
+      await reload(q, paymentFilter)
+    } catch (err) {
+      setError(firstError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function onAddSalesperson(event: FormEvent) {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+
+    try {
+      await createAdminSalesperson(salespersonName.trim())
+      setSalespersonName('')
+      await reload(q, paymentFilter)
+    } catch (err) {
+      setError(firstError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function onResetPassword(
     shop: AdminShop,
     password: string,
@@ -343,6 +395,71 @@ export default function AdminShopsPage() {
           <button type="submit" className="secondary" disabled={busy}>
             {busy ? 'Saving…' : 'Save catalogue'}
           </button>
+        </form>
+        <form className="form" onSubmit={(event) => void onSaveReferral(event)}>
+          <h2 className="section-title">Referral commission</h2>
+          <label>
+            Paying shops before commission starts
+            <input
+              type="number"
+              min="0"
+              max="500"
+              step="1"
+              value={referralSkip}
+              onChange={(event) => setReferralSkip(event.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Naira for each paying shop after that
+            <input
+              type="number"
+              min="0"
+              max="100000"
+              step="1"
+              value={referralAmount}
+              onChange={(event) => setReferralAmount(event.target.value)}
+              required
+            />
+          </label>
+          <p className="status">
+            A shop counts after a successful monthly plan payment. A refund
+            removes that count. You pay the commission yourself.
+            {referralOffer ? ` Saved rate: ${referralOffer.amount_label}.` : ''}
+          </p>
+          <button type="submit" className="secondary" disabled={busy}>
+            {busy ? 'Saving…' : 'Save referral'}
+          </button>
+        </form>
+        <form className="form" onSubmit={(event) => void onAddSalesperson(event)}>
+          <h2 className="section-title">Salesperson</h2>
+          <label>
+            Name
+            <input
+              value={salespersonName}
+              onChange={(event) => setSalespersonName(event.target.value)}
+              maxLength={120}
+              required
+            />
+          </label>
+          <button type="submit" className="secondary" disabled={busy}>
+            {busy ? 'Saving…' : 'Add salesperson'}
+          </button>
+          {salespeople.length === 0 ? (
+            <p className="status">No salesperson yet.</p>
+          ) : (
+            salespeople.map((person) => (
+              <p className="status" key={person.id}>
+                {person.name} · {person.code} · {person.signed_up} signed up ·{' '}
+                {person.paid} paid · {person.commission_label}
+                {person.shops.length > 0
+                  ? ` · ${person.shops
+                      .map((shop) => `${shop.name} (${shop.paid ? 'paid' : 'signed up'})`)
+                      .join(', ')}`
+                  : ''}
+              </p>
+            ))
+          )}
         </form>
         <label className="search-label">
           Search
@@ -871,6 +988,24 @@ function ShopModal({
           styles are in use. The free count and the paid pack are set for every
           shop at the top of this page.
         </p>
+        <p className="status">
+          Invite code: {shop.invite_code ?? '—'}.{' '}
+          {shop.referred_by
+            ? `Invited by ${shop.referred_by}.`
+            : 'No invite code was used.'}{' '}
+          {shop.referral_signed_up ?? 0} shops used this code,{' '}
+          {shop.referral_paid ?? 0} have paid. Commission due{' '}
+          {shop.referral_commission_label ?? '₦0.00'}.
+        </p>
+        {(shop.referral_shops ?? []).length > 0 && (
+          <ul>
+            {(shop.referral_shops ?? []).map((row) => (
+              <li key={`${row.email ?? row.name}`}>
+                {row.name} · {row.paid ? 'paid' : 'signed up'}
+              </li>
+            ))}
+          </ul>
+        )}
 
         <form className="form" onSubmit={onSubmitPassword}>
           <h3 className="section-title">Reset password</h3>

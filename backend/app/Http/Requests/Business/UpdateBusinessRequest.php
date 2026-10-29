@@ -25,6 +25,7 @@ class UpdateBusinessRequest extends FormRequest
             'whatsapp_phone' => ['nullable', 'string', 'max:32'],
             'country' => ['required', 'string', 'size:2'],
             'state' => ['required', 'string', Rule::in(NigerianStates::all())],
+            'address' => ['nullable', 'string', 'max:240'],
             'measurement_unit' => ['required', Rule::enum(MeasurementUnit::class)],
             'currency' => ['required', 'string', 'size:3'],
             'receipt_header' => ['nullable', 'string', 'max:240'],

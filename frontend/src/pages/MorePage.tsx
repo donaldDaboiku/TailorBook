@@ -62,6 +62,7 @@ export default function MorePage({
     business?.signature_name ?? '',
   )
   const [stateName, setStateName] = useState(business?.state ?? '')
+  const [address, setAddress] = useState(business?.address ?? '')
   const [stateOptions, setStateOptions] = useState<string[]>([])
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [logoError, setLogoError] = useState('')
@@ -192,6 +193,7 @@ export default function MorePage({
         whatsapp_phone: whatsappPhone.trim() || undefined,
         country: business?.country ?? 'NG',
         state: stateName,
+        address: address.trim(),
         measurement_unit: unit,
         currency: currency.trim().toUpperCase() || 'NGN',
         receipt_header: receiptHeader.trim(),
@@ -436,14 +438,28 @@ export default function MorePage({
           </label>
 
           <label>
-            Receipt line (optional)
+            Shop address
+            <input
+              value={address}
+              onChange={(event) => setAddress(event.target.value)}
+              maxLength={240}
+              placeholder="12 Allen Avenue, Ikeja"
+            />
+          </label>
+
+          <label>
+            Message of patronage
             <input
               value={receiptHeader}
               onChange={(event) => setReceiptHeader(event.target.value)}
               maxLength={240}
-              placeholder="Thank you for sewing with us"
+              placeholder="Thank you for your patronage"
             />
           </label>
+          <p className="status">
+            The receipt prints this message, the shop address, the account
+            email, and the logo.
+          </p>
 
           <label>
             Receipt footer (optional)

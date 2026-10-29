@@ -4,9 +4,30 @@ const WIDTH = 720
 
 export async function renderReceiptPng(receipt: PaymentReceipt): Promise<Blob> {
   const logo = receipt.logo_data_url
-    ? await loadImage(receipt.logo_data_url)
+    ? await loadImage(receipt.logo_data_url).catch(() => null)
     : null
-  const height = logo ? 1180 : 1080
+  const measure = document.createElement('canvas').getContext('2d')
+  if (!measure) {
+    throw new Error('Could not draw the receipt.')
+  }
+
+  const max = WIDTH - 96
+  const nameLines = wrapText(measure, receipt.shop_name, '700 34px Segoe UI, system-ui, sans-serif', max)
+  const addressLines = wrapText(measure, receipt.shop_address, '20px Segoe UI, system-ui, sans-serif', max)
+  const phoneLines = wrapText(measure, receipt.shop_phone, '20px Segoe UI, system-ui, sans-serif', max)
+  const emailLines = wrapText(measure, receipt.shop_email, '20px Segoe UI, system-ui, sans-serif', max)
+  const sloganLines = wrapText(measure, receipt.header, 'italic 20px Segoe UI, system-ui, sans-serif', max)
+  const footerLines = wrapText(measure, receipt.footer, '18px Segoe UI, system-ui, sans-serif', max)
+
+  let headerHeight = 36
+  if (logo) {
+    headerHeight += 128
+  }
+  headerHeight += nameLines.length * 40
+  headerHeight += (addressLines.length + phoneLines.length + emailLines.length + sloganLines.length) * 28
+  headerHeight += 28
+
+  const height = headerHeight + 720 + footerLines.length * 28
   const canvas = document.createElement('canvas')
   canvas.width = WIDTH
   canvas.height = height
@@ -18,9 +39,8 @@ export async function renderReceiptPng(receipt: PaymentReceipt): Promise<Blob> {
 
   ctx.fillStyle = '#f4f1eb'
   ctx.fillRect(0, 0, WIDTH, height)
-
   ctx.fillStyle = '#1f3d34'
-  ctx.fillRect(0, 0, WIDTH, logo ? 250 : 180)
+  ctx.fillRect(0, 0, WIDTH, headerHeight)
 
   let y = 36
   if (logo) {
@@ -36,25 +56,18 @@ export async function renderReceiptPng(receipt: PaymentReceipt): Promise<Blob> {
     ctx.clip()
     ctx.drawImage(logo, x, y, size, size)
     ctx.restore()
-    y += size + 18
+    y += size + 36
   }
 
   ctx.fillStyle = '#f7f4ef'
   ctx.textAlign = 'center'
-  ctx.font = '700 34px Segoe UI, system-ui, sans-serif'
-  ctx.fillText(receipt.shop_name, WIDTH / 2, y + 8)
-  y += 36
-  if (receipt.shop_phone) {
-    ctx.font = '20px Segoe UI, system-ui, sans-serif'
-    ctx.fillText(receipt.shop_phone, WIDTH / 2, y)
-    y += 28
-  }
-  if (receipt.header) {
-    ctx.font = '18px Segoe UI, system-ui, sans-serif'
-    ctx.fillText(receipt.header, WIDTH / 2, y)
-  }
+  y = drawCentered(ctx, nameLines, '700 34px Segoe UI, system-ui, sans-serif', y, 40)
+  y = drawCentered(ctx, addressLines, '20px Segoe UI, system-ui, sans-serif', y, 28)
+  y = drawCentered(ctx, phoneLines, '20px Segoe UI, system-ui, sans-serif', y, 28)
+  y = drawCentered(ctx, emailLines, '20px Segoe UI, system-ui, sans-serif', y, 28)
+  drawCentered(ctx, sloganLines, 'italic 20px Segoe UI, system-ui, sans-serif', y, 28)
 
-  let body = logo ? 290 : 220
+  let body = headerHeight + 48
   ctx.fillStyle = '#1c1917'
   ctx.textAlign = 'left'
   ctx.font = '700 22px Segoe UI, system-ui, sans-serif'
@@ -148,11 +161,11 @@ export async function renderReceiptPng(receipt: PaymentReceipt): Promise<Blob> {
   ctx.fillStyle = '#57534e'
   ctx.fillText('Authorised signature', WIDTH / 2, body)
 
-  if (receipt.footer) {
+  if (footerLines.length > 0) {
     body += 48
-    ctx.font = '18px Segoe UI, system-ui, sans-serif'
     ctx.fillStyle = '#1c1917'
-    ctx.fillText(receipt.footer, WIDTH / 2, body)
+    ctx.textAlign = 'center'
+    drawCentered(ctx, footerLines, '18px Segoe UI, system-ui, sans-serif', body, 28)
   }
 
   const blob = await new Promise<Blob | null>((resolve) => {
@@ -198,6 +211,58 @@ export function blobToBase64(blob: Blob): Promise<string> {
     reader.onerror = () => reject(new Error('Could not read the receipt image.'))
     reader.readAsDataURL(blob)
   })
+}
+
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  value: string | null | undefined,
+  font: string,
+  max: number,
+): string[] {
+  const text = value?.trim() ?? ''
+  if (!text) {
+    return []
+  }
+
+  ctx.font = font
+  const words = text.split(/\s+/)
+  const lines: string[] = []
+  let line = ''
+
+  for (const word of words) {
+    const next = line ? `${line} ${word}` : word
+    if (line && ctx.measureText(next).width > max) {
+      lines.push(line)
+      line = word
+    } else {
+      line = next
+    }
+  }
+
+  if (line) {
+    lines.push(line)
+  }
+
+  return lines
+}
+
+function drawCentered(
+  ctx: CanvasRenderingContext2D,
+  lines: string[],
+  font: string,
+  y: number,
+  gap: number,
+): number {
+  ctx.font = font
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+  for (const line of lines) {
+    ctx.fillText(line, WIDTH / 2, y)
+    y += gap
+  }
+  ctx.textBaseline = 'alphabetic'
+
+  return y
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {

@@ -20,6 +20,9 @@ class ReceiptText
         $number = self::ensureNumber($payment);
         $amount = Money::format((string) $payment->amount, $currency);
         $shop = $business?->name ?? 'Shop';
+        $address = $business?->address;
+        $email = $business?->user?->email;
+        $slogan = $business?->receipt_header;
 
         $name = $customer?->name ?: 'Customer';
         $outstanding = $customer
@@ -30,6 +33,18 @@ class ReceiptText
             "Receipt {$number}.",
             "Amount paid: {$amount}.",
         ];
+
+        if (filled($address)) {
+            $lines[] = "Address: {$address}.";
+        }
+
+        if (filled($email)) {
+            $lines[] = "Email: {$email}.";
+        }
+
+        if (filled($slogan)) {
+            $lines[] = $slogan;
+        }
 
         if (filled($payment->job?->title)) {
             $lines[] = 'Job: '.$payment->job->title.'.';
@@ -43,7 +58,9 @@ class ReceiptText
             'receipt_number' => $number,
             'shop_name' => $shop,
             'shop_phone' => $business?->phone,
-            'header' => $business?->receipt_header,
+            'shop_address' => filled($address) ? $address : null,
+            'shop_email' => filled($email) ? $email : null,
+            'header' => filled($slogan) ? $slogan : null,
             'footer' => $business?->receipt_footer,
             'logo_data_url' => BusinessController::logoDataUrl($business),
             'signature_name' => filled($business?->signature_name)

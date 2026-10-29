@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'name', 'phone', 'whatsapp_phone', 'country', 'state', 'measurement_unit', 'currency', 'receipt_header', 'receipt_footer', 'logo_path', 'signature_name', 'catalogue_extra', 'catalogue_free', 'catalogue_pack_amount'])]
+#[Fillable(['user_id', 'name', 'phone', 'whatsapp_phone', 'country', 'state', 'address', 'measurement_unit', 'currency', 'receipt_header', 'receipt_footer', 'logo_path', 'signature_name', 'catalogue_extra', 'catalogue_free', 'catalogue_pack_amount'])]
 class Business extends Model
 {
     /** @use HasFactory<BusinessFactory> */

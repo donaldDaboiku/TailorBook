@@ -10,6 +10,7 @@ export type Business = {
   whatsapp_phone: string | null
   country: string
   state: string | null
+  address?: string | null
   measurement_unit: 'cm' | 'in'
   currency: string
   receipt_header?: string | null
@@ -824,6 +825,7 @@ export async function updateBusiness(payload: {
   state: string
   measurement_unit: 'cm' | 'in'
   currency: string
+  address?: string
   receipt_header?: string
   receipt_footer?: string
   signature_name?: string
@@ -835,6 +837,7 @@ export async function updateBusiness(payload: {
     state: payload.state,
     measurement_unit: payload.measurement_unit,
     currency: payload.currency,
+    address: payload.address?.trim() ?? '',
     receipt_header: payload.receipt_header?.trim() ?? '',
     receipt_footer: payload.receipt_footer?.trim() ?? '',
     signature_name: payload.signature_name?.trim() ?? '',
@@ -1155,6 +1158,8 @@ export type PaymentReceipt = {
   receipt_number: string
   shop_name: string
   shop_phone: string | null
+  shop_address: string | null
+  shop_email: string | null
   header: string | null
   footer: string | null
   logo_data_url: string | null

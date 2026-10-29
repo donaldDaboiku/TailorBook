@@ -24,6 +24,7 @@ class ReceiptTest extends TestCase
             'user_id' => $user->id,
             'name' => 'Ada Atelier',
             'phone' => '08031234567',
+            'address' => '12 Allen Avenue, Ikeja',
             'receipt_header' => 'Thank you for sewing with us',
             'receipt_footer' => 'No refund after collection',
         ]);
@@ -48,6 +49,8 @@ class ReceiptTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.email', 'bola@example.com')
             ->assertJsonPath('data.shop_name', 'Ada Atelier')
+            ->assertJsonPath('data.shop_address', '12 Allen Avenue, Ikeja')
+            ->assertJsonPath('data.shop_email', $user->email)
             ->assertJsonPath('data.header', 'Thank you for sewing with us')
             ->assertJsonPath('data.footer', 'No refund after collection')
             ->assertJsonPath('data.customer', 'Bola')

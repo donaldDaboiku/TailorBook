@@ -38,6 +38,9 @@ class BusinessController extends Controller
             'whatsapp_phone' => $data['whatsapp_phone'] ?? $phone,
             'country' => strtoupper($data['country']),
             'state' => $data['state'],
+            'address' => array_key_exists('address', $data)
+                ? (filled($data['address']) ? $data['address'] : null)
+                : $business->address,
             'measurement_unit' => MeasurementUnit::from($data['measurement_unit']),
             'currency' => strtoupper($data['currency']),
             'receipt_header' => filled($data['receipt_header'] ?? null) ? $data['receipt_header'] : null,

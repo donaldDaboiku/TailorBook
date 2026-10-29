@@ -403,6 +403,9 @@ class PaystackBilling
 
                 return;
             }
+
+            app(Referrals::class)->notePlanRefunded($user);
+
             $days = (int) config('services.paystack.plan_days');
 
             if ($user->subscribed_until === null) {
@@ -483,6 +486,8 @@ class PaystackBilling
                     'subscription_status' => SubscriptionStatus::Subscribed,
                     'subscribed_until' => $base->addDays($days)->toDateString(),
                 ])->save();
+
+                app(Referrals::class)->notePlanPaid($user);
             }
 
             $locked->forceFill([

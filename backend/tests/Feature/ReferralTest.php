@@ -6,6 +6,7 @@ use App\Models\Business;
 use App\Models\Salesperson;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
+use App\Services\PaystackBilling;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -105,6 +106,72 @@ class ReferralTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.salespeople.0.paid', 1)
             ->assertJsonPath('data.salespeople.0.commission_label', '₦0.00');
+    }
+
+    public function test_a_paying_invite_gives_the_host_shop_a_free_month_after_admin_approval(): void
+    {
+        $host = Business::factory()->create(['name' => 'Host Atelier', 'invite_code' => 'HOST02']);
+        $guest = $this->registerUnder('HOST02', 'guest-month@example.com', 'Guest Atelier');
+
+        $admin = User::factory()->admin()->create();
+        Sanctum::actingAs($admin);
+        $this->getJson('/api/admin/referrals')
+            ->assertOk()
+            ->assertJsonPath('data.rewards.0.status', 'signed_up')
+            ->assertJsonPath('data.activities.0.kind', 'signed_up');
+
+        $billing = app(PaystackBilling::class);
+        $markPaid = new \ReflectionMethod(PaystackBilling::class, 'markPaid');
+        $payment = SubscriptionPayment::query()->create([
+            'user_id' => $guest->user_id,
+            'reference' => 'tm_guest_month',
+            'amount' => 500000,
+            'currency' => 'NGN',
+            'purpose' => 'plan',
+            'status' => 'pending',
+        ]);
+        $markPaid->invoke($billing, $payment, []);
+
+        $rewardId = $this->getJson('/api/admin/referrals')
+            ->assertOk()
+            ->assertJsonPath('data.rewards.0.status', 'pending')
+            ->json('data.rewards.0.id');
+
+        $billing->markRefunded('tm_guest_month');
+        $this->getJson('/api/admin/referrals')
+            ->assertOk()
+            ->assertJsonPath('data.rewards.0.status', 'signed_up');
+
+        $again = SubscriptionPayment::query()->create([
+            'user_id' => $guest->user_id,
+            'reference' => 'tm_guest_month_2',
+            'amount' => 500000,
+            'currency' => 'NGN',
+            'purpose' => 'plan',
+            'status' => 'pending',
+        ]);
+        $markPaid->invoke($billing, $again, []);
+
+        $this->postJson("/api/admin/referrals/{$rewardId}/approve")->assertOk();
+
+        $hostUser = $host->user()->first();
+        $this->assertSame('subscribed', $hostUser?->subscription_status?->value);
+        $this->assertSame(now()->addDays(30)->toDateString(), $hostUser?->subscribed_until?->toDateString());
+
+        $board = $this->getJson('/api/admin/referrals')->assertOk()->json('data');
+        $this->assertSame('approved', $board['rewards'][0]['status']);
+        $this->assertSame(now()->addDays(30)->toDateString(), $board['rewards'][0]['granted_until']);
+        $this->assertTrue(collect($board['activities'])->contains(
+            fn (array $row) => $row['kind'] === 'approved' && str_contains($row['summary'], 'Host Atelier'),
+        ));
+
+        $this->postJson("/api/admin/referrals/{$rewardId}/approve")->assertUnprocessable();
+
+        Sanctum::actingAs($host->user);
+        $this->getJson('/api/referral')
+            ->assertOk()
+            ->assertJsonPath('data.months_pending', 0)
+            ->assertJsonPath('data.months_approved', 1);
     }
 
     public function test_a_shop_cannot_change_the_referral_rate(): void

@@ -1051,6 +1051,102 @@ a.primary {
   gap: 1rem;
 }
 
+.app.admin-web {
+  max-width: 1120px;
+}
+
+.admin-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+
+.admin-nav button {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 650;
+  padding: 0.4rem 1rem;
+}
+
+.admin-nav button[aria-pressed='true'] {
+  background: var(--accent);
+  color: #f7f4ef;
+  border-color: var(--accent);
+}
+
+.stat-grid,
+.reward-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.reward-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stat-grid article,
+.reward-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  padding: 0.9rem 1rem;
+}
+
+.stat-grid span,
+.reward-card p,
+.activity-list time {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.stat-grid strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.8rem;
+}
+
+.reward-card h3 {
+  margin: 0 0 0.35rem;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.activity-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.activity-list li {
+  border-left: 3px solid var(--accent);
+  background: var(--paper);
+  border-radius: 0 12px 12px 0;
+  padding: 0.7rem 0.85rem;
+}
+
+.activity-list p {
+  margin: 0.2rem 0 0;
+}
+
+@media (max-width: 800px) {
+  .stat-grid,
+  .reward-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (min-width: 560px) {
   .modal-backdrop {
     align-items: center;

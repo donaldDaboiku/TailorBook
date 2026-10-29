@@ -60,6 +60,7 @@ class AuthController extends Controller
 
             $referrals->assign($business, $referrer);
             $referrals->ensureCode($business);
+            $referrals->noteSignup($business);
 
             return $user->load('business');
         });

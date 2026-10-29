@@ -18,6 +18,7 @@ class ReferralController extends Controller
         $code = $referrals->ensureCode($business);
         $counts = $referrals->counts($business);
         $offer = $referrals->offer();
+        $reward = $referrals->shopReward($business);
 
         return response()->json([
             'data' => [
@@ -28,6 +29,9 @@ class ReferralController extends Controller
                 'commission_label' => $counts['commission_label'],
                 'skip' => $offer['skip'],
                 'amount' => $offer['amount'],
+                'months_pending' => $reward['months_pending'],
+                'months_approved' => $reward['months_approved'],
+                'activities' => $reward['activities'],
             ],
         ]);
     }

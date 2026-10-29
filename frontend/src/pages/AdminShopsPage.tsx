@@ -12,6 +12,8 @@ import {
   unsuspendAdminShop,
   updateAdminCataloguePrice,
   updateAdminReferral,
+  approveAdminReferral,
+  rejectAdminReferral,
   createAdminSalesperson,
   listAdminReferrals,
   updateAdminShopState,
@@ -19,6 +21,8 @@ import {
   type AdminCatalogueOffer,
   type AdminPayment,
   type AdminReferralOffer,
+  type AdminReferralActivity,
+  type AdminReferralReward,
   type AdminSalesperson,
   type AdminShopReview,
   type ReviewStatus,
@@ -28,6 +32,36 @@ import {
   type SubscriptionStatus,
 } from '../api'
 import { useAuth } from '../auth'
+import AdminReferralsPage from './AdminReferralsPage'
+
+function AdminDesk({
+  desk,
+  pending,
+  onChange,
+}: {
+  desk: 'shops' | 'referrals'
+  pending: number
+  onChange: (next: 'shops' | 'referrals') => void
+}) {
+  return (
+    <nav className="admin-nav" aria-label="Admin pages">
+      <button
+        type="button"
+        aria-pressed={desk === 'shops'}
+        onClick={() => onChange('shops')}
+      >
+        Shops
+      </button>
+      <button
+        type="button"
+        aria-pressed={desk === 'referrals'}
+        onClick={() => onChange('referrals')}
+      >
+        Referrals{pending > 0 ? ` · ${pending}` : ''}
+      </button>
+    </nav>
+  )
+}
 
 export default function AdminShopsPage() {
   const { user, logout, appName } = useAuth()
@@ -54,7 +88,10 @@ export default function AdminShopsPage() {
   const [referralSkip, setReferralSkip] = useState('0')
   const [referralAmount, setReferralAmount] = useState('0')
   const [salespeople, setSalespeople] = useState<AdminSalesperson[]>([])
+  const [rewards, setRewards] = useState<AdminReferralReward[]>([])
+  const [activities, setActivities] = useState<AdminReferralActivity[]>([])
   const [salespersonName, setSalespersonName] = useState('')
+  const [desk, setDesk] = useState<'shops' | 'referrals'>('shops')
 
   const places = useMemo(() => {
     const counts = new Map<string, number>()
@@ -107,6 +144,8 @@ export default function AdminShopsPage() {
       setReferralSkip(String(referralRows.offer.skip))
       setReferralAmount(String(referralRows.offer.amount))
       setSalespeople(referralRows.salespeople)
+      setRewards(referralRows.rewards)
+      setActivities(referralRows.activities)
       setError('')
     } catch (err) {
       setError(firstError(err))
@@ -319,6 +358,35 @@ export default function AdminShopsPage() {
     }
   }
 
+  async function onApproveReward(id: string) {
+    setBusy(true)
+    setError('')
+    try {
+      await approveAdminReferral(id)
+      await reload(q, paymentFilter)
+    } catch (err) {
+      setError(firstError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function onDeclineReward(id: string) {
+    if (!window.confirm('Decline this free month?')) {
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      await rejectAdminReferral(id)
+      await reload(q, paymentFilter)
+    } catch (err) {
+      setError(firstError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function onResetPassword(
     shop: AdminShop,
     password: string,
@@ -342,8 +410,41 @@ export default function AdminShopsPage() {
     }
   }
 
+  const pendingRewards = rewards.filter((reward) => reward.status === 'pending').length
+
+  if (desk === 'referrals') {
+    return (
+      <>
+        <AdminDesk desk={desk} pending={pendingRewards} onChange={setDesk} />
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+        <AdminReferralsPage
+          offer={referralOffer}
+          salespeople={salespeople}
+          rewards={rewards}
+          activities={activities}
+          skip={referralSkip}
+          amount={referralAmount}
+          salespersonName={salespersonName}
+          busy={busy}
+          onSkip={setReferralSkip}
+          onAmount={setReferralAmount}
+          onSalespersonName={setSalespersonName}
+          onSaveRate={(event) => void onSaveReferral(event)}
+          onAddSalesperson={(event) => void onAddSalesperson(event)}
+          onApprove={(id) => void onApproveReward(id)}
+          onDecline={(id) => void onDeclineReward(id)}
+        />
+      </>
+    )
+  }
+
   return (
     <>
+      <AdminDesk desk={desk} pending={pendingRewards} onChange={setDesk} />
       <section className="card">
         <h1>Admin</h1>
         <p className="lede">
@@ -395,71 +496,6 @@ export default function AdminShopsPage() {
           <button type="submit" className="secondary" disabled={busy}>
             {busy ? 'Saving…' : 'Save catalogue'}
           </button>
-        </form>
-        <form className="form" onSubmit={(event) => void onSaveReferral(event)}>
-          <h2 className="section-title">Referral commission</h2>
-          <label>
-            Paying shops before commission starts
-            <input
-              type="number"
-              min="0"
-              max="500"
-              step="1"
-              value={referralSkip}
-              onChange={(event) => setReferralSkip(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Naira for each paying shop after that
-            <input
-              type="number"
-              min="0"
-              max="100000"
-              step="1"
-              value={referralAmount}
-              onChange={(event) => setReferralAmount(event.target.value)}
-              required
-            />
-          </label>
-          <p className="status">
-            A shop counts after a successful monthly plan payment. A refund
-            removes that count. You pay the commission yourself.
-            {referralOffer ? ` Saved rate: ${referralOffer.amount_label}.` : ''}
-          </p>
-          <button type="submit" className="secondary" disabled={busy}>
-            {busy ? 'Saving…' : 'Save referral'}
-          </button>
-        </form>
-        <form className="form" onSubmit={(event) => void onAddSalesperson(event)}>
-          <h2 className="section-title">Salesperson</h2>
-          <label>
-            Name
-            <input
-              value={salespersonName}
-              onChange={(event) => setSalespersonName(event.target.value)}
-              maxLength={120}
-              required
-            />
-          </label>
-          <button type="submit" className="secondary" disabled={busy}>
-            {busy ? 'Saving…' : 'Add salesperson'}
-          </button>
-          {salespeople.length === 0 ? (
-            <p className="status">No salesperson yet.</p>
-          ) : (
-            salespeople.map((person) => (
-              <p className="status" key={person.id}>
-                {person.name} · {person.code} · {person.signed_up} signed up ·{' '}
-                {person.paid} paid · {person.commission_label}
-                {person.shops.length > 0
-                  ? ` · ${person.shops
-                      .map((shop) => `${shop.name} (${shop.paid ? 'paid' : 'signed up'})`)
-                      .join(', ')}`
-                  : ''}
-              </p>
-            ))
-          )}
         </form>
         <label className="search-label">
           Search
@@ -994,8 +1030,8 @@ function ShopModal({
             ? `Invited by ${shop.referred_by}.`
             : 'No invite code was used.'}{' '}
           {shop.referral_signed_up ?? 0} shops used this code,{' '}
-          {shop.referral_paid ?? 0} have paid. Commission due{' '}
-          {shop.referral_commission_label ?? '₦0.00'}.
+          {shop.referral_paid ?? 0} have paid. A paid invite can receive one
+          free month from the Referrals page.
         </p>
         {(shop.referral_shops ?? []).length > 0 && (
           <ul>

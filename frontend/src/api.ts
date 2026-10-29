@@ -673,6 +673,9 @@ export type ShopReferral = {
   commission_label: string
   skip: number
   amount: number
+  months_pending: number
+  months_approved: number
+  activities: { id: string; at: string | null; summary: string }[]
 }
 
 export type AdminReferralOffer = {
@@ -691,6 +694,25 @@ export type AdminSalesperson = {
   shops: { name: string; email: string | null; paid: boolean }[]
 }
 
+export type AdminReferralReward = {
+  id: string
+  status: string
+  referrer_name: string | null
+  referrer_email: string | null
+  referred_name: string | null
+  referred_email: string | null
+  paid_at: string | null
+  approved_at: string | null
+  granted_until: string | null
+}
+
+export type AdminReferralActivity = {
+  id: string
+  kind: string
+  at: string | null
+  summary: string
+}
+
 export async function fetchReferral(): Promise<ShopReferral> {
   const data = await apiJson<{ data: ShopReferral }>('/api/referral')
 
@@ -700,12 +722,24 @@ export async function fetchReferral(): Promise<ShopReferral> {
 export async function listAdminReferrals(): Promise<{
   offer: AdminReferralOffer
   salespeople: AdminSalesperson[]
+  rewards: AdminReferralReward[]
+  activities: AdminReferralActivity[]
 }> {
   const data = await apiJson<{
-    data: { offer: AdminReferralOffer; salespeople: AdminSalesperson[] }
+    data: {
+      offer: AdminReferralOffer
+      salespeople: AdminSalesperson[]
+      rewards?: AdminReferralReward[]
+      activities?: AdminReferralActivity[]
+    }
   }>('/api/admin/referrals')
 
-  return data.data
+  return {
+    offer: data.data.offer,
+    salespeople: data.data.salespeople,
+    rewards: data.data.rewards ?? [],
+    activities: data.data.activities ?? [],
+  }
 }
 
 export async function updateAdminReferral(payload: {
@@ -727,6 +761,14 @@ export async function createAdminSalesperson(name: string): Promise<AdminSalespe
   })
 
   return data.data
+}
+
+export async function approveAdminReferral(id: string): Promise<void> {
+  await apiJson(`/api/admin/referrals/${id}/approve`, { method: 'POST' })
+}
+
+export async function rejectAdminReferral(id: string): Promise<void> {
+  await apiJson(`/api/admin/referrals/${id}/reject`, { method: 'POST' })
 }
 
 export async function updateAdminShopSubscription(

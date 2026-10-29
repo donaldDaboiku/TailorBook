@@ -279,7 +279,7 @@ function AuthenticatedApp() {
 
   if (user.role === 'admin') {
     return (
-      <Shell appName={appName} signedOut>
+      <Shell appName={appName} signedOut wide>
         <AdminShopsPage />
       </Shell>
     )
@@ -573,6 +573,7 @@ function Shell({
   children,
   signedOut = false,
   hideHeader = false,
+  wide = false,
   tab = 'home',
   onTabChange,
 }: {
@@ -580,13 +581,17 @@ function Shell({
   children: ReactNode
   signedOut?: boolean
   hideHeader?: boolean
+  wide?: boolean
   tab?: Tab
   onTabChange?: (tab: Tab) => void
 }) {
   const { t } = useI18n()
+  const shellClass = ['app', signedOut ? 'signed-out' : '', wide ? 'admin-web' : '']
+    .filter(Boolean)
+    .join(' ')
 
   return (
-    <div className={signedOut ? 'app signed-out' : 'app'}>
+    <div className={shellClass}>
       {!hideHeader && (
         <header className="topbar">
           <p className="app-name">{appName || 'Shop'}</p>

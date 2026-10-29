@@ -32,7 +32,11 @@ export default function MorePage({
   const [referralLink, setReferralLink] = useState('')
   const [referralSignedUp, setReferralSignedUp] = useState(0)
   const [referralPaid, setReferralPaid] = useState(0)
-  const [referralCommission, setReferralCommission] = useState('₦0.00')
+  const [monthsPending, setMonthsPending] = useState(0)
+  const [monthsApproved, setMonthsApproved] = useState(0)
+  const [referralActivities, setReferralActivities] = useState<
+    { id: string; summary: string }[]
+  >([])
   const [referralCopied, setReferralCopied] = useState(false)
   const [referralError, setReferralError] = useState('')
   const [name, setName] = useState(user?.name ?? '')
@@ -102,7 +106,9 @@ export default function MorePage({
         setReferralLink(referral.link)
         setReferralSignedUp(referral.signed_up)
         setReferralPaid(referral.paid)
-        setReferralCommission(referral.commission_label)
+        setMonthsPending(referral.months_pending)
+        setMonthsApproved(referral.months_approved)
+        setReferralActivities(referral.activities ?? [])
       })
       .catch((err) => {
         if (!cancelled) {
@@ -289,8 +295,8 @@ export default function MorePage({
         <h2 className="section-title">Invite a shop</h2>
         <p className="lede">
           Share this code with another tailor. They enter it when they register.
-          The shop counts after they pay the monthly plan. The admin pays the
-          commission.
+          After they pay the monthly plan, you can receive one free month once
+          the admin approves it.
         </p>
         {referralError ? (
           <p className="form-error" role="alert">
@@ -306,9 +312,20 @@ export default function MorePage({
               </label>
             </div>
             <p className="status">
-              {referralSignedUp} signed up. {referralPaid} paid. Commission due{' '}
-              {referralCommission}.
+              {referralSignedUp} signed up. {referralPaid} paid. {monthsPending}{' '}
+              free {monthsPending === 1 ? 'month' : 'months'} waiting for the
+              admin. {monthsApproved} free{' '}
+              {monthsApproved === 1 ? 'month' : 'months'} approved.
             </p>
+            {referralActivities.length > 0 && (
+              <ul className="activity-list">
+                {referralActivities.map((row) => (
+                  <li key={row.id}>
+                    <p>{row.summary}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
             <button
               type="button"
               className="secondary"

@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react'
 import { firstError } from '../api'
 import { useAuth } from '../auth'
 import { LanguageSelect, useI18n } from '../i18n'
-import PrivacyNotice from './PrivacyNotice'
 
 export default function LoginPage({
   onShowRegister,
@@ -17,7 +16,6 @@ export default function LoginPage({
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [showPrivacy, setShowPrivacy] = useState(false)
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -83,15 +81,19 @@ export default function LoginPage({
       </p>
 
       <p className="switch">
-        <button
-          type="button"
+        <a className="link" href="/terms.pdf" target="_blank" rel="noreferrer">
+          Terms
+        </a>
+        {' · '}
+        <a
           className="link"
-          onClick={() => setShowPrivacy((open) => !open)}
+          href="/privacy-notice.pdf"
+          target="_blank"
+          rel="noreferrer"
         >
-          {showPrivacy ? 'Hide the privacy notice' : 'Privacy notice'}
-        </button>
+          Privacy notice
+        </a>
       </p>
-      {showPrivacy && <PrivacyNotice />}
     </section>
   )
 }

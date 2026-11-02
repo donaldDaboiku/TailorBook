@@ -190,6 +190,7 @@ class AuthTest extends TestCase
             'currency' => 'NGN',
             'adult' => true,
             'privacy' => true,
+            'terms' => true,
         ], $overrides);
     }
 }

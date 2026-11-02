@@ -15,7 +15,6 @@ import { LanguageSelect, useI18n } from '../i18n'
 import CommunityPanel from './CommunityPanel'
 import ShopReviewCard from './ShopReviewCard'
 import MeasurementFieldsSettings from './MeasurementFieldsSettings'
-import PrivacyNotice from './PrivacyNotice'
 import SubscriptionBillingCard from './SubscriptionBillingCard'
 
 export default function MorePage({
@@ -595,7 +594,16 @@ export default function MorePage({
       </section>
 
       <section className="card muted-card">
-        <PrivacyNotice />
+        <h2 className="section-title">Terms and privacy</h2>
+        <p className="lede">
+          <a href="/terms.pdf" target="_blank" rel="noreferrer">
+            Terms (PDF)
+          </a>
+          {' · '}
+          <a href="/privacy-notice.pdf" target="_blank" rel="noreferrer">
+            Privacy notice (PDF)
+          </a>
+        </p>
       </section>
 
       <section className="card muted-card">

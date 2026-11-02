@@ -451,6 +451,7 @@ export async function register(payload: {
   invite_code?: string
   adult: boolean
   privacy: boolean
+  terms: boolean
 }): Promise<AuthResponse> {
   return authRequest('/api/auth/register', payload)
 }

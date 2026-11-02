@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { fetchPresence, firstError } from '../api'
 import { useAuth } from '../auth'
-import PrivacyNotice from './PrivacyNotice'
 
 export default function RegisterPage({
   onShowLogin,
@@ -24,7 +23,6 @@ export default function RegisterPage({
   })
   const [adult, setAdult] = useState(false)
   const [privacy, setPrivacy] = useState(false)
-  const [showPrivacy, setShowPrivacy] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -68,6 +66,7 @@ export default function RegisterPage({
         invite_code: inviteCode.trim().toUpperCase() || undefined,
         adult,
         privacy,
+        terms: privacy,
       })
     } catch (err) {
       setError(firstError(err))
@@ -197,14 +196,25 @@ export default function RegisterPage({
           </label>
         </fieldset>
 
-        <button
-          type="button"
-          className="link"
-          onClick={() => setShowPrivacy((open) => !open)}
-        >
-          {showPrivacy ? 'Hide the privacy notice' : 'Read the privacy notice'}
-        </button>
-        {showPrivacy && <PrivacyNotice />}
+        <p className="switch">
+          <a
+            className="link"
+            href="/terms.pdf"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Read the terms
+          </a>
+          {' · '}
+          <a
+            className="link"
+            href="/privacy-notice.pdf"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Read the privacy notice
+          </a>
+        </p>
 
         <label className="choice">
           <input
@@ -222,7 +232,7 @@ export default function RegisterPage({
             onChange={(event) => setPrivacy(event.target.checked)}
             required
           />
-          I agree to the privacy notice, including storage outside Nigeria
+          I agree to the terms and the privacy notice, including storage outside Nigeria
         </label>
 
         {error && <p className="form-error" role="alert">{error}</p>}

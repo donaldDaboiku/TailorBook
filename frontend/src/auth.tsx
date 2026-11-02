@@ -34,6 +34,9 @@ type AuthContextValue = {
     measurement_unit: 'cm' | 'in'
     currency: string
     invite_code?: string
+    adult: boolean
+    privacy: boolean
+    terms: boolean
   }) => Promise<void>
   setUser: (user: User) => void
   clearUser: () => void
@@ -106,6 +109,9 @@ export function AuthProvider({
     measurement_unit: 'cm' | 'in'
     currency: string
     invite_code?: string
+    adult: boolean
+    privacy: boolean
+    terms: boolean
   }) {
     const result = await apiRegister(payload)
     markTutorialUnseen(result.user.id)

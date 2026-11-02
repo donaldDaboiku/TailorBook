@@ -33,6 +33,7 @@ class RegisterRequest extends FormRequest
             'invite_code' => ['nullable', 'string', 'max:12'],
             'adult' => ['required', 'accepted'],
             'privacy' => ['required', 'accepted'],
+            'terms' => ['required', 'accepted'],
         ];
     }
 
@@ -63,6 +64,7 @@ class RegisterRequest extends FormRequest
             'invite_code.max' => 'That invite code is not recognised.',
             'adult.accepted' => 'You must be 18 or older to open a shop.',
             'privacy.accepted' => 'Agree to the privacy notice to open a shop.',
+            'terms.accepted' => 'Agree to the terms to open a shop.',
         ];
     }
 }

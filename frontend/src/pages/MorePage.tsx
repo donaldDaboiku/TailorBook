@@ -597,11 +597,11 @@ export default function MorePage({
         <h2 className="section-title">Terms and privacy</h2>
         <p className="lede">
           <a href="/terms.pdf" target="_blank" rel="noreferrer">
-            Terms (PDF)
+            Terms
           </a>
           {' · '}
           <a href="/privacy-notice.pdf" target="_blank" rel="noreferrer">
-            Privacy notice (PDF)
+            Privacy notice
           </a>
         </p>
       </section>

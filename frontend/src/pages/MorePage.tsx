@@ -15,6 +15,7 @@ import { LanguageSelect, useI18n } from '../i18n'
 import CommunityPanel from './CommunityPanel'
 import ShopReviewCard from './ShopReviewCard'
 import MeasurementFieldsSettings from './MeasurementFieldsSettings'
+import PrivacyNotice from './PrivacyNotice'
 import SubscriptionBillingCard from './SubscriptionBillingCard'
 
 export default function MorePage({
@@ -594,11 +595,15 @@ export default function MorePage({
       </section>
 
       <section className="card muted-card">
+        <PrivacyNotice />
+      </section>
+
+      <section className="card muted-card">
         <h2 className="section-title">Your records</h2>
         <p className="lede">
           Download every client, measurement, job, payment, and expense as a
-          spreadsheet. Do this before you delete the account. Deleting removes
-          the records from TailorMate.
+          spreadsheet. A single client’s file is on that client’s page. Do this
+          before you delete the account.
         </p>
         {exportError && (
           <p className="form-error" role="alert">
@@ -618,8 +623,9 @@ export default function MorePage({
       <section className="card muted-card">
         <h2 className="section-title">Delete account</h2>
         <p className="lede">
-          This permanently removes your login, shop, customers, measurements,
-          jobs, payments, and expenses.
+          This permanently removes your login, shop, clients, measurements,
+          jobs, payments, expenses, logo, catalogue photos, and feedback sent
+          from this login. Archived clients are removed as well.
         </p>
         <form className="form" onSubmit={onDeleteAccount}>
           <label>

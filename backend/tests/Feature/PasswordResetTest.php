@@ -72,9 +72,23 @@ class PasswordResetTest extends TestCase
         $this->putJson("/api/admin/shops/{$tailor->id}/password", [
             'password' => 'temp-password',
             'password_confirmation' => 'temp-password',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['reason']);
+
+        $this->putJson("/api/admin/shops/{$tailor->id}/password", [
+            'password' => 'temp-password',
+            'password_confirmation' => 'temp-password',
+            'reason' => 'Owner forgot the password',
         ])
             ->assertOk()
             ->assertJsonPath('data.email', 'ada@example.com');
+
+        $this->assertDatabaseHas('admin_actions', [
+            'user_id' => $admin->id,
+            'target_user_id' => $tailor->id,
+            'action' => 'password_reset',
+            'target_email' => 'ada@example.com',
+            'reason' => 'Owner forgot the password',
+        ]);
 
         $this->assertTrue(Hash::check('temp-password', $tailor->fresh()->password));
 

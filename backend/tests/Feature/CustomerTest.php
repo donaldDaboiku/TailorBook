@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Business;
 use App\Models\Customer;
+use App\Models\CustomerJob;
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -150,6 +152,54 @@ class CustomerTest extends TestCase
             ->assertJsonPath('data.phone', '08037654321')
             ->assertJsonPath('data.whatsapp_phone', '08039998877')
             ->assertJsonPath('data.address', 'Enugu');
+    }
+
+    public function test_a_shop_can_download_and_erase_one_client(): void
+    {
+        $user = $this->tailor();
+        $customer = Customer::factory()->create([
+            'business_id' => $user->business->id,
+            'name' => 'Grace Ada',
+            'phone' => '08031110000',
+        ]);
+        $other = Customer::factory()->create([
+            'business_id' => $user->business->id,
+            'name' => 'Bola Stone',
+            'phone' => '08032220000',
+        ]);
+        $job = CustomerJob::factory()->create([
+            'business_id' => $user->business->id,
+            'customer_id' => $customer->id,
+            'agreed_amount' => '20000.00',
+        ]);
+        $payment = Payment::factory()->create([
+            'business_id' => $user->business->id,
+            'customer_id' => $customer->id,
+            'customer_job_id' => $job->id,
+            'amount' => '5000.00',
+        ]);
+        $customer->delete();
+
+        Sanctum::actingAs($user);
+
+        $this->get("/api/customers/{$customer->id}/records")
+            ->assertOk()
+            ->assertSee('Grace Ada')
+            ->assertDontSee('Bola Stone');
+
+        $stranger = $this->tailor('stranger@example.com');
+        Sanctum::actingAs($stranger);
+        $this->postJson("/api/customers/{$customer->id}/erase")->assertNotFound();
+
+        Sanctum::actingAs($user);
+        $this->postJson("/api/customers/{$customer->id}/erase")
+            ->assertOk()
+            ->assertJsonPath('message', 'Client erased.');
+
+        $this->assertDatabaseMissing('customers', ['id' => $customer->id]);
+        $this->assertDatabaseMissing('customer_jobs', ['id' => $job->id]);
+        $this->assertDatabaseMissing('payments', ['id' => $payment->id]);
+        $this->assertDatabaseHas('customers', ['id' => $other->id]);
     }
 
     public function test_guests_cannot_manage_customers(): void

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ResetShopPasswordRequest;
 use App\Http\Requests\Admin\UpdateShopStateRequest;
 use App\Http\Requests\Admin\UpdateShopSubscriptionRequest;
+use App\Models\AdminAction;
 use App\Models\Business;
 use App\Models\CatalogueItem;
 use App\Models\Setting;
@@ -85,6 +86,11 @@ class ShopController extends Controller
         return response()->json([
             'data' => $shops,
             'catalogue' => $this->catalogueOffer(),
+            'actions' => AdminAction::query()
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->limit(20)
+                ->get(['id', 'action', 'target_email', 'reason', 'created_at']),
         ]);
     }
 
@@ -212,6 +218,14 @@ class ShopController extends Controller
             'password' => $request->validated('password'),
         ])->save();
         $user->tokens()->delete();
+
+        AdminAction::query()->create([
+            'user_id' => $request->user()?->id,
+            'target_user_id' => $user->id,
+            'action' => 'password_reset',
+            'target_email' => $user->email,
+            'reason' => $request->validated('reason'),
+        ]);
 
         return response()->json([
             'message' => 'Password reset. Tell the shop owner the new password securely.',

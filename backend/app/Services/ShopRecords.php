@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class ShopRecords
 {
-    public function csv(Business $business): string
+    public function csv(Business $business, ?Customer $only = null): string
     {
         $handle = fopen('php://temp', 'r+');
         fwrite($handle, "\xEF\xBB\xBF");
@@ -38,16 +38,19 @@ class ShopRecords
 
         $unit = $business->measurement_unit?->value ?? 'in';
 
-        fputcsv($handle, $this->row([
-            'record' => 'shop',
-            'customer' => $business->name,
-            'phone' => $business->phone,
-            'whatsapp' => $business->whatsapp_phone,
-            'detail' => $business->user?->email,
-        ]));
+        if ($only === null) {
+            fputcsv($handle, $this->row([
+                'record' => 'shop',
+                'customer' => $business->name,
+                'phone' => $business->phone,
+                'whatsapp' => $business->whatsapp_phone,
+                'detail' => $business->user?->email,
+            ]));
+        }
 
         $customers = Customer::withTrashed()
             ->where('business_id', $business->id)
+            ->when($only instanceof Customer, fn ($query) => $query->whereKey($only->id))
             ->with([
                 'measurements' => fn ($query) => $query->withTrashed()->with(['template', 'values.field']),
                 'jobs' => fn ($query) => $query->withTrashed(),
@@ -103,22 +106,24 @@ class ShopRecords
             }
         }
 
-        $expenses = Expense::withTrashed()
-            ->where('business_id', $business->id)
-            ->with('category')
-            ->orderBy('spent_on')
-            ->get();
+        if ($only === null) {
+            $expenses = Expense::withTrashed()
+                ->where('business_id', $business->id)
+                ->with('category')
+                ->orderBy('spent_on')
+                ->get();
 
-        foreach ($expenses as $expense) {
-            fputcsv($handle, $this->row([
-                'record' => 'expense',
-                'archived' => $expense->trashed() ? 'yes' : 'no',
-                'date' => $expense->spent_on?->toDateString(),
-                'field' => $expense->category?->name,
-                'amount' => (string) $expense->amount,
-                'method' => $expense->method?->value,
-                'detail' => $expense->description ?: $expense->note,
-            ]));
+            foreach ($expenses as $expense) {
+                fputcsv($handle, $this->row([
+                    'record' => 'expense',
+                    'archived' => $expense->trashed() ? 'yes' : 'no',
+                    'date' => $expense->spent_on?->toDateString(),
+                    'field' => $expense->category?->name,
+                    'amount' => (string) $expense->amount,
+                    'method' => $expense->method?->value,
+                    'detail' => $expense->description ?: $expense->note,
+                ]));
+            }
         }
 
         rewind($handle);
@@ -128,9 +133,9 @@ class ShopRecords
         return $csv;
     }
 
-    public function filename(Business $business): string
+    public function filename(Business $business, ?Customer $only = null): string
     {
-        $slug = Str::slug($business->name) ?: 'shop';
+        $slug = Str::slug($only?->name ?: $business->name) ?: 'records';
 
         return $slug.'-records-'.now()->format('Y-m-d').'.csv';
     }

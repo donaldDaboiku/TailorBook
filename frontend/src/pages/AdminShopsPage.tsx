@@ -18,6 +18,7 @@ import {
   listAdminReferrals,
   updateAdminShopState,
   updateAdminShopSubscription,
+  type AdminAction,
   type AdminCatalogueOffer,
   type AdminPayment,
   type AdminReferralOffer,
@@ -66,6 +67,7 @@ function AdminDesk({
 export default function AdminShopsPage() {
   const { user, logout, appName } = useAuth()
   const [shops, setShops] = useState<AdminShop[]>([])
+  const [actions, setActions] = useState<AdminAction[]>([])
   const [payments, setPayments] = useState<AdminPayment[]>([])
   const [feedback, setFeedback] = useState<FeedbackNote[]>([])
   const [reviews, setReviews] = useState<AdminShopReview[]>([])
@@ -133,6 +135,7 @@ export default function AdminShopsPage() {
         listAdminReferrals(),
       ])
       setShops(shopList.shops)
+      setActions(shopList.actions)
       setCatalogue(shopList.catalogue)
       setFreeStyles(String(shopList.catalogue.free))
       setPackStyles(String(shopList.catalogue.pack))
@@ -391,6 +394,7 @@ export default function AdminShopsPage() {
     shop: AdminShop,
     password: string,
     passwordConfirmation: string,
+    reason: string,
   ) {
     setActionId(shop.id)
     setError('')
@@ -399,10 +403,12 @@ export default function AdminShopsPage() {
       await resetAdminShopPassword(shop.id, {
         password,
         password_confirmation: passwordConfirmation,
+        reason,
       })
       window.alert(
         `Password updated for ${shop.email}. Tell the owner the new password securely (not by public chat if you can avoid it).`,
       )
+      await reload(q, paymentFilter)
     } catch (err) {
       setError(firstError(err))
     } finally {
@@ -672,6 +678,24 @@ export default function AdminShopsPage() {
         </section>
       )}
 
+      {!loading && actions.length > 0 && (
+        <section className="card muted-card">
+          <h2 className="section-title">Password resets</h2>
+          <p className="status">
+            Each reset keeps the reason. The shop email is removed if that
+            account is deleted.
+          </p>
+          <ol className="activity-list">
+            {actions.map((action) => (
+              <li key={action.id}>
+                {action.created_at.slice(0, 10)} ·{' '}
+                {action.target_email ?? 'Deleted shop'} · {action.reason}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
       {!loading && (
         <section className="card muted-card">
           <div className="row-between">
@@ -780,8 +804,8 @@ export default function AdminShopsPage() {
           onSaveSubscription={(status, until) =>
             void onSaveSubscription(selectedShop, status, until)
           }
-          onResetPassword={(password, confirmation) =>
-            void onResetPassword(selectedShop, password, confirmation)
+          onResetPassword={(password, confirmation, reason) =>
+            void onResetPassword(selectedShop, password, confirmation, reason)
           }
         />
       )}
@@ -806,7 +830,7 @@ function ShopModal({
   onToggleSuspend: () => void
   onSaveState: (state: string) => Promise<void>
   onSaveSubscription: (status: SubscriptionStatus, until: string) => void
-  onResetPassword: (password: string, confirmation: string) => void
+  onResetPassword: (password: string, confirmation: string, reason: string) => void
 }) {
   const [status, setStatus] = useState<SubscriptionStatus>(
     shop.subscription_status === 'subscribed' ? 'subscribed' : 'free',
@@ -814,6 +838,7 @@ function ShopModal({
   const [until, setUntil] = useState(shop.subscribed_until ?? defaultUntil())
   const [newPassword, setNewPassword] = useState('')
   const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('')
+  const [reason, setReason] = useState('')
   const [stateName, setStateName] = useState(shop.state ?? '')
   const [stateError, setStateError] = useState('')
   const [stateSaved, setStateSaved] = useState(false)
@@ -842,9 +867,10 @@ function ShopModal({
 
   function onSubmitPassword(event: FormEvent) {
     event.preventDefault()
-    onResetPassword(newPassword, newPasswordConfirmation)
+    onResetPassword(newPassword, newPasswordConfirmation, reason.trim())
     setNewPassword('')
     setNewPasswordConfirmation('')
+    setReason('')
   }
 
   return (
@@ -1046,8 +1072,19 @@ function ShopModal({
         <form className="form" onSubmit={onSubmitPassword}>
           <h3 className="section-title">Reset password</h3>
           <p className="status">
-            Set a temporary password, then tell the owner privately.
+            Set a temporary password, then tell the owner privately. The reason
+            is kept.
           </p>
+          <label>
+            Why is this password being reset?
+            <input
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              required
+              minLength={8}
+              maxLength={200}
+            />
+          </label>
           <label>
             New password
             <input

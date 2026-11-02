@@ -19,6 +19,7 @@ class ResetShopPasswordRequest extends FormRequest
     {
         return [
             'password' => ['required', 'confirmed', Password::defaults()],
+            'reason' => ['required', 'string', 'min:8', 'max:200'],
         ];
     }
 
@@ -29,6 +30,8 @@ class ResetShopPasswordRequest extends FormRequest
     {
         return [
             'password.confirmed' => 'The password confirmation does not match.',
+            'reason.required' => 'Say why this password is being reset.',
+            'reason.min' => 'Say why this password is being reset.',
         ];
     }
 }

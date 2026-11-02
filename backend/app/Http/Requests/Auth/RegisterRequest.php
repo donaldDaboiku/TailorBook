@@ -31,6 +31,8 @@ class RegisterRequest extends FormRequest
             'measurement_unit' => ['required', Rule::enum(MeasurementUnit::class)],
             'currency' => ['required', 'string', 'size:3'],
             'invite_code' => ['nullable', 'string', 'max:12'],
+            'adult' => ['required', 'accepted'],
+            'privacy' => ['required', 'accepted'],
         ];
     }
 
@@ -59,6 +61,8 @@ class RegisterRequest extends FormRequest
             'state.required' => 'Choose the state your shop is in.',
             'state.in' => 'Choose a Nigerian state.',
             'invite_code.max' => 'That invite code is not recognised.',
+            'adult.accepted' => 'You must be 18 or older to open a shop.',
+            'privacy.accepted' => 'Agree to the privacy notice to open a shop.',
         ];
     }
 }

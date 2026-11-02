@@ -61,6 +61,7 @@ class AuthController extends Controller
             $referrals->assign($business, $referrer);
             $referrals->ensureCode($business);
             $referrals->noteSignup($business);
+            $user->forceFill(['privacy_accepted_at' => now()])->save();
 
             return $user->load('business');
         });

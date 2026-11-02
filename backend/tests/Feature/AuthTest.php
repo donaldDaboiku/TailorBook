@@ -37,6 +37,7 @@ class AuthTest extends TestCase
             ->assertJsonPath('user.subscribed_until', now()->addDays(14)->toDateString())
             ->assertJsonStructure(['token', 'user']);
 
+        $this->assertNotNull(User::query()->where('email', 'ada@example.com')->value('privacy_accepted_at'));
         $this->assertDatabaseHas('users', ['email' => 'ada@example.com']);
         $this->assertDatabaseHas('businesses', [
             'name' => 'Ada Atelier',
@@ -63,6 +64,19 @@ class AuthTest extends TestCase
 
         $this->getJson('/api/customers')->assertForbidden();
         $this->getJson('/api/billing/plan')->assertOk();
+    }
+
+    public function test_register_requires_an_adult_who_accepts_the_privacy_notice(): void
+    {
+        $this->postJson('/api/auth/register', $this->registrationPayload([
+            'email' => 'young@example.com',
+            'adult' => false,
+            'privacy' => false,
+        ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['adult', 'privacy']);
+
+        $this->assertDatabaseMissing('users', ['email' => 'young@example.com']);
     }
 
     public function test_register_rejects_a_duplicate_email(): void
@@ -174,6 +188,8 @@ class AuthTest extends TestCase
             'state' => 'Lagos',
             'measurement_unit' => 'in',
             'currency' => 'NGN',
+            'adult' => true,
+            'privacy' => true,
         ], $overrides);
     }
 }

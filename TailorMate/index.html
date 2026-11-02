@@ -160,6 +160,7 @@
           <div><label for="feedback-message">Feedback</label><textarea id="feedback-message" name="message" maxlength="1500" required placeholder="What should we improve?"></textarea></div>
           <button class="send" type="submit">Send to the admin</button>
           <p class="form-note" id="feedback-note" aria-live="polite">This message is saved for the TailorMate admin.</p>
+          <p class="form-note"><a href="#privacy">Privacy notice</a></p>
         </form>
       </div>
     </div>
@@ -181,7 +182,21 @@
       <p class="fine"><a class="btn primary" id="about-app" href="https://tailormate-web.onrender.com" target="_blank" rel="noopener noreferrer">Open the app</a></p>
     </div>
   </section>
-  <footer><span>© <span id="year">2026</span> TailorMate</span><span>Built by <a href="https://www.gitsystemng.com" target="_blank" rel="noopener noreferrer">gitsystemng</a></span></footer>
+  <section class="section" id="privacy" aria-labelledby="privacy-title">
+    <div class="panel about-copy">
+      <div class="eyebrow"><span class="dot"></span> Nigeria Data Protection Act</div>
+      <h2 id="privacy-title">Privacy notice</h2>
+      <p>TailorMate is operated by gitsystemng. This notice explains what the app does with personal data.</p>
+      <p>A shop account keeps the owner’s name, email, shop name, phone, WhatsApp number, state, address, logo, and receipt message. The password is stored so it cannot be read back. Paystack takes the subscription payment. TailorMate keeps the payment reference and amount, and does not keep the card number.</p>
+      <p>The shop keeps each client’s name, phone, WhatsApp number, email, gender, address, notes, body measurements, jobs, and payments. Catalogue photos are of clothes. The shop decides what to enter and tells the client.</p>
+      <p>The shop sees its own clients. A TailorMate admin can see the shop’s name, email, phone, and state, and can set a new password. That reset is stored with the reason. The admin has no screen of client measurements. Paystack receives the shop email when a subscription is paid. An emailed receipt or notice goes through the email service. A WhatsApp chat stays on WhatsApp. The database and files are stored by Render, outside Nigeria. Render may keep a backup after a deletion for its own backup period.</p>
+      <p>A client stays until the shop erases that client or deletes the shop account. Archive only hides a client. Deleting the account removes the login, shop, clients, measurements, jobs, payments, expenses, logo, catalogue photos, and feedback sent from that login. A referral note that named the shop is rewritten so the name is gone. Paystack keeps its own payment record.</p>
+      <p>On More, the shop can download every record or delete the account. On a client, the shop can correct the details, download that client’s file, or erase the client. A client asks the shop for a copy, a correction, or deletion. You must be 18 or older to open a shop.</p>
+      <p>If we learn of a breach that is likely to risk people’s rights, we tell the Nigeria Data Protection Commission within 72 hours, and we tell the affected shops when the risk is high.</p>
+      <p>Write to gitsystemng through <a href="https://www.gitsystemng.com" target="_blank" rel="noopener noreferrer">gitsystemng.com</a>, or to the Nigeria Data Protection Commission at <a href="https://ndpc.gov.ng" target="_blank" rel="noopener noreferrer">ndpc.gov.ng</a>.</p>
+    </div>
+  </section>
+  <footer><span>© <span id="year">2026</span> TailorMate</span><span><a href="#privacy">Privacy</a> · Built by <a href="https://www.gitsystemng.com" target="_blank" rel="noopener noreferrer">gitsystemng</a></span></footer>
 </div>
 <script>
   const APP_URL = 'https://tailormate-web.onrender.com'

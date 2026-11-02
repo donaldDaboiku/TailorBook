@@ -45,6 +45,7 @@ class User extends Authenticatable implements CanResetPasswordContract
             'suspended_at' => 'datetime',
             'subscription_status' => SubscriptionStatus::class,
             'subscribed_until' => 'date',
+            'privacy_accepted_at' => 'datetime',
         ];
     }
 

@@ -62,7 +62,10 @@ export default function CustomerFormPage({
   return (
     <section className="card">
       <h1>{customer ? 'Edit customer' : 'New customer'}</h1>
-      <p className="lede">Name and phone are enough to start.</p>
+      <p className="lede">
+        Name and phone are enough to start. Tell this client that TailorMate
+        keeps these details, including on servers outside Nigeria.
+      </p>
 
       <form className="form" onSubmit={onSubmit}>
         <label>

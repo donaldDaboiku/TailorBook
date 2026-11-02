@@ -230,6 +230,8 @@ class ReferralTest extends TestCase
             'state' => 'Lagos',
             'measurement_unit' => 'in',
             'currency' => 'NGN',
+            'adult' => true,
+            'privacy' => true,
         ], $overrides);
     }
 }

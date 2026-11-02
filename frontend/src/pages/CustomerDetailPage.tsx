@@ -3,6 +3,8 @@ import {
   archiveCustomer,
   archiveJob,
   archivePayment,
+  downloadCustomerRecords,
+  eraseCustomer,
   emailPaymentReceipt,
   fetchPaymentReceipt,
   firstError,
@@ -56,6 +58,7 @@ export default function CustomerDetailPage({
   const [payments, setPayments] = useState<Payment[]>([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [recordBusy, setRecordBusy] = useState(false)
   const [receiptPayment, setReceiptPayment] = useState<Payment | null>(null)
 
   async function reload() {
@@ -99,6 +102,45 @@ export default function CustomerDetailPage({
     setBusy(true)
     try {
       await archiveCustomer(customer.id)
+      onArchived()
+    } catch (err) {
+      setError(firstError(err))
+      setBusy(false)
+    }
+  }
+
+  async function onDownloadRecord() {
+    if (!customer) {
+      return
+    }
+
+    setRecordBusy(true)
+    setError('')
+    try {
+      await downloadCustomerRecords(customer.id)
+    } catch (err) {
+      setError(firstError(err))
+    } finally {
+      setRecordBusy(false)
+    }
+  }
+
+  async function onErase() {
+    if (!customer) {
+      return
+    }
+
+    if (
+      !window.confirm(
+        `Erase ${customer.name}? This deletes their name, phone, measurements, jobs, and payments. It cannot be undone.`,
+      )
+    ) {
+      return
+    }
+
+    setBusy(true)
+    try {
+      await eraseCustomer(customer.id)
       onArchived()
     } catch (err) {
       setError(firstError(err))
@@ -398,6 +440,11 @@ export default function CustomerDetailPage({
           )}
         </dl>
 
+        <p className="status">
+          If this client asks for a copy, correct the details or download their
+          record. If they ask to be deleted, erase them. Archive only hides the
+          record.
+        </p>
         <button
           type="button"
           className="secondary"
@@ -407,11 +454,27 @@ export default function CustomerDetailPage({
         </button>
         <button
           type="button"
+          className="secondary"
+          onClick={() => void onDownloadRecord()}
+          disabled={recordBusy}
+        >
+          {recordBusy ? 'Preparing…' : "Download this client's record"}
+        </button>
+        <button
+          type="button"
           className="secondary danger"
           onClick={onArchive}
           disabled={busy}
         >
-          {busy ? 'Archiving…' : 'Archive customer'}
+          {busy ? 'Working…' : 'Archive customer'}
+        </button>
+        <button
+          type="button"
+          className="secondary danger"
+          onClick={() => void onErase()}
+          disabled={busy}
+        >
+          Erase this client
         </button>
         {error && (
           <p className="form-error" role="alert">

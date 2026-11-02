@@ -82,6 +82,8 @@ class PublicPresenceTest extends TestCase
             'state' => 'Paris',
             'measurement_unit' => 'in',
             'currency' => 'NGN',
+            'adult' => true,
+            'privacy' => true,
         ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['state']);

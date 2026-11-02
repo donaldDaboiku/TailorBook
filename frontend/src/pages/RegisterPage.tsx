@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { fetchPresence, firstError } from '../api'
 import { useAuth } from '../auth'
+import PrivacyNotice from './PrivacyNotice'
 
 export default function RegisterPage({
   onShowLogin,
@@ -21,6 +22,9 @@ export default function RegisterPage({
     const params = new URLSearchParams(window.location.search)
     return (params.get('invite') ?? '').trim().toUpperCase()
   })
+  const [adult, setAdult] = useState(false)
+  const [privacy, setPrivacy] = useState(false)
+  const [showPrivacy, setShowPrivacy] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -62,6 +66,8 @@ export default function RegisterPage({
         measurement_unit: unit,
         currency: 'NGN',
         invite_code: inviteCode.trim().toUpperCase() || undefined,
+        adult,
+        privacy,
       })
     } catch (err) {
       setError(firstError(err))
@@ -190,6 +196,34 @@ export default function RegisterPage({
             Centimeters
           </label>
         </fieldset>
+
+        <button
+          type="button"
+          className="link"
+          onClick={() => setShowPrivacy((open) => !open)}
+        >
+          {showPrivacy ? 'Hide the privacy notice' : 'Read the privacy notice'}
+        </button>
+        {showPrivacy && <PrivacyNotice />}
+
+        <label className="choice">
+          <input
+            type="checkbox"
+            checked={adult}
+            onChange={(event) => setAdult(event.target.checked)}
+            required
+          />
+          I am 18 or older
+        </label>
+        <label className="choice">
+          <input
+            type="checkbox"
+            checked={privacy}
+            onChange={(event) => setPrivacy(event.target.checked)}
+            required
+          />
+          I agree to the privacy notice, including storage outside Nigeria
+        </label>
 
         {error && <p className="form-error" role="alert">{error}</p>}
 

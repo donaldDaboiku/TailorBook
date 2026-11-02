@@ -84,6 +84,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/customers/{customer}', [CustomerController::class, 'show']);
     Route::put('/customers/{customer}', [CustomerController::class, 'update']);
     Route::delete('/customers/{customer}', [CustomerController::class, 'destroy']);
+    Route::post('/customers/{customer}/erase', [CustomerController::class, 'erase']);
+    Route::get('/customers/{customer}/records', [CustomerController::class, 'records']);
     Route::get('/customers/{customer}/whatsapp-templates', [WhatsAppController::class, 'templates']);
 
     Route::get('/measurement-templates', [MeasurementTemplateController::class, 'index']);

@@ -449,6 +449,8 @@ export async function register(payload: {
   measurement_unit: 'cm' | 'in'
   currency: string
   invite_code?: string
+  adult: boolean
+  privacy: boolean
 }): Promise<AuthResponse> {
   return authRequest('/api/auth/register', payload)
 }
@@ -485,7 +487,7 @@ export async function resetPassword(payload: {
 
 export async function resetAdminShopPassword(
   userId: number,
-  payload: { password: string; password_confirmation: string },
+  payload: { password: string; password_confirmation: string; reason: string },
 ): Promise<AdminShop> {
   const data = await apiJson<{ data: AdminShop; message: string }>(
     `/api/admin/shops/${userId}/password`,
@@ -528,14 +530,24 @@ export type AdminCatalogueOffer = {
   amount_label: string
 }
 
+export type AdminAction = {
+  id: string
+  action: string
+  target_email: string | null
+  reason: string
+  created_at: string
+}
+
 export async function listAdminShops(q = ''): Promise<{
   shops: AdminShop[]
   catalogue: AdminCatalogueOffer
+  actions: AdminAction[]
 }> {
   const query = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''
   const data = await apiJson<{
     data: AdminShop[]
     catalogue?: AdminCatalogueOffer
+    actions?: AdminAction[]
   }>(`/api/admin/shops${query}`)
 
   if (!Array.isArray(data.data)) {
@@ -550,6 +562,7 @@ export async function listAdminShops(q = ''): Promise<{
       amount: 1000,
       amount_label: '₦1,000.00',
     },
+    actions: Array.isArray(data.actions) ? data.actions : [],
   }
 }
 
@@ -998,6 +1011,34 @@ export async function archiveCustomer(id: string): Promise<void> {
   await apiJson<{ message: string }>(`/api/customers/${id}`, {
     method: 'DELETE',
   })
+}
+
+export async function eraseCustomer(id: string): Promise<void> {
+  await apiJson<{ message: string }>(`/api/customers/${id}/erase`, {
+    method: 'POST',
+  })
+}
+
+export async function downloadCustomerRecords(id: string): Promise<void> {
+  const response = await fetch(apiUrl(`/api/customers/${id}/records`), {
+    headers: authHeaders(),
+  })
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  const header = response.headers.get('Content-Disposition') ?? ''
+  const match = /filename="([^"]+)"/.exec(header)
+  link.href = url
+  link.download = match?.[1] ?? 'client-records.csv'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
 }
 
 export async function listMeasurementTemplates(
@@ -1594,7 +1635,7 @@ export function currentMonth(): string {
 
 async function authRequest(
   path: string,
-  body: Record<string, string>,
+  body: Record<string, string | boolean | undefined>,
 ): Promise<AuthResponse> {
   const response = await fetch(apiUrl(path), {
     method: 'POST',

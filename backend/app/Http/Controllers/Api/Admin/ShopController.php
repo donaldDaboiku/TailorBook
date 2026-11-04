@@ -33,12 +33,12 @@ class ShopController extends Controller
             ])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
-                    $inner->where('name', 'ilike', "%{$search}%")
-                        ->orWhere('email', 'ilike', "%{$search}%")
+                    $inner->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
                         ->orWhereHas('business', function ($business) use ($search) {
-                            $business->where('name', 'ilike', "%{$search}%")
-                                ->orWhere('phone', 'ilike', "%{$search}%")
-                                ->orWhere('state', 'ilike', "%{$search}%");
+                            $business->where('name', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%")
+                                ->orWhere('state', 'like', "%{$search}%");
                         });
                 });
             })

@@ -21,12 +21,12 @@ class PaymentController extends Controller
             ->when($status !== '', fn ($query) => $query->where('status', $status))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
-                    $inner->where('reference', 'ilike', "%{$search}%")
+                    $inner->where('reference', 'like', "%{$search}%")
                         ->orWhereHas('user', function ($user) use ($search) {
-                            $user->where('name', 'ilike', "%{$search}%")
-                                ->orWhere('email', 'ilike', "%{$search}%")
+                            $user->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%")
                                 ->orWhereHas('business', function ($business) use ($search) {
-                                    $business->where('name', 'ilike', "%{$search}%");
+                                    $business->where('name', 'like', "%{$search}%");
                                 });
                         });
                 });

@@ -10,42 +10,44 @@ class BackupDatabaseCommand extends Command
 {
     protected $signature = 'backup:database';
 
-    protected $description = 'Dump the PostgreSQL database to storage/app/private/backups';
+    protected $description = 'Dump the MySQL database to storage/app/private/backups';
 
     public function handle(): int
     {
-        if (config('database.default') !== 'pgsql') {
-            $this->error('backup:database only supports PostgreSQL.');
+        $driver = (string) config('database.default');
+
+        if (! in_array($driver, ['mysql', 'mariadb'], true)) {
+            $this->error('backup:database only supports MySQL.');
 
             return self::FAILURE;
         }
 
-        $connection = config('database.connections.pgsql');
+        $connection = config('database.connections.'.$driver);
         $directory = storage_path('app/private/backups');
         File::ensureDirectoryExists($directory);
 
         $file = $directory.'/tailormate-'.now()->format('Ymd-His').'.sql';
         $process = new Process([
-            'pg_dump',
-            '--host', (string) $connection['host'],
-            '--port', (string) $connection['port'],
-            '--username', (string) $connection['username'],
-            '--dbname', (string) $connection['database'],
-            '--file', $file,
-            '--no-owner',
-            '--no-privileges',
+            'mysqldump',
+            '--host='.(string) $connection['host'],
+            '--port='.(string) $connection['port'],
+            '--user='.(string) $connection['username'],
+            '--default-character-set=utf8mb4',
+            '--single-transaction',
+            '--result-file='.$file,
+            (string) $connection['database'],
         ]);
         $process->setTimeout(300);
         $env = getenv();
         $env = is_array($env) ? $env : [];
-        $env['PGPASSWORD'] = (string) $connection['password'];
+        $env['MYSQL_PWD'] = (string) $connection['password'];
         $process->setEnv($env);
 
         $process->run();
 
         if (! $process->isSuccessful() || ! is_file($file) || filesize($file) === 0) {
             File::delete($file);
-            $this->error(trim($process->getErrorOutput()) ?: 'pg_dump failed. Install postgresql-client on the server.');
+            $this->error(trim($process->getErrorOutput()) ?: 'mysqldump failed. Install the MySQL client on the server.');
 
             return self::FAILURE;
         }

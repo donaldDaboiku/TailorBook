@@ -41,7 +41,7 @@ class AdminShopTest extends TestCase
             ->assertJsonPath('data.0.email', 'ada@example.com')
             ->assertJsonPath('data.0.shop_name', 'Ada Atelier')
             ->assertJsonPath('data.0.phone', '08031234567')
-            ->assertJsonPath('data.0.last_login_at', '2026-10-07T09:00:00.000000Z');
+            ->assertJsonPath('data.0.last_login_at', '2026-10-07T09:00:00+00:00');
     }
 
     public function test_tailors_cannot_access_admin_shops(): void

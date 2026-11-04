@@ -34,7 +34,9 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
+            $table->string('active_phone')->nullable()->storedAs('case when deleted_at is null then phone else null end');
             $table->index(['business_id', 'name']);
+            $table->unique(['business_id', 'active_phone'], 'customers_business_phone_active_unique');
         });
 
         Schema::create('measurement_templates', function (Blueprint $table) {
@@ -44,6 +46,9 @@ return new class extends Migration
             $table->string('name');
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();
+            // ponytail: mirrors business_id, all zeroes for a system row. MySQL rejects a generated column that reads a foreign key.
+            $table->uuid('scope_key');
+            $table->unique(['scope_key', 'slug'], 'measurement_templates_scope_slug_unique');
         });
 
         Schema::create('measurement_fields', function (Blueprint $table) {
@@ -112,6 +117,9 @@ return new class extends Migration
             $table->string('name');
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();
+            // ponytail: mirrors business_id, all zeroes for a system row. MySQL rejects a generated column that reads a foreign key.
+            $table->uuid('scope_key');
+            $table->unique(['scope_key', 'slug'], 'expense_categories_scope_slug_unique');
         });
 
         Schema::create('expenses', function (Blueprint $table) {
@@ -128,12 +136,6 @@ return new class extends Migration
             $table->softDeletes();
             $table->index(['business_id', 'spent_on']);
         });
-
-        DB::statement('create unique index customers_business_phone_active_unique on customers (business_id, phone) where deleted_at is null');
-        DB::statement('create unique index measurement_templates_system_slug_unique on measurement_templates (slug) where business_id is null');
-        DB::statement('create unique index measurement_templates_business_slug_unique on measurement_templates (business_id, slug) where business_id is not null');
-        DB::statement('create unique index expense_categories_system_slug_unique on expense_categories (slug) where business_id is null');
-        DB::statement('create unique index expense_categories_business_slug_unique on expense_categories (business_id, slug) where business_id is not null');
 
         DB::statement('alter table measurement_values add constraint measurement_values_value_cm_positive check (value_cm > 0)');
         DB::statement('alter table customer_jobs add constraint customer_jobs_agreed_amount_positive check (agreed_amount > 0)');

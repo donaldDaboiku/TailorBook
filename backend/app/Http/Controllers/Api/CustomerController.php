@@ -30,9 +30,9 @@ class CustomerController extends Controller
             ->where('business_id', $business->id)
             ->when($request->string('q')->trim()->toString(), function ($query, string $search) {
                 $query->where(function ($inner) use ($search) {
-                    $inner->where('name', 'ilike', "%{$search}%")
-                        ->orWhere('phone', 'ilike', "%{$search}%")
-                        ->orWhere('whatsapp_phone', 'ilike', "%{$search}%");
+                    $inner->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('whatsapp_phone', 'like', "%{$search}%");
                 });
             })
             ->when($request->filled('gender'), fn ($query) => $query->where('gender', $request->string('gender')))

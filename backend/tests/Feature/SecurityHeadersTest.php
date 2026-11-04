@@ -37,19 +37,19 @@ class SecurityHeadersTest extends TestCase
         );
     }
 
-    public function test_database_backup_writes_a_sql_dump_when_pg_dump_is_installed(): void
+    public function test_database_backup_writes_a_sql_dump_when_mysqldump_is_installed(): void
     {
-        $probe = new Process(['pg_dump', '--version']);
+        $probe = new Process(['mysqldump', '--version']);
         $probe->run();
 
         if (! $probe->isSuccessful()) {
-            $this->markTestSkipped('pg_dump is not installed.');
+            $this->markTestSkipped('mysqldump is not installed.');
         }
 
         try {
             DB::connection()->getPdo();
         } catch (Throwable) {
-            $this->markTestSkipped('PostgreSQL is not running.');
+            $this->markTestSkipped('MySQL is not running.');
         }
 
         $directory = storage_path('app/private/backups');

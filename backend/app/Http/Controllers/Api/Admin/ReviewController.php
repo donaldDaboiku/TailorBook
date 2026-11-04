@@ -22,11 +22,11 @@ class ReviewController extends Controller
             ->when($term !== '', function ($query) use ($term) {
                 $like = '%'.$term.'%';
                 $query->where(function ($inner) use ($like) {
-                    $inner->where('body', 'ilike', $like)
+                    $inner->where('body', 'like', $like)
                         ->orWhereHas('business', function ($business) use ($like) {
-                            $business->where('name', 'ilike', $like)
+                            $business->where('name', 'like', $like)
                                 ->orWhereHas('user', function ($user) use ($like) {
-                                    $user->where('email', 'ilike', $like);
+                                    $user->where('email', 'like', $like);
                                 });
                         });
                 });

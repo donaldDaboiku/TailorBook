@@ -1,0 +1,8 @@
+---
+deployment:
+  tasks:
+    - /bin/mkdir -p /home/gitsrcgt/tailormate.gitsystemng.com
+    - /bin/cp -a backend/. /home/gitsrcgt/tailormate.gitsystemng.com/
+    - /bin/mkdir -p /home/gitsrcgt/tailormate.gitsystemng.com/storage/framework/cache/data /home/gitsrcgt/tailormate.gitsystemng.com/storage/framework/sessions /home/gitsrcgt/tailormate.gitsystemng.com/storage/framework/views /home/gitsrcgt/tailormate.gitsystemng.com/storage/logs /home/gitsrcgt/tailormate.gitsystemng.com/storage/app/public /home/gitsrcgt/tailormate.gitsystemng.com/bootstrap/cache
+    - /bin/chmod -R ug+rwx /home/gitsrcgt/tailormate.gitsystemng.com/storage /home/gitsrcgt/tailormate.gitsystemng.com/bootstrap/cache
+    - cd /home/gitsrcgt/tailormate.gitsystemng.com && /opt/cpanel/composer/bin/composer install --no-dev --optimize-autoloader --no-interaction --no-scripts

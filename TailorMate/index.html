@@ -3,16 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#173f35">
+  <meta name="theme-color" content="#082653">
   <meta name="description" content="TailorMate helps fashion designers manage customer measurements, tailoring jobs, payments and business records.">
+  <link rel="icon" href="icon.png" type="image/png">
   <title>TailorMate — Your tailoring business, organised</title>
   <style>
-    :root{color-scheme:light;--green:#173f35;--green2:#245b4c;--cream:#f6f5ef;--ink:#17231f;--muted:#68756f;--line:#dfe6df;--gold:#e8bd65}
+    :root{color-scheme:light;--green:#082653;--green2:#0c3268;--cream:#FFFEF5;--ink:#082653;--muted:#5c6b82;--line:#e6e4da;--gold:#D99A18}
     *{box-sizing:border-box} body{margin:0;background:var(--cream);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
     a{color:inherit} .wrap{min-height:100vh;display:flex;flex-direction:column}
     header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px clamp(20px,6vw,84px)}
     .brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:-.03em;font-size:1.2rem}
-    .mark{width:42px;height:42px;border-radius:14px;background:var(--green);display:grid;place-items:center;color:#fff;font-size:1.1rem}
+    .mark{width:42px;height:42px;border-radius:12px;object-fit:cover}
     .toplink{font-size:.92rem;text-decoration:none;color:var(--green);font-weight:700}
     main{width:min(1120px,calc(100% - 40px));margin:auto;flex:1;display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:clamp(28px,6vw,76px);padding:42px 0 70px}
     .eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--green2);font-size:.78rem;text-transform:uppercase;letter-spacing:.13em;font-weight:800}
@@ -22,9 +23,9 @@
     .intro{font-size:1.1rem;color:var(--muted);max-width:570px;margin:0 0 30px}
     .actions{display:flex;flex-wrap:wrap;gap:12px}
     .btn{display:inline-flex;justify-content:center;align-items:center;gap:10px;padding:14px 20px;border-radius:12px;font-weight:800;text-decoration:none;transition:transform .15s,box-shadow .15s}
-    .btn:hover{transform:translateY(-2px)} .primary{background:var(--green);color:#fff;box-shadow:0 8px 20px #173f3524}.secondary{border:1px solid var(--line);background:#fff}
+    .btn:hover{transform:translateY(-2px)} .primary{background:var(--green);color:#fff;box-shadow:0 8px 20px #08265324}.secondary{border:1px solid var(--line);background:#fff}
     .fine{font-size:.83rem;color:var(--muted);margin-top:15px}
-    .preview{position:relative;background:var(--green);border-radius:28px;padding:26px;color:#fff;overflow:hidden;box-shadow:0 24px 60px #173f3525}
+    .preview{position:relative;background:var(--green);border-radius:28px;padding:26px;color:#fff;overflow:hidden;box-shadow:0 24px 60px #08265325}
     .preview:before{content:"";position:absolute;width:230px;height:230px;border-radius:50%;background:#ffffff0b;right:-70px;top:-80px}
     .preview-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px;position:relative}
     .preview-title{font-weight:800;font-size:1.05rem}.pill{font-size:.72rem;border:1px solid #ffffff35;border-radius:999px;padding:5px 9px;color:#e7eee9}
@@ -37,7 +38,7 @@
     .social-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.social{display:flex;align-items:center;gap:12px;padding:17px;background:#fff;border:1px solid var(--line);border-radius:15px;text-decoration:none;font-weight:700}.social:hover{border-color:var(--green2);transform:translateY(-1px)}
     .community-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px}.panel h3{margin:0 0 7px}.panel p{color:var(--muted);font-size:.92rem}.stat{font-size:2rem;font-weight:800;letter-spacing:-.04em;color:var(--green);margin:12px 0 4px}.status{display:inline-block;background:#f5eddb;color:#75571c;border-radius:999px;padding:5px 10px;font-size:.75rem;font-weight:800}
     .state-list{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding:0;list-style:none}.state-list li{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:.85rem}
-    .feedback-form{display:grid;gap:12px}.stars{display:flex;gap:5px}.stars button{border:0;background:transparent;font-size:1.7rem;padding:2px;cursor:pointer;color:#b8c0ba}.stars button.selected{color:#d59c28}.feedback-form input,.feedback-form textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}.feedback-form textarea{min-height:95px;resize:vertical}.feedback-form .send{border:0;border-radius:10px;background:var(--green);color:#fff;font-weight:800;padding:13px;cursor:pointer}.form-note{font-size:.8rem;color:var(--muted);margin:0}
+    .feedback-form{display:grid;gap:12px}.stars{display:flex;gap:5px}.stars button{border:0;background:transparent;font-size:1.7rem;padding:2px;cursor:pointer;color:#b8c0ba}.stars button.selected{color:#D99A18}.feedback-form input,.feedback-form textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}.feedback-form textarea{min-height:95px;resize:vertical}.feedback-form .send{border:0;border-radius:10px;background:var(--green);color:#fff;font-weight:800;padding:13px;cursor:pointer}.form-note{font-size:.8rem;color:var(--muted);margin:0}
     .feature{padding:22px;border:1px solid var(--line);border-radius:18px;background:#fff}.feature .ico{font-size:1.3rem}.feature h2{font-size:1rem;margin:10px 0 6px}.feature p{font-size:.9rem;color:var(--muted);margin:0}
     .catalogue-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
     .style-card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
@@ -46,8 +47,8 @@
     .about-copy p{margin:0 0 12px}.about-copy ul{margin:0 0 14px;padding-left:1.1rem;color:var(--ink)}.about-copy li{margin:6px 0}
     .review-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
     .review{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px}
-    .review p{margin:8px 0}    .review-stars{color:#d59c28;letter-spacing:.08em;font-size:1.05rem}
-    .ad{background:var(--green);color:#fff;border-radius:20px;padding:28px;box-shadow:0 16px 40px #173f3520}
+    .review p{margin:8px 0}    .review-stars{color:#D99A18;letter-spacing:.08em;font-size:1.05rem}
+    .ad{background:var(--green);color:#fff;border-radius:20px;padding:28px;box-shadow:0 16px 40px #08265320}
     .ad .eyebrow{color:#e8bd65}
     .ad h2{color:#fff;margin:8px 0 12px}
     .ad p{color:#e7eee9;max-width:640px}
@@ -59,7 +60,7 @@
 <body>
 <div class="wrap">
   <header>
-    <a class="brand" href="#top" aria-label="TailorMate home" style="text-decoration:none"><span class="mark" aria-hidden="true">✂</span><span>TailorMate</span></a>
+    <a class="brand" href="#top" aria-label="TailorMate home" style="text-decoration:none"><img class="mark" src="icon.png" alt="" width="42" height="42"><span>TailorMate</span></a>
     <a class="toplink" id="open-app" href="https://tailormate.gitsystemng.com" target="_blank" rel="noopener noreferrer">Open the app</a>
   </header>
   <main id="top">

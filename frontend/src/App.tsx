@@ -594,7 +594,10 @@ function Shell({
     <div className={shellClass}>
       {!hideHeader && (
         <header className="topbar">
-          <p className="app-name">{appName || 'Shop'}</p>
+          <p className="app-name">
+            <img className="app-mark" src="/icons/icon-192.png" alt="" />
+            {appName || 'Shop'}
+          </p>
         </header>
       )}
 

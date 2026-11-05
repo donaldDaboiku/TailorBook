@@ -33,6 +33,7 @@ export default function LoginPage({
 
   return (
     <section className="card">
+      <img className="brand-lockup" src="/icons/icon-192.png" alt="TailorMate" />
       <h1>{t('login.title')}</h1>
       <p className="lede">{t('login.lede', { shop: appName || 'shop' })}</p>
 

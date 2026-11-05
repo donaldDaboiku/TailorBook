@@ -8,17 +8,18 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
-        'favicon.svg',
+        'favicon.ico',
         'icons/icon-192.png',
         'icons/icon-512.png',
+        'icons/icon-512-maskable.png',
         'icons/apple-touch-icon.png',
       ],
       manifest: {
         name: 'TailorMate',
         short_name: 'TailorMate',
         description: 'Customers, measurements, payments, and expenses for your shop.',
-        theme_color: '#1f3d34',
-        background_color: '#f4f1eb',
+        theme_color: '#082653',
+        background_color: '#FFFEF5',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
@@ -35,7 +36,7 @@ export default defineConfig({
             type: 'image/png',
           },
           {
-            src: 'icons/icon-512.png',
+            src: 'icons/icon-512-maskable.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

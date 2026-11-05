@@ -1,11 +1,12 @@
 :root {
   color-scheme: light;
-  --paper: #f4f1eb;
-  --ink: #1c1917;
-  --muted: #57534e;
-  --card: #fffcf8;
-  --line: #e6dfd4;
-  --accent: #1f3d34;
+  --paper: #fffef5;
+  --ink: #082653;
+  --muted: #5c6b82;
+  --card: #ffffff;
+  --line: #e6e4da;
+  --accent: #082653;
+  --gold: #d99a18;
   --danger: #9f1239;
   --font: "Segoe UI", system-ui, sans-serif;
   --radius: 16px;
@@ -36,7 +37,7 @@ body {
 }
 
 .balance-card :focus-visible {
-  outline-color: #f7f4ef;
+  outline-color: #fffef5;
 }
 
 .form input,
@@ -64,11 +65,28 @@ body {
 
 .app-name {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.8rem;
   font-weight: 650;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+.app-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.brand-lockup {
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
+  display: block;
+  margin: 0 auto 1rem;
 }
 
 main {
@@ -335,7 +353,7 @@ p {
 
 .balance-card {
   background: var(--accent);
-  color: #f7f4ef;
+  color: #fffef5;
   border-radius: 18px;
   padding: 1.1rem 1.15rem 1rem;
 }
@@ -343,7 +361,7 @@ p {
 .balance-label,
 .balance-note,
 .balance-stats span {
-  color: color-mix(in srgb, #f7f4ef 78%, transparent);
+  color: color-mix(in srgb, #fffef5 78%, transparent);
   font-size: 0.86rem;
 }
 
@@ -399,7 +417,7 @@ p {
 
 .dash-tile.accent {
   background: var(--accent);
-  color: #f7f4ef;
+  color: #fffef5;
   border-color: transparent;
 }
 
@@ -416,7 +434,7 @@ p {
 }
 
 .dash-tile.accent .dash-tile-note {
-  color: color-mix(in srgb, #f7f4ef 75%, transparent);
+  color: color-mix(in srgb, #fffef5 75%, transparent);
 }
 
 .dash-upcoming {
@@ -527,7 +545,7 @@ p {
 }
 
 .star-pick button[aria-pressed='true'] {
-  color: #d59c28;
+  color: #d99a18;
 }
 
 .star-pick button:focus-visible {
@@ -547,7 +565,7 @@ p {
 
 .primary {
   background: var(--accent);
-  color: #f7f4ef;
+  color: #fffef5;
 }
 
 .primary:disabled,
@@ -718,7 +736,7 @@ p {
 }
 
 a.primary {
-  color: #f7f4ef;
+  color: #fffef5;
 }
 
 .section-title {
@@ -1074,7 +1092,7 @@ a.primary {
 
 .admin-nav button[aria-pressed='true'] {
   background: var(--accent);
-  color: #f7f4ef;
+  color: #fffef5;
   border-color: var(--accent);
 }
 

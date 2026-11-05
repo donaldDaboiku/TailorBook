@@ -37,9 +37,9 @@ export async function renderReceiptPng(receipt: PaymentReceipt): Promise<Blob> {
     throw new Error('Could not draw the receipt.')
   }
 
-  ctx.fillStyle = '#f4f1eb'
+  ctx.fillStyle = '#fffef5'
   ctx.fillRect(0, 0, WIDTH, height)
-  ctx.fillStyle = '#1f3d34'
+  ctx.fillStyle = '#082653'
   ctx.fillRect(0, 0, WIDTH, headerHeight)
 
   let y = 36
@@ -49,7 +49,7 @@ export async function renderReceiptPng(receipt: PaymentReceipt): Promise<Blob> {
     ctx.save()
     ctx.beginPath()
     ctx.arc(WIDTH / 2, y + size / 2, size / 2 + 4, 0, Math.PI * 2)
-    ctx.fillStyle = '#f7f4ef'
+    ctx.fillStyle = '#fffef5'
     ctx.fill()
     ctx.beginPath()
     ctx.arc(WIDTH / 2, y + size / 2, size / 2, 0, Math.PI * 2)
@@ -59,7 +59,7 @@ export async function renderReceiptPng(receipt: PaymentReceipt): Promise<Blob> {
     y += size + 36
   }
 
-  ctx.fillStyle = '#f7f4ef'
+  ctx.fillStyle = '#fffef5'
   ctx.textAlign = 'center'
   y = drawCentered(ctx, nameLines, '700 34px Segoe UI, system-ui, sans-serif', y, 40)
   y = drawCentered(ctx, addressLines, '20px Segoe UI, system-ui, sans-serif', y, 28)
@@ -68,7 +68,7 @@ export async function renderReceiptPng(receipt: PaymentReceipt): Promise<Blob> {
   drawCentered(ctx, sloganLines, 'italic 20px Segoe UI, system-ui, sans-serif', y, 28)
 
   let body = headerHeight + 48
-  ctx.fillStyle = '#1c1917'
+  ctx.fillStyle = '#082653'
   ctx.textAlign = 'left'
   ctx.font = '700 22px Segoe UI, system-ui, sans-serif'
   ctx.fillText('RECEIPT', 48, body)
@@ -76,7 +76,7 @@ export async function renderReceiptPng(receipt: PaymentReceipt): Promise<Blob> {
   ctx.font = '600 22px Segoe UI, system-ui, sans-serif'
   ctx.fillText(receipt.receipt_number, WIDTH - 48, body)
   body += 16
-  ctx.strokeStyle = '#e6dfd4'
+  ctx.strokeStyle = '#e6e4da'
   ctx.beginPath()
   ctx.moveTo(48, body)
   ctx.lineTo(WIDTH - 48, body)
@@ -100,25 +100,25 @@ export async function renderReceiptPng(receipt: PaymentReceipt): Promise<Blob> {
 
   for (const [label, value] of rows) {
     ctx.textAlign = 'left'
-    ctx.fillStyle = '#57534e'
+    ctx.fillStyle = '#5c6b82'
     ctx.font = '18px Segoe UI, system-ui, sans-serif'
     ctx.fillText(label, 48, body)
     ctx.textAlign = 'right'
-    ctx.fillStyle = '#1c1917'
+    ctx.fillStyle = '#082653'
     ctx.font = '600 18px Segoe UI, system-ui, sans-serif'
     ctx.fillText(fit(ctx, value, WIDTH - 220), WIDTH - 48, body)
     body += 36
   }
 
   body += 8
-  ctx.fillStyle = '#fffcf8'
+  ctx.fillStyle = '#ffffff'
   roundRect(ctx, 40, body, WIDTH - 80, 92, 16)
   ctx.fill()
   ctx.textAlign = 'left'
-  ctx.fillStyle = '#57534e'
+  ctx.fillStyle = '#5c6b82'
   ctx.font = '16px Segoe UI, system-ui, sans-serif'
   ctx.fillText('Amount paid', 64, body + 34)
-  ctx.fillStyle = '#1f3d34'
+  ctx.fillStyle = '#082653'
   ctx.font = '700 32px Segoe UI, system-ui, sans-serif'
   ctx.fillText(receipt.amount_label, 64, body + 70)
   body += 120
@@ -135,11 +135,11 @@ export async function renderReceiptPng(receipt: PaymentReceipt): Promise<Blob> {
   }
   for (const [label, value] of totals) {
     ctx.textAlign = 'left'
-    ctx.fillStyle = '#57534e'
+    ctx.fillStyle = '#5c6b82'
     ctx.font = '18px Segoe UI, system-ui, sans-serif'
     ctx.fillText(label, 48, body)
     ctx.textAlign = 'right'
-    ctx.fillStyle = '#1c1917'
+    ctx.fillStyle = '#082653'
     ctx.font = '600 18px Segoe UI, system-ui, sans-serif'
     ctx.fillText(value, WIDTH - 48, body)
     body += 32
@@ -147,23 +147,23 @@ export async function renderReceiptPng(receipt: PaymentReceipt): Promise<Blob> {
 
   body += 36
   ctx.textAlign = 'center'
-  ctx.fillStyle = '#1c1917'
+  ctx.fillStyle = '#082653'
   ctx.font = 'italic 42px "Segoe Script", "Brush Script MT", cursive'
   ctx.fillText(receipt.signature_name, WIDTH / 2, body + 20)
   body += 36
-  ctx.strokeStyle = '#1c1917'
+  ctx.strokeStyle = '#082653'
   ctx.beginPath()
   ctx.moveTo(WIDTH / 2 - 120, body)
   ctx.lineTo(WIDTH / 2 + 120, body)
   ctx.stroke()
   body += 28
   ctx.font = '16px Segoe UI, system-ui, sans-serif'
-  ctx.fillStyle = '#57534e'
+  ctx.fillStyle = '#5c6b82'
   ctx.fillText('Authorised signature', WIDTH / 2, body)
 
   if (footerLines.length > 0) {
     body += 48
-    ctx.fillStyle = '#1c1917'
+    ctx.fillStyle = '#082653'
     ctx.textAlign = 'center'
     drawCentered(ctx, footerLines, '18px Segoe UI, system-ui, sans-serif', body, 28)
   }

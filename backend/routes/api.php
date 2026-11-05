@@ -132,9 +132,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::put('/catalogue-price', [AdminShopController::class, 'updateCataloguePrice']);
         Route::get('/referrals', [AdminReferralController::class, 'index']);
         Route::put('/referrals', [AdminReferralController::class, 'update']);
+        Route::post('/referrals/shops/{reward}/reject', [AdminReferralController::class, 'rejectShop']);
         Route::post('/referrals/{reward}/approve', [AdminReferralController::class, 'approve']);
         Route::post('/referrals/{reward}/reject', [AdminReferralController::class, 'reject']);
         Route::post('/salespeople', [AdminReferralController::class, 'storeSalesperson']);
+        Route::put('/salespeople/{salesperson}', [AdminReferralController::class, 'updateSalesperson']);
         Route::put('/shops/{user}/password', [AdminShopController::class, 'resetPassword']);
         Route::get('/shops/{user}/payments', [AdminPaymentController::class, 'forShop']);
         Route::get('/payments', [AdminPaymentController::class, 'index']);

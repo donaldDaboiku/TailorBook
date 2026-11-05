@@ -29,9 +29,13 @@ class ReferralController extends Controller
                 'commission_label' => $counts['commission_label'],
                 'skip' => $offer['skip'],
                 'amount' => $offer['amount'],
+                'threshold' => $reward['threshold'],
+                'successful' => $reward['successful'],
+                'progress' => $reward['progress'],
                 'months_pending' => $reward['months_pending'],
                 'months_approved' => $reward['months_approved'],
                 'activities' => $reward['activities'],
+                'history' => $reward['history'],
             ],
         ]);
     }

@@ -1139,6 +1139,20 @@ a.primary {
   margin-top: 0.75rem;
 }
 
+.referral-progress {
+  height: 8px;
+  margin: 0.35rem 0 0.75rem;
+  background: var(--line);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.referral-progress span {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+
 .activity-list {
   list-style: none;
   margin: 0.75rem 0 0;

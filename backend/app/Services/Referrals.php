@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\SubscriptionStatus;
 use App\Models\Business;
 use App\Models\ReferralActivity;
+use App\Models\ReferralGrant;
 use App\Models\ReferralReward;
 use App\Models\Salesperson;
 use App\Models\Setting;
@@ -34,10 +35,16 @@ class Referrals
             return ['business_id' => $businessId];
         }
 
-        $salespersonId = Salesperson::query()->where('code', $code)->value('id');
+        $salesperson = Salesperson::query()->where('code', $code)->first();
 
-        if (is_string($salespersonId)) {
-            return ['salesperson_id' => $salespersonId];
+        if ($salesperson instanceof Salesperson) {
+            if (! $salesperson->active) {
+                throw ValidationException::withMessages([
+                    'invite_code' => ['That invite code is not active.'],
+                ]);
+            }
+
+            return ['salesperson_id' => $salesperson->id];
         }
 
         throw ValidationException::withMessages([
@@ -52,6 +59,20 @@ class Referrals
     {
         if ($referrer === null) {
             return;
+        }
+
+        $referrerBusinessId = $referrer['business_id'] ?? null;
+
+        if (is_string($referrerBusinessId)) {
+            $sameShop = $referrerBusinessId === $business->id;
+            $referrerUserId = Business::query()->whereKey($referrerBusinessId)->value('user_id');
+            $sameOwner = $referrerUserId !== null && (string) $referrerUserId === (string) $business->user_id;
+
+            if ($sameShop || $sameOwner) {
+                throw ValidationException::withMessages([
+                    'invite_code' => ['You cannot use your own invite code.'],
+                ]);
+            }
         }
 
         $business->forceFill([
@@ -92,7 +113,13 @@ class Referrals
             'amount' => (int) ($kobo / 100),
             'amount_kobo' => $kobo,
             'amount_label' => $this->moneyLabel($kobo),
+            'threshold' => $this->threshold(),
         ];
+    }
+
+    public function threshold(): int
+    {
+        return max(1, $this->storedInt('referral_threshold', 5));
     }
 
     public function link(string $code): string
@@ -156,6 +183,7 @@ class Referrals
                 'paid' => $tally['paid'],
                 'commission_label' => $tally['commission_label'],
                 'shops' => $tally['shops'],
+                'active' => (bool) $person->active,
             ];
         })->all();
     }
@@ -314,12 +342,12 @@ class Referrals
             ]);
         }
 
-        if ($reward->status !== 'signed_up') {
+        if (! in_array($reward->status, ['signed_up', 'cancelled'], true)) {
             return;
         }
 
         $reward->forceFill([
-            'status' => 'pending',
+            'status' => 'successful',
             'paid_at' => now(),
         ])->save();
 
@@ -328,9 +356,10 @@ class Referrals
         $this->record(
             $business,
             'paid',
-            "{$business->name} paid the monthly plan. {$hostName} can receive one free month after admin approval.",
+            "{$business->name} paid the monthly plan with {$hostName}'s code.",
             $reward->id,
         );
+        $this->syncGrants($business->referred_by_business_id, $business);
     }
 
     public function notePlanRefunded(User $user): void
@@ -361,37 +390,38 @@ class Referrals
             $this->record(
                 $business,
                 'refunded',
-                "{$business->name}'s plan payment was refunded after the free month was approved.",
+                "{$business->name}'s plan payment was refunded after a free month was already approved.",
                 $reward->id,
             );
 
             return;
         }
 
-        if ($reward->status === 'pending' && ! $stillPaid) {
+        if ($reward->status === 'successful' && ! $stillPaid) {
             $reward->forceFill([
-                'status' => 'signed_up',
+                'status' => 'cancelled',
                 'paid_at' => null,
             ])->save();
             $this->record(
                 $business,
                 'refunded',
-                "{$business->name}'s plan payment was refunded. The free month is no longer waiting for approval.",
+                "{$business->name}'s plan payment was refunded. It no longer counts toward a free month.",
                 $reward->id,
             );
+            $this->syncGrants($business->referred_by_business_id, $business);
         }
     }
 
-    public function approve(ReferralReward $reward, User $admin): void
+    public function approve(ReferralGrant $grant, User $admin): void
     {
-        if ($reward->status !== 'pending') {
+        if ($grant->status !== 'pending') {
             throw ValidationException::withMessages([
                 'reward' => ['This free month is not waiting for approval.'],
             ]);
         }
 
-        DB::transaction(function () use ($reward, $admin): void {
-            $locked = ReferralReward::query()->whereKey($reward->id)->lockForUpdate()->firstOrFail();
+        DB::transaction(function () use ($grant, $admin): void {
+            $locked = ReferralGrant::query()->whereKey($grant->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->status !== 'pending') {
                 throw ValidationException::withMessages([
@@ -401,12 +431,11 @@ class Referrals
 
             $referrer = Business::query()->findOrFail($locked->referrer_business_id);
             $owner = User::query()->whereKey($referrer->user_id)->lockForUpdate()->firstOrFail();
-            $days = (int) config('services.paystack.plan_days', 30);
             $until = $owner->subscribed_until;
             $base = $until !== null && $until->copy()->endOfDay()->isFuture()
                 ? $until->copy()
                 : now();
-            $next = $base->addDays($days)->toDateString();
+            $next = $base->addMonth()->toDateString();
 
             $owner->forceFill([
                 'subscription_status' => SubscriptionStatus::Subscribed,
@@ -420,26 +449,26 @@ class Referrals
                 'granted_until' => $next,
             ])->save();
 
-            $referred = Business::query()->find($locked->referred_business_id);
+            $referred = Business::query()->where('referred_by_business_id', $referrer->id)->first();
             $this->record(
                 $referred instanceof Business ? $referred : $referrer,
                 'approved',
                 "Admin approved one free month for {$referrer->name}, until {$next}.",
-                $locked->id,
+                null,
             );
         });
     }
 
-    public function reject(ReferralReward $reward): void
+    public function reject(ReferralGrant $grant): void
     {
-        if ($reward->status !== 'pending') {
+        if ($grant->status !== 'pending') {
             throw ValidationException::withMessages([
                 'reward' => ['This free month is not waiting for approval.'],
             ]);
         }
 
-        DB::transaction(function () use ($reward): void {
-            $locked = ReferralReward::query()->whereKey($reward->id)->lockForUpdate()->firstOrFail();
+        DB::transaction(function () use ($grant): void {
+            $locked = ReferralGrant::query()->whereKey($grant->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->status !== 'pending') {
                 throw ValidationException::withMessages([
@@ -449,17 +478,52 @@ class Referrals
 
             $locked->forceFill(['status' => 'rejected'])->save();
             $referrer = Business::query()->find($locked->referrer_business_id);
-            $referred = Business::query()->find($locked->referred_business_id);
             $host = $referrer?->name ?? 'A shop';
+            $referred = Business::query()->where('referred_by_business_id', $locked->referrer_business_id)->first();
 
             if ($referred instanceof Business) {
                 $this->record(
                     $referred,
                     'rejected',
-                    "Admin declined the free month for {$host}.",
+                    "Admin declined one free month for {$host}. Those paid shops stay counted, and this set will not be paid again.",
+                    null,
+                );
+            }
+        });
+    }
+
+    public function rejectShop(ReferralReward $reward): void
+    {
+        if (! in_array($reward->status, ['signed_up', 'successful'], true)) {
+            throw ValidationException::withMessages([
+                'reward' => ['This referral can no longer be rejected.'],
+            ]);
+        }
+
+        DB::transaction(function () use ($reward): void {
+            $locked = ReferralReward::query()->whereKey($reward->id)->lockForUpdate()->firstOrFail();
+
+            if (! in_array($locked->status, ['signed_up', 'successful'], true)) {
+                throw ValidationException::withMessages([
+                    'reward' => ['This referral can no longer be rejected.'],
+                ]);
+            }
+
+            $locked->forceFill(['status' => 'rejected'])->save();
+            $referred = Business::query()->find($locked->referred_business_id);
+            $host = Business::query()->whereKey($locked->referrer_business_id)->value('name');
+            $hostName = is_string($host) && $host !== '' ? $host : 'A shop';
+
+            if ($referred instanceof Business) {
+                $this->record(
+                    $referred,
+                    'rejected',
+                    "Admin rejected {$referred->name}. It no longer counts toward a free month for {$hostName}.",
                     $locked->id,
                 );
             }
+
+            $this->syncGrants($locked->referrer_business_id, $referred instanceof Business ? $referred : null);
         });
     }
 
@@ -469,8 +533,15 @@ class Referrals
     public function shopReward(Business $business): array
     {
         $rewards = ReferralReward::query()
+            ->with('referred:id,name,created_at')
+            ->where('referrer_business_id', $business->id)
+            ->orderByDesc('created_at')
+            ->get();
+        $grants = ReferralGrant::query()
             ->where('referrer_business_id', $business->id)
             ->get();
+        $threshold = $this->threshold();
+        $successful = $rewards->where('status', 'successful')->count();
 
         $activities = ReferralActivity::query()
             ->where('referrer_business_id', $business->id)
@@ -480,12 +551,23 @@ class Referrals
             ->get();
 
         return [
-            'months_pending' => $rewards->where('status', 'pending')->count(),
-            'months_approved' => $rewards->where('status', 'approved')->count(),
+            'threshold' => $threshold,
+            'successful' => $successful,
+            'progress' => $successful % $threshold,
+            'months_pending' => $grants->where('status', 'pending')->count(),
+            'months_approved' => $grants->where('status', 'approved')->count(),
             'activities' => $activities->map(fn (ReferralActivity $row) => [
                 'id' => $row->id,
                 'at' => $row->created_at?->toIso8601String(),
                 'summary' => $row->summary,
+            ])->values()->all(),
+            'history' => $rewards->map(fn (ReferralReward $reward) => [
+                'id' => $reward->id,
+                'shop_name' => $reward->referred?->name,
+                'registered_at' => $reward->referred?->created_at?->toIso8601String(),
+                'status' => $reward->status,
+                'status_label' => $this->statusLabel($reward->status),
+                'paid_at' => $reward->paid_at?->toIso8601String(),
             ])->values()->all(),
         ];
     }
@@ -495,21 +577,36 @@ class Referrals
      */
     public function adminRewards(): array
     {
-        $rewards = ReferralReward::query()
-            ->with(['referrer.user:id,email', 'referred.user:id,email'])
+        $rewards = ReferralGrant::query()
+            ->with(['referrer.user:id,email'])
+            ->orderByDesc('updated_at')
+            ->limit(100)
+            ->get()
+            ->map(fn (ReferralGrant $grant) => [
+                'id' => $grant->id,
+                'status' => $grant->status,
+                'milestone' => $grant->milestone,
+                'referrer_name' => $grant->referrer?->name,
+                'referrer_email' => $grant->referrer?->user?->email,
+                'approved_at' => $grant->approved_at?->toIso8601String(),
+                'granted_until' => $grant->granted_until?->toDateString(),
+            ])
+            ->values()
+            ->all();
+
+        $referrals = ReferralReward::query()
+            ->with(['referrer:id,name', 'referred:id,name,created_at'])
             ->orderByDesc('updated_at')
             ->limit(100)
             ->get()
             ->map(fn (ReferralReward $reward) => [
                 'id' => $reward->id,
                 'status' => $reward->status,
+                'status_label' => $this->statusLabel($reward->status),
                 'referrer_name' => $reward->referrer?->name,
-                'referrer_email' => $reward->referrer?->user?->email,
-                'referred_name' => $reward->referred?->name,
-                'referred_email' => $reward->referred?->user?->email,
+                'shop_name' => $reward->referred?->name,
+                'registered_at' => $reward->referred?->created_at?->toIso8601String(),
                 'paid_at' => $reward->paid_at?->toIso8601String(),
-                'approved_at' => $reward->approved_at?->toIso8601String(),
-                'granted_until' => $reward->granted_until?->toDateString(),
             ])
             ->values()
             ->all();
@@ -530,8 +627,79 @@ class Referrals
 
         return [
             'rewards' => $rewards,
+            'referrals' => $referrals,
+            'overview' => [
+                'codes' => Business::query()->whereNotNull('invite_code')->count() + Salesperson::query()->count(),
+                'registered' => ReferralReward::query()->count(),
+                'successful' => ReferralReward::query()->where('status', 'successful')->count(),
+                'pending_payment' => ReferralReward::query()->where('status', 'signed_up')->count(),
+                'pending_rewards' => ReferralGrant::query()->where('status', 'pending')->count(),
+                'approved_rewards' => ReferralGrant::query()->where('status', 'approved')->count(),
+                'free_months' => ReferralGrant::query()->where('status', 'approved')->count(),
+            ],
             'activities' => $activities,
         ];
+    }
+
+    private function syncGrants(string $referrerId, ?Business $trigger): void
+    {
+        Business::query()->whereKey($referrerId)->lockForUpdate()->first();
+
+        $threshold = $this->threshold();
+        $successful = ReferralReward::query()
+            ->where('referrer_business_id', $referrerId)
+            ->where('status', 'successful')
+            ->count();
+        $earned = intdiv($successful, $threshold);
+
+        $pending = ReferralGrant::query()
+            ->where('referrer_business_id', $referrerId)
+            ->where('status', 'pending')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($pending as $grant) {
+            if ($grant->milestone > $earned) {
+                $grant->delete();
+            }
+        }
+
+        for ($milestone = 1; $milestone <= $earned; $milestone++) {
+            $exists = ReferralGrant::query()
+                ->where('referrer_business_id', $referrerId)
+                ->where('milestone', $milestone)
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            ReferralGrant::query()->create([
+                'referrer_business_id' => $referrerId,
+                'milestone' => $milestone,
+                'status' => 'pending',
+            ]);
+
+            if ($trigger instanceof Business) {
+                $this->record(
+                    $trigger,
+                    'pending',
+                    "{$successful} paid shops. One free month for this set is waiting for admin approval.",
+                    null,
+                );
+            }
+        }
+    }
+
+    private function statusLabel(string $status): string
+    {
+        return match ($status) {
+            'successful' => 'Successful',
+            'rejected' => 'Rejected',
+            'cancelled' => 'Cancelled',
+            'signed_up' => 'Pending payment',
+            default => 'Registered',
+        };
     }
 
     private function record(Business $business, string $kind, string $summary, ?string $rewardId = null): void

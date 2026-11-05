@@ -173,6 +173,12 @@ export default function RegisterPage({
             placeholder="From the shop or salesperson who invited you"
           />
         </label>
+        {inviteCode.trim() !== '' && (
+          <p className="status">
+            This invitation will be recorded when the shop is created. It counts
+            toward a free month only after the first paid plan.
+          </p>
+        )}
 
         <fieldset className="unit-field">
           <legend>Measurement unit</legend>

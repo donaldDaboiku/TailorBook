@@ -17,6 +17,14 @@ import ShopReviewCard from './ShopReviewCard'
 import MeasurementFieldsSettings from './MeasurementFieldsSettings'
 import SubscriptionBillingCard from './SubscriptionBillingCard'
 
+function inviteMessage(code: string, link: string): string {
+  return `Hello! I use TailorMate to manage my tailoring business. Join me and simplify your measurements, customer records, jobs and finances.
+
+Register here: ${link}
+
+Use my invitation code: ${code}`
+}
+
 export default function MorePage({
   onShowTutorial,
   onOpenCatalogue,
@@ -32,12 +40,15 @@ export default function MorePage({
   const [referralLink, setReferralLink] = useState('')
   const [referralSignedUp, setReferralSignedUp] = useState(0)
   const [referralPaid, setReferralPaid] = useState(0)
+  const [threshold, setThreshold] = useState(5)
+  const [successful, setSuccessful] = useState(0)
+  const [progress, setProgress] = useState(0)
   const [monthsPending, setMonthsPending] = useState(0)
   const [monthsApproved, setMonthsApproved] = useState(0)
-  const [referralActivities, setReferralActivities] = useState<
-    { id: string; summary: string }[]
+  const [referralHistory, setReferralHistory] = useState<
+    { id: string; shop_name: string | null; status_label: string; registered_at: string | null; paid_at: string | null }[]
   >([])
-  const [referralCopied, setReferralCopied] = useState(false)
+  const [referralCopied, setReferralCopied] = useState<'code' | 'link' | ''>('')
   const [referralError, setReferralError] = useState('')
   const [name, setName] = useState(user?.name ?? '')
   const [email, setEmail] = useState(user?.email ?? '')
@@ -107,9 +118,12 @@ export default function MorePage({
         setReferralLink(referral.link)
         setReferralSignedUp(referral.signed_up)
         setReferralPaid(referral.paid)
+        setThreshold(referral.threshold || 5)
+        setSuccessful(referral.successful)
+        setProgress(referral.progress)
         setMonthsPending(referral.months_pending)
         setMonthsApproved(referral.months_approved)
-        setReferralActivities(referral.activities ?? [])
+        setReferralHistory(referral.history ?? [])
       })
       .catch((err) => {
         if (!cancelled) {
@@ -295,10 +309,9 @@ export default function MorePage({
 
       <section className="card muted-card">
         <h2 className="section-title">Invite a shop</h2>
-        <p className="lede">
-          Share this code with another tailor. They enter it when they register.
-          After they pay the monthly plan, you can receive one free month once
-          the admin approves it.
+        <p className="lede">Bring another tailor onto TailorMate.</p>
+        <p className="status">
+          Invite {threshold} shops and get 1 month FREE!
         </p>
         {referralError ? (
           <p className="form-error" role="alert">
@@ -314,33 +327,105 @@ export default function MorePage({
               </label>
             </div>
             <p className="status">
-              {referralSignedUp} signed up. {referralPaid} paid. {monthsPending}{' '}
-              free {monthsPending === 1 ? 'month' : 'months'} waiting for the
-              admin. {monthsApproved} free{' '}
-              {monthsApproved === 1 ? 'month' : 'months'} approved.
+              {progress} / {threshold} successful referrals toward the next free
+              month.
+              {progress === 0
+                ? ''
+                : ` ${threshold - progress} more to earn it.`}
             </p>
-            {referralActivities.length > 0 && (
+            <div className="referral-progress" aria-hidden="true">
+              <span
+                style={{
+                  width: `${Math.min(100, (progress / threshold) * 100)}%`,
+                }}
+              />
+            </div>
+            <p className="status">
+              {referralSignedUp} registered. {referralPaid} paid. {successful}{' '}
+              counting now. {monthsPending} free{' '}
+              {monthsPending === 1 ? 'month' : 'months'} waiting for the admin.{' '}
+              {monthsApproved} free {monthsApproved === 1 ? 'month' : 'months'}{' '}
+              approved.
+            </p>
+            {referralHistory.length > 0 && (
               <ul className="activity-list">
-                {referralActivities.map((row) => (
+                {referralHistory.map((row) => (
                   <li key={row.id}>
-                    <p>{row.summary}</p>
+                    <p>
+                      <strong>{row.shop_name || 'Shop'}</strong> · {row.status_label}
+                    </p>
+                    <p className="status">
+                      Registered{' '}
+                      {row.registered_at
+                        ? new Date(row.registered_at).toLocaleDateString()
+                        : '—'}
+                      {row.paid_at
+                        ? ` · Paid ${new Date(row.paid_at).toLocaleDateString()}`
+                        : ''}
+                    </p>
                   </li>
                 ))}
               </ul>
             )}
-            <button
-              type="button"
-              className="secondary"
-              disabled={!referralLink}
-              onClick={() => {
-                void navigator.clipboard.writeText(referralLink).then(
-                  () => setReferralCopied(true),
-                  () => setReferralCopied(false),
-                )
-              }}
-            >
-              {referralCopied ? 'Link copied' : 'Copy invite link'}
-            </button>
+            <div className="row-actions">
+              <button
+                type="button"
+                className="secondary"
+                disabled={!referralCode}
+                onClick={() => {
+                  void navigator.clipboard.writeText(referralCode).then(
+                    () => setReferralCopied('code'),
+                    () => setReferralCopied(''),
+                  )
+                }}
+              >
+                {referralCopied === 'code' ? 'Code copied' : 'Copy code'}
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                disabled={!referralLink}
+                onClick={() => {
+                  void navigator.clipboard.writeText(inviteMessage(referralCode, referralLink)).then(
+                    () => setReferralCopied('link'),
+                    () => setReferralCopied(''),
+                  )
+                }}
+              >
+                {referralCopied === 'link' ? 'Invite copied' : 'Copy invitation'}
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                disabled={!referralLink}
+                onClick={() => {
+                  const text = inviteMessage(referralCode, referralLink)
+                  window.open(
+                    `https://wa.me/?text=${encodeURIComponent(text)}`,
+                    '_blank',
+                    'noopener,noreferrer',
+                  )
+                }}
+              >
+                WhatsApp
+              </button>
+              {typeof navigator.share === 'function' && (
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={!referralLink}
+                  onClick={() => {
+                    void navigator.share({
+                      title: 'TailorMate',
+                      text: inviteMessage(referralCode, referralLink),
+                      url: referralLink,
+                    })
+                  }}
+                >
+                  Share
+                </button>
+              )}
+            </div>
           </>
         )}
       </section>

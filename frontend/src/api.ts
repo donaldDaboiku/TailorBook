@@ -688,15 +688,27 @@ export type ShopReferral = {
   commission_label: string
   skip: number
   amount: number
+  threshold: number
+  successful: number
+  progress: number
   months_pending: number
   months_approved: number
   activities: { id: string; at: string | null; summary: string }[]
+  history: {
+    id: string
+    shop_name: string | null
+    registered_at: string | null
+    status: string
+    status_label: string
+    paid_at: string | null
+  }[]
 }
 
 export type AdminReferralOffer = {
   skip: number
   amount: number
   amount_label: string
+  threshold: number
 }
 
 export type AdminSalesperson = {
@@ -706,19 +718,38 @@ export type AdminSalesperson = {
   signed_up: number
   paid: number
   commission_label: string
+  active: boolean
   shops: { name: string; email: string | null; paid: boolean }[]
 }
 
 export type AdminReferralReward = {
   id: string
   status: string
+  milestone: number
   referrer_name: string | null
   referrer_email: string | null
-  referred_name: string | null
-  referred_email: string | null
-  paid_at: string | null
   approved_at: string | null
   granted_until: string | null
+}
+
+export type AdminShopReferral = {
+  id: string
+  status: string
+  status_label: string
+  referrer_name: string | null
+  shop_name: string | null
+  registered_at: string | null
+  paid_at: string | null
+}
+
+export type AdminReferralOverview = {
+  codes: number
+  registered: number
+  successful: number
+  pending_payment: number
+  pending_rewards: number
+  approved_rewards: number
+  free_months: number
 }
 
 export type AdminReferralActivity = {
@@ -738,6 +769,8 @@ export async function listAdminReferrals(): Promise<{
   offer: AdminReferralOffer
   salespeople: AdminSalesperson[]
   rewards: AdminReferralReward[]
+  referrals: AdminShopReferral[]
+  overview: AdminReferralOverview
   activities: AdminReferralActivity[]
 }> {
   const data = await apiJson<{
@@ -745,6 +778,8 @@ export async function listAdminReferrals(): Promise<{
       offer: AdminReferralOffer
       salespeople: AdminSalesperson[]
       rewards?: AdminReferralReward[]
+      referrals?: AdminShopReferral[]
+      overview?: AdminReferralOverview
       activities?: AdminReferralActivity[]
     }
   }>('/api/admin/referrals')
@@ -753,6 +788,16 @@ export async function listAdminReferrals(): Promise<{
     offer: data.data.offer,
     salespeople: data.data.salespeople,
     rewards: data.data.rewards ?? [],
+    referrals: data.data.referrals ?? [],
+    overview: data.data.overview ?? {
+      codes: 0,
+      registered: 0,
+      successful: 0,
+      pending_payment: 0,
+      pending_rewards: 0,
+      approved_rewards: 0,
+      free_months: 0,
+    },
     activities: data.data.activities ?? [],
   }
 }
@@ -760,6 +805,7 @@ export async function listAdminReferrals(): Promise<{
 export async function updateAdminReferral(payload: {
   skip: number
   amount: number
+  threshold?: number
 }): Promise<AdminReferralOffer> {
   const data = await apiJson<{ data: AdminReferralOffer }>('/api/admin/referrals', {
     method: 'PUT',
@@ -784,6 +830,17 @@ export async function approveAdminReferral(id: string): Promise<void> {
 
 export async function rejectAdminReferral(id: string): Promise<void> {
   await apiJson(`/api/admin/referrals/${id}/reject`, { method: 'POST' })
+}
+
+export async function rejectAdminShopReferral(id: string): Promise<void> {
+  await apiJson(`/api/admin/referrals/shops/${id}/reject`, { method: 'POST' })
+}
+
+export async function setSalespersonActive(id: string, active: boolean): Promise<void> {
+  await apiJson(`/api/admin/salespeople/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ active }),
+  })
 }
 
 export async function updateAdminShopSubscription(

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ReferralGrant;
 use App\Models\ReferralReward;
+use App\Models\Salesperson;
 use App\Models\Setting;
 use App\Services\Referrals;
 use Illuminate\Http\JsonResponse;
@@ -20,12 +22,14 @@ class ReferralController extends Controller
                 'offer' => $referrals->offer(),
                 'salespeople' => $referrals->salespeople(),
                 'rewards' => $board['rewards'],
+                'referrals' => $board['referrals'],
+                'overview' => $board['overview'],
                 'activities' => $board['activities'],
             ],
         ]);
     }
 
-    public function approve(ReferralReward $reward, Request $request, Referrals $referrals): JsonResponse
+    public function approve(ReferralGrant $reward, Request $request, Referrals $referrals): JsonResponse
     {
         $referrals->approve($reward, $request->user());
 
@@ -34,7 +38,7 @@ class ReferralController extends Controller
         ]);
     }
 
-    public function reject(ReferralReward $reward, Referrals $referrals): JsonResponse
+    public function reject(ReferralGrant $reward, Referrals $referrals): JsonResponse
     {
         $referrals->reject($reward);
 
@@ -48,6 +52,7 @@ class ReferralController extends Controller
         $data = $request->validate([
             'skip' => ['required', 'integer', 'min:0', 'max:500'],
             'amount' => ['required', 'integer', 'min:0', 'max:100000'],
+            'threshold' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
 
         Setting::query()->updateOrCreate(
@@ -58,6 +63,13 @@ class ReferralController extends Controller
             ['key' => 'referral_amount'],
             ['value' => (string) ((int) $data['amount'] * 100)],
         );
+
+        if (array_key_exists('threshold', $data)) {
+            Setting::query()->updateOrCreate(
+                ['key' => 'referral_threshold'],
+                ['value' => (string) ((int) $data['threshold'])],
+            );
+        }
 
         return response()->json([
             'message' => 'Referral commission updated.',
@@ -83,7 +95,34 @@ class ReferralController extends Controller
                 'paid' => 0,
                 'commission_label' => '₦0.00',
                 'shops' => [],
+                'active' => true,
             ],
         ], 201);
+    }
+
+    public function rejectShop(ReferralReward $reward, Referrals $referrals): JsonResponse
+    {
+        $referrals->rejectShop($reward);
+
+        return response()->json([
+            'message' => 'Referral rejected.',
+        ]);
+    }
+
+    public function updateSalesperson(Salesperson $salesperson, Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'active' => ['required', 'boolean'],
+        ]);
+
+        $salesperson->forceFill(['active' => $data['active']])->save();
+
+        return response()->json([
+            'message' => $salesperson->active ? 'Salesperson code is active.' : 'Salesperson code is off.',
+            'data' => [
+                'id' => $salesperson->id,
+                'active' => $salesperson->active,
+            ],
+        ]);
     }
 }

@@ -14,6 +14,8 @@ import {
   updateAdminReferral,
   approveAdminReferral,
   rejectAdminReferral,
+  rejectAdminShopReferral,
+  setSalespersonActive,
   createAdminSalesperson,
   listAdminReferrals,
   updateAdminShopState,
@@ -24,6 +26,8 @@ import {
   type AdminReferralOffer,
   type AdminReferralActivity,
   type AdminReferralReward,
+  type AdminReferralOverview,
+  type AdminShopReferral,
   type AdminSalesperson,
   type AdminShopReview,
   type ReviewStatus,
@@ -89,8 +93,11 @@ export default function AdminShopsPage() {
   const [referralOffer, setReferralOffer] = useState<AdminReferralOffer | null>(null)
   const [referralSkip, setReferralSkip] = useState('0')
   const [referralAmount, setReferralAmount] = useState('0')
+  const [referralThreshold, setReferralThreshold] = useState('5')
   const [salespeople, setSalespeople] = useState<AdminSalesperson[]>([])
   const [rewards, setRewards] = useState<AdminReferralReward[]>([])
+  const [shopReferrals, setShopReferrals] = useState<AdminShopReferral[]>([])
+  const [overview, setOverview] = useState<AdminReferralOverview | null>(null)
   const [activities, setActivities] = useState<AdminReferralActivity[]>([])
   const [salespersonName, setSalespersonName] = useState('')
   const [desk, setDesk] = useState<'shops' | 'referrals'>('shops')
@@ -146,8 +153,11 @@ export default function AdminShopsPage() {
       setReferralOffer(referralRows.offer)
       setReferralSkip(String(referralRows.offer.skip))
       setReferralAmount(String(referralRows.offer.amount))
+      setReferralThreshold(String(referralRows.offer.threshold || 5))
       setSalespeople(referralRows.salespeople)
       setRewards(referralRows.rewards)
+      setShopReferrals(referralRows.referrals)
+      setOverview(referralRows.overview)
       setActivities(referralRows.activities)
       setError('')
     } catch (err) {
@@ -333,10 +343,12 @@ export default function AdminShopsPage() {
       const updated = await updateAdminReferral({
         skip: Number(referralSkip),
         amount: Number(referralAmount),
+        threshold: Number(referralThreshold),
       })
       setReferralOffer(updated)
       setReferralSkip(String(updated.skip))
       setReferralAmount(String(updated.amount))
+      setReferralThreshold(String(updated.threshold || 5))
       await reload(q, paymentFilter)
     } catch (err) {
       setError(firstError(err))
@@ -390,6 +402,35 @@ export default function AdminShopsPage() {
     }
   }
 
+  async function onRejectShop(id: string) {
+    if (!window.confirm('Reject this referral? It will stop counting toward a free month.')) {
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      await rejectAdminShopReferral(id)
+      await reload(q, paymentFilter)
+    } catch (err) {
+      setError(firstError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function onToggleSalesperson(id: string, active: boolean) {
+    setBusy(true)
+    setError('')
+    try {
+      await setSalespersonActive(id, active)
+      await reload(q, paymentFilter)
+    } catch (err) {
+      setError(firstError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function onResetPassword(
     shop: AdminShop,
     password: string,
@@ -431,18 +472,24 @@ export default function AdminShopsPage() {
           offer={referralOffer}
           salespeople={salespeople}
           rewards={rewards}
+          referrals={shopReferrals}
+          overview={overview}
           activities={activities}
           skip={referralSkip}
           amount={referralAmount}
+          threshold={referralThreshold}
           salespersonName={salespersonName}
           busy={busy}
           onSkip={setReferralSkip}
           onAmount={setReferralAmount}
+          onThreshold={setReferralThreshold}
           onSalespersonName={setSalespersonName}
           onSaveRate={(event) => void onSaveReferral(event)}
           onAddSalesperson={(event) => void onAddSalesperson(event)}
           onApprove={(id) => void onApproveReward(id)}
           onDecline={(id) => void onDeclineReward(id)}
+          onRejectShop={(id) => void onRejectShop(id)}
+          onToggleSalesperson={(id, active) => void onToggleSalesperson(id, active)}
         />
       </>
     )
@@ -1056,8 +1103,8 @@ function ShopModal({
             ? `Invited by ${shop.referred_by}.`
             : 'No invite code was used.'}{' '}
           {shop.referral_signed_up ?? 0} shops used this code,{' '}
-          {shop.referral_paid ?? 0} have paid. A paid invite can receive one
-          free month from the Referrals page.
+          {shop.referral_paid ?? 0} have paid. Five paid shops earn one free
+          month, approved on the Referrals page.
         </p>
         {(shop.referral_shops ?? []).length > 0 && (
           <ul>

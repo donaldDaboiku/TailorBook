@@ -2,45 +2,58 @@ import { type FormEvent } from 'react'
 import {
   type AdminReferralActivity,
   type AdminReferralOffer,
+  type AdminReferralOverview,
   type AdminReferralReward,
   type AdminSalesperson,
+  type AdminShopReferral,
 } from '../api'
 
 export default function AdminReferralsPage({
   offer,
   salespeople,
   rewards,
+  referrals,
+  overview,
   activities,
   skip,
   amount,
+  threshold,
   salespersonName,
   busy,
   onSkip,
   onAmount,
+  onThreshold,
   onSalespersonName,
   onSaveRate,
   onAddSalesperson,
   onApprove,
   onDecline,
+  onRejectShop,
+  onToggleSalesperson,
 }: {
   offer: AdminReferralOffer | null
   salespeople: AdminSalesperson[]
   rewards: AdminReferralReward[]
+  referrals: AdminShopReferral[]
+  overview: AdminReferralOverview | null
   activities: AdminReferralActivity[]
   skip: string
   amount: string
+  threshold: string
   salespersonName: string
   busy: boolean
   onSkip: (value: string) => void
   onAmount: (value: string) => void
+  onThreshold: (value: string) => void
   onSalespersonName: (value: string) => void
   onSaveRate: (event: FormEvent) => void
   onAddSalesperson: (event: FormEvent) => void
   onApprove: (id: string) => void
   onDecline: (id: string) => void
+  onRejectShop: (id: string) => void
+  onToggleSalesperson: (id: string, active: boolean) => void
 }) {
   const pending = rewards.filter((reward) => reward.status === 'pending')
-  const waiting = rewards.filter((reward) => reward.status === 'signed_up').length
   const approved = rewards.filter((reward) => reward.status === 'approved').length
 
   return (
@@ -48,21 +61,33 @@ export default function AdminReferralsPage({
       <section className="card">
         <h1>Referrals</h1>
         <p className="lede">
-          A new shop that pays after using another shop’s code gives that shop
-          one free month. You approve it here. The record stays on this page.
+          {threshold || '5'} paid shops earn one free month. You approve it
+          here. A salesperson code is separate and does not earn that month.
         </p>
         <div className="stat-grid">
           <article>
-            <span>Signed up, not paid yet</span>
-            <strong>{waiting}</strong>
+            <span>Registered</span>
+            <strong>{overview?.registered ?? referrals.length}</strong>
+          </article>
+          <article>
+            <span>Paid and counting</span>
+            <strong>{overview?.successful ?? 0}</strong>
+          </article>
+          <article>
+            <span>Waiting for payment</span>
+            <strong>{overview?.pending_payment ?? 0}</strong>
           </article>
           <article>
             <span>Ready to approve</span>
-            <strong>{pending.length}</strong>
+            <strong>{overview?.pending_rewards ?? pending.length}</strong>
           </article>
           <article>
             <span>Free months given</span>
-            <strong>{approved}</strong>
+            <strong>{overview?.free_months ?? approved}</strong>
+          </article>
+          <article>
+            <span>Codes</span>
+            <strong>{overview?.codes ?? 0}</strong>
           </article>
         </div>
       </section>
@@ -77,12 +102,8 @@ export default function AdminReferralsPage({
               <article className="reward-card" key={reward.id}>
                 <h3>{reward.referrer_name ?? 'Shop'}</h3>
                 <p>
-                  {reward.referred_name ?? 'A new shop'} paid the monthly plan
-                  with this shop’s code.
-                </p>
-                <p className="status">
-                  {reward.referrer_email}
-                  {reward.referred_email ? ` · invited ${reward.referred_email}` : ''}
+                  Set {reward.milestone} is complete. {reward.referrer_email} can
+                  receive one free month.
                 </p>
                 <div className="row-actions">
                   <button
@@ -109,6 +130,34 @@ export default function AdminReferralsPage({
       </section>
 
       <section className="card">
+        <h2 className="section-title">Shop referrals</h2>
+        {referrals.length === 0 ? (
+          <p className="status">No shop has registered with an invite code yet.</p>
+        ) : (
+          <ul className="activity-list">
+            {referrals.map((row) => (
+              <li key={row.id}>
+                <p>
+                  <strong>{row.shop_name || 'Shop'}</strong> · {row.status_label}
+                  {row.referrer_name ? ` · invited by ${row.referrer_name}` : ''}
+                </p>
+                {(row.status === 'signed_up' || row.status === 'successful') && (
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={busy}
+                    onClick={() => onRejectShop(row.id)}
+                  >
+                    Reject
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="card">
         <h2 className="section-title">Activity</h2>
         {activities.length === 0 ? (
           <p className="status">No referral activity yet.</p>
@@ -130,10 +179,23 @@ export default function AdminReferralsPage({
         <form className="form" onSubmit={onSaveRate}>
           <h2 className="section-title">Salesperson commission</h2>
           <p className="status">
-            This rate is for a salesperson’s code. A shop’s reward is the free
-            month above, not this amount.
+            Shop reward: {threshold || offer?.threshold || 5} paid shops, then
+            one free month after you approve it. The naira amount below is only
+            the salesperson commission.
             {offer ? ` Saved rate: ${offer.amount_label}.` : ''}
           </p>
+          <label>
+            Paid shops for one free month
+            <input
+              type="number"
+              min="1"
+              max="100"
+              step="1"
+              value={threshold}
+              onChange={(event) => onThreshold(event.target.value)}
+              required
+            />
+          </label>
           <label>
             Paying shops before commission starts
             <input
@@ -186,14 +248,22 @@ export default function AdminReferralsPage({
                     <strong>{person.name}</strong> · {person.code}
                   </p>
                   <p className="status">
-                    {person.signed_up} signed up · {person.paid} paid ·{' '}
-                    {person.commission_label}
+                    {person.active ? 'Active' : 'Off'} · {person.signed_up} signed
+                    up · {person.paid} paid · {person.commission_label}
                     {person.shops.length > 0
                       ? ` · ${person.shops
                           .map((shop) => `${shop.name} (${shop.paid ? 'paid' : 'signed up'})`)
                           .join(', ')}`
                       : ''}
                   </p>
+                  <button
+                    type="button"
+                    className="link"
+                    disabled={busy}
+                    onClick={() => onToggleSalesperson(person.id, !person.active)}
+                  >
+                    {person.active ? 'Turn off' : 'Turn on'}
+                  </button>
                 </li>
               ))}
             </ul>

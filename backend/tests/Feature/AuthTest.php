@@ -34,7 +34,7 @@ class AuthTest extends TestCase
             ->assertJsonPath('user.business.measurement_unit', 'in')
             ->assertJsonPath('user.business.currency', 'NGN')
             ->assertJsonPath('user.subscription_access', 'trial')
-            ->assertJsonPath('user.subscribed_until', now()->addDays(14)->toDateString())
+            ->assertJsonPath('user.subscribed_until', now()->addDays(7)->toDateString())
             ->assertJsonStructure(['token', 'user']);
 
         $this->assertNotNull(User::query()->where('email', 'ada@example.com')->value('privacy_accepted_at'));
@@ -48,7 +48,7 @@ class AuthTest extends TestCase
             return $mail->hasTo('ada@example.com')
                 && $mail->subjectLine === 'Welcome to TailorMate'
                 && str_contains($mail->bodyText, 'Ada Atelier')
-                && str_contains($mail->bodyText, now()->addDays(14)->toDateString());
+                && str_contains($mail->bodyText, now()->addDays(7)->toDateString());
         });
     }
 

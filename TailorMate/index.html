@@ -112,8 +112,8 @@
   <section class="section" aria-labelledby="price-title">
     <div class="panel">
       <div class="eyebrow"><span class="dot"></span> Price</div>
-      <h2 id="price-title">Try it for 14 days</h2>
-      <p>A new shop can use TailorMate for 14 days. Then the paid plan is one price, paid inside the app.</p>
+      <h2 id="price-title">Try it for 7 days</h2>
+      <p>A new shop can use TailorMate for 7 days. Then the paid plan is one price, paid inside the app.</p>
       <div class="stat" id="plan-price">…</div>
       <p id="plan-note">Loading the paid plan…</p>
       <p class="fine"><a class="btn primary" id="price-app" href="https://tailormate.gitsystemng.com" target="_blank" rel="noopener noreferrer">Open the app to subscribe</a></p>
@@ -175,7 +175,7 @@
       <p>When the outfit is due, Home lists that client. One tap opens their WhatsApp with the balance or a ready-for-pickup note. The receipt can go to that same chat, or to the email saved on their record. The picture can be shared from the phone as well.</p>
       <ul>
         <li>English, Yoruba, Igbo, Hausa, and French on the screens used with a client.</li>
-        <li>A new shop can try TailorMate for 14 days, then pay the monthly plan inside the app.</li>
+        <li>A new shop can try TailorMate for 7 days, then pay the monthly plan inside the app.</li>
         <li>The shop can download its records before closing the account.</li>
       </ul>
       <p>Saving needs the internet. The app opens on the phone like an installed app after it is added to the home screen.</p>
@@ -237,7 +237,7 @@
       const planNote = document.getElementById('plan-note')
       if (plan.amount_label) {
         planPrice.textContent = plan.amount_label
-        planNote.textContent = (plan.trial_days || 14) + ' days to try. Then ' + (plan.label || 'the paid plan') + ' · ' + plan.amount_label + ' for ' + (plan.days || 30) + ' days.'
+        planNote.textContent = (plan.trial_days || 7) + ' days to try. Then ' + (plan.label || 'the paid plan') + ' · ' + plan.amount_label + ' for ' + (plan.days || 30) + ' days.'
       } else {
         planPrice.textContent = '—'
         planNote.textContent = 'The paid plan price will show after the API is updated.'

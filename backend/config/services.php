@@ -50,7 +50,7 @@ return [
         'public_key' => env('PAYSTACK_PUBLIC_KEY'),
         'plan_amount' => (int) env('PAYSTACK_PLAN_AMOUNT', 500000),
         'plan_days' => (int) env('PAYSTACK_PLAN_DAYS', 30),
-        'trial_days' => (int) env('TRIAL_DAYS', 14),
+        'trial_days' => (int) env('TRIAL_DAYS', 7),
         'plan_label' => env('PAYSTACK_PLAN_LABEL', 'Monthly shop plan'),
         'catalogue_free' => 40,
         'catalogue_pack' => 10,

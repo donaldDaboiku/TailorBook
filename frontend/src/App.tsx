@@ -347,7 +347,6 @@ function AuthenticatedApp() {
   return (
     <Shell
       appName={appName}
-      hideHeader={screen.name === 'home'}
       tab={tab}
       onTabChange={(next) => {
         if (next === 'home') {

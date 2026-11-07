@@ -60,10 +60,10 @@ export default function JobsPage({
       {loading && <p className="status">{t('jobs.loading')}</p>}
 
       {!loading && (
-        <JobGroup title="Due and upcoming" jobs={upcoming} onOpen={onOpen} empty="No jobs scheduled." />
+        <JobGroup title="Due and upcoming" jobs={upcoming} onOpen={onOpen} empty="No jobs scheduled." mark="Due" />
       )}
       {!loading && overdue.length > 0 && (
-        <JobGroup title="Past due" jobs={overdue} onOpen={onOpen} empty="" />
+        <JobGroup title="Past due" jobs={overdue} onOpen={onOpen} empty="" mark="Past due" tone="danger" />
       )}
     </>
   )
@@ -74,11 +74,15 @@ function JobGroup({
   jobs,
   empty,
   onOpen,
+  mark,
+  tone = 'warn',
 }: {
   title: string
   jobs: ShopJob[]
   empty: string
   onOpen: (job: ShopJob) => void
+  mark: string
+  tone?: 'warn' | 'danger'
 }) {
   return (
     <section className="card muted-card">
@@ -100,7 +104,10 @@ function JobGroup({
                     {job.customer_name ?? 'Customer'} · {job.service_date}
                   </span>
                 </span>
-                <span className="status">{job.outstanding_label}</span>
+                <span className="admin-list-main">
+                  <span className={tone === 'danger' ? 'badge danger' : 'badge warn'}>{mark}</span>
+                  <span className="status">{job.outstanding_label}</span>
+                </span>
               </button>
             </li>
           ))}

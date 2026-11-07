@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchHome, fetchWhatsAppTemplates, firstError, type HomeDashboard, type ShopJob, type User, type WhatsAppTemplateKey } from '../api'
 import { useAuth } from '../auth'
-import InstallButton from '../InstallButton'
 import { useI18n } from '../i18n'
 
 function timeGreeting(t: (key: string) => string, now = new Date()): string {
@@ -118,7 +117,6 @@ export default function HomePage({
           <p className="status">{t('home.organize')}</p>
         </div>
         <div className="dash-tools">
-          <InstallButton />
           <button
             type="button"
             className="avatar"
@@ -141,6 +139,7 @@ export default function HomePage({
         <p className="balance-note">
           {t('home.received')}: {home?.received_week_label ?? '—'}
         </p>
+        <MoneySplit outstanding={home?.outstanding} received={home?.received_week} />
         <div className="balance-stats">
           <button type="button" onClick={onOpenJobs}>
             <strong>{home?.active_jobs ?? '—'}</strong>
@@ -261,6 +260,35 @@ export default function HomePage({
           </ul>
         )}
       </section>
+    </div>
+  )
+}
+
+function MoneySplit({
+  outstanding,
+  received,
+}: {
+  outstanding?: string
+  received?: string
+}) {
+  const owed = Number(outstanding)
+  const got = Number(received)
+
+  if (!Number.isFinite(owed) || !Number.isFinite(got) || owed + got <= 0) {
+    return null
+  }
+
+  const gotShare = Math.round((got / (owed + got)) * 100)
+  const owedShare = 100 - gotShare
+
+  return (
+    <div
+      className="money-bar"
+      role="img"
+      aria-label={`Received this week ${gotShare} percent. Still outstanding ${owedShare} percent.`}
+    >
+      <span style={{ width: `${gotShare}%` }} />
+      <span style={{ width: `${owedShare}%` }} />
     </div>
   )
 }

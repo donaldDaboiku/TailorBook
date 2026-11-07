@@ -9,13 +9,17 @@
     }
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#082653">
+  <meta name="theme-color" content="#542638">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <meta name="description" content="TailorMate helps fashion designers manage customer measurements, tailoring jobs, payments and business records.">
   <link rel="icon" href="icon.png" type="image/png">
   <title>TailorMate — Your tailoring business, organised</title>
   <style>
-    :root{color-scheme:light;--green:#082653;--green2:#0c3268;--cream:#FFFEF5;--ink:#082653;--muted:#5c6b82;--line:#e6e4da;--gold:#D99A18}
+    :root{color-scheme:light;--green:#542638;--green2:#8B4558;--cream:#F8F3ED;--ink:#29252A;--muted:#776B6B;--line:#E9DFD8;--gold:#D4AE83}
     *{box-sizing:border-box} body{margin:0;background:var(--cream);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
+    h1,h2,h3,.brand{font-family:Manrope,Inter,sans-serif}
     a{color:inherit} .wrap{min-height:100vh;display:flex;flex-direction:column}
     header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px clamp(20px,6vw,84px)}
     .brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:-.03em;font-size:1.2rem}
@@ -29,9 +33,17 @@
     .intro{font-size:1.1rem;color:var(--muted);max-width:570px;margin:0 0 30px}
     .actions{display:flex;flex-wrap:wrap;gap:12px}
     .btn{display:inline-flex;justify-content:center;align-items:center;gap:10px;padding:14px 20px;border-radius:12px;font-weight:800;text-decoration:none;transition:transform .15s,box-shadow .15s}
-    .btn:hover{transform:translateY(-2px)} .primary{background:var(--green);color:#fff;box-shadow:0 8px 20px #08265324}.secondary{border:1px solid var(--line);background:#fff}
+    .btn:hover{transform:translateY(-2px)} .primary{background:var(--green);color:#fff;box-shadow:0 8px 20px #54263824}.secondary{border:1px solid var(--line);background:#fff}
+    .site-nav{display:flex;flex-wrap:wrap;gap:14px 18px;padding:0 clamp(20px,6vw,84px) 8px;font-size:.92rem;font-weight:600}
+    .site-nav a{color:var(--green);text-decoration:none}
+    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .step{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px}
+    .step strong{display:block;margin-bottom:6px}
+    .faq{display:grid;gap:10px}
+    .faq details{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+    .faq summary{font-weight:700;cursor:pointer}
     .fine{font-size:.83rem;color:var(--muted);margin-top:15px}
-    .preview{position:relative;background:var(--green);border-radius:28px;padding:26px;color:#fff;overflow:hidden;box-shadow:0 24px 60px #08265325}
+    .preview{position:relative;background:var(--green);border-radius:28px;padding:26px;color:#fff;overflow:hidden;box-shadow:0 24px 60px #54263825}
     .preview:before{content:"";position:absolute;width:230px;height:230px;border-radius:50%;background:#ffffff0b;right:-70px;top:-80px}
     .preview-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px;position:relative}
     .preview-title{font-weight:800;font-size:1.05rem}.pill{font-size:.72rem;border:1px solid #ffffff35;border-radius:999px;padding:5px 9px;color:#e7eee9}
@@ -44,7 +56,7 @@
     .social-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.social{display:flex;align-items:center;gap:12px;padding:17px;background:#fff;border:1px solid var(--line);border-radius:15px;text-decoration:none;font-weight:700}.social:hover{border-color:var(--green2);transform:translateY(-1px)}
     .community-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px}.panel h3{margin:0 0 7px}.panel p{color:var(--muted);font-size:.92rem}.stat{font-size:2rem;font-weight:800;letter-spacing:-.04em;color:var(--green);margin:12px 0 4px}.status{display:inline-block;background:#f5eddb;color:#75571c;border-radius:999px;padding:5px 10px;font-size:.75rem;font-weight:800}
     .state-list{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding:0;list-style:none}.state-list li{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:.85rem}
-    .feedback-form{display:grid;gap:12px}.stars{display:flex;gap:5px}.stars button{border:0;background:transparent;font-size:1.7rem;padding:2px;cursor:pointer;color:#b8c0ba}.stars button.selected{color:#D99A18}.feedback-form input,.feedback-form textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}.feedback-form textarea{min-height:95px;resize:vertical}.feedback-form .send{border:0;border-radius:10px;background:var(--green);color:#fff;font-weight:800;padding:13px;cursor:pointer}.form-note{font-size:.8rem;color:var(--muted);margin:0}
+    .feedback-form{display:grid;gap:12px}.stars{display:flex;gap:5px}.stars button{border:0;background:transparent;font-size:1.7rem;padding:2px;cursor:pointer;color:#b8c0ba}.stars button.selected{color:#D4AE83}.feedback-form input,.feedback-form textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}.feedback-form textarea{min-height:95px;resize:vertical}.feedback-form .send{border:0;border-radius:10px;background:var(--green);color:#fff;font-weight:800;padding:13px;cursor:pointer}.form-note{font-size:.8rem;color:var(--muted);margin:0}
     .feature{padding:22px;border:1px solid var(--line);border-radius:18px;background:#fff}.feature .ico{font-size:1.3rem}.feature h2{font-size:1rem;margin:10px 0 6px}.feature p{font-size:.9rem;color:var(--muted);margin:0}
     .catalogue-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
     .style-card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
@@ -53,14 +65,14 @@
     .about-copy p{margin:0 0 12px}.about-copy ul{margin:0 0 14px;padding-left:1.1rem;color:var(--ink)}.about-copy li{margin:6px 0}
     .review-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
     .review{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px}
-    .review p{margin:8px 0}    .review-stars{color:#D99A18;letter-spacing:.08em;font-size:1.05rem}
-    .ad{background:var(--green);color:#fff;border-radius:20px;padding:28px;box-shadow:0 16px 40px #08265320}
+    .review p{margin:8px 0}    .review-stars{color:#D4AE83;letter-spacing:.08em;font-size:1.05rem}
+    .ad{background:var(--green);color:#fff;border-radius:20px;padding:28px;box-shadow:0 16px 40px #54263820}
     .ad .eyebrow{color:#e8bd65}
     .ad h2{color:#fff;margin:8px 0 12px}
     .ad p{color:#e7eee9;max-width:640px}
     .ad .btn.secondary{background:#fff;color:var(--green);margin-top:8px}
     footer{border-top:1px solid var(--line);padding:22px clamp(20px,6vw,84px);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.82rem}
-    @media(max-width:760px){main{grid-template-columns:1fr;padding-top:24px}.preview{max-width:520px;width:100%;margin:auto}.features,.catalogue-grid{grid-template-columns:1fr 1fr}.review-grid{grid-template-columns:1fr}.intro{font-size:1rem}header{padding-top:18px;padding-bottom:18px}.social-grid,.community-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){main{grid-template-columns:1fr;padding-top:24px}.preview{max-width:520px;width:100%;margin:auto}.features,.catalogue-grid,.steps{grid-template-columns:1fr 1fr}.review-grid{grid-template-columns:1fr}.intro{font-size:1rem}header{padding-top:18px;padding-bottom:18px}.social-grid,.community-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -69,6 +81,14 @@
     <a class="brand" href="#top" aria-label="TailorMate home" style="text-decoration:none"><img class="mark" src="icon.png" alt="" width="42" height="42"><span>TailorMate</span></a>
     <a class="toplink" id="open-app" href="https://tailormate.gitsystemng.com" target="_blank" rel="noopener noreferrer">Open the app</a>
   </header>
+  <nav class="site-nav" aria-label="On this page">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#reviews">Reviews</a>
+    <a href="#faq">FAQ</a>
+    <a href="#contact">Contact</a>
+  </nav>
   <main id="top">
     <section>
       <div class="eyebrow"><span class="dot"></span> Made for fashion professionals</div>
@@ -89,10 +109,22 @@
       </div>
     </aside>
   </main>
-  <section class="features" aria-label="Main features">
+  <section class="features" id="features" aria-label="Main features">
     <article class="feature"><div class="ico" aria-hidden="true">📏</div><h2>Customer measurements</h2><p>Keep measurement history accessible when it is time to sew.</p></article>
     <article class="feature"><div class="ico" aria-hidden="true">🪡</div><h2>Jobs and orders</h2><p>Organise customer jobs and service dates in one workspace.</p></article>
     <article class="feature"><div class="ico" aria-hidden="true">📊</div><h2>Business finances</h2><p>Keep an eye on payments, expenses and your business summary.</p></article>
+  </section>
+  <section class="section" id="how" aria-labelledby="how-title">
+    <div class="section-head">
+      <div class="eyebrow"><span class="dot"></span> How TailorMate works</div>
+      <h2 id="how-title">From the fitting to the balance</h2>
+      <p>The same shop records the client, the cloth, and the money. Nothing here is a second product. It is the app you already open.</p>
+    </div>
+    <div class="steps">
+      <article class="step"><strong>1. Save the client</strong><p>Name and phone, then the measurements. An older set stays when you save a new one.</p></article>
+      <article class="step"><strong>2. Open the job</strong><p>Pick a style from the shop catalogue. The title and usual price fill in. Record the deposit as cash, transfer, or POS.</p></article>
+      <article class="step"><strong>3. Collect and remind</strong><p>Home shows who is due. One tap opens WhatsApp with the balance or a ready-for-pickup note.</p></article>
+    </div>
   </section>
   <section class="section" id="catalogue" aria-labelledby="catalogue-title">
     <div class="section-head">
@@ -115,7 +147,7 @@
     </div>
     <div class="review-grid" id="review-list"></div>
   </section>
-  <section class="section" aria-labelledby="price-title">
+  <section class="section" id="pricing" aria-labelledby="price-title">
     <div class="panel">
       <div class="eyebrow"><span class="dot"></span> Price</div>
       <h2 id="price-title">Try it for 7 days</h2>
@@ -133,7 +165,7 @@
       <a class="btn secondary" id="referral-app" href="https://tailormate.gitsystemng.com" target="_blank" rel="noopener noreferrer">Open the app</a>
     </div>
   </section>
-  <section class="section" aria-labelledby="connect-title">
+  <section class="section" id="contact" aria-labelledby="connect-title">
     <div class="section-head"><div class="eyebrow"><span class="dot"></span> Stay connected</div><h2 id="connect-title">Reach the admin</h2><p>Questions about TailorMate go to the admin. Shop customers still message their tailor inside the app.</p></div>
     <div class="social-grid" id="social-grid"></div>
     <p class="form-note" id="social-note">Loading contact links…</p>
@@ -170,6 +202,30 @@
           <p class="form-note"><a href="terms.html">Terms</a> · <a href="privacy-notice.html">Privacy notice</a></p>
         </form>
       </div>
+    </div>
+  </section>
+  <section class="section" id="faq" aria-labelledby="faq-title">
+    <div class="section-head">
+      <div class="eyebrow"><span class="dot"></span> Questions</div>
+      <h2 id="faq-title">Before you open the app</h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>How long is the trial?</summary>
+        <p>A new shop can use TailorMate for 7 days. The paid plan then runs for 30 days. The price on this page comes from the live plan.</p>
+      </details>
+      <details>
+        <summary>Where do I sign in?</summary>
+        <p>Sign in and registration are inside the app at tailormate.gitsystemng.com. This page does not keep a second login.</p>
+      </details>
+      <details>
+        <summary>Can I message a customer?</summary>
+        <p>Yes. When a job is due, Home opens WhatsApp with the balance or a ready-for-pickup note. The receipt can also go to the email on the shop account.</p>
+      </details>
+      <details>
+        <summary>Does it work without internet?</summary>
+        <p>The app can sit on the phone home screen. Saving a customer, measurement, job, or payment still needs the internet.</p>
+      </details>
     </div>
   </section>
   <section class="section" id="about" aria-labelledby="about-title">

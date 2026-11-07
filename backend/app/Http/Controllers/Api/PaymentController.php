@@ -37,32 +37,31 @@ class PaymentController extends Controller
         abort_unless($business !== null, 403, 'Set up your shop first.');
 
         $data = $request->validated();
-        $existing = $sync->replayCreate(Payment::class, $business->id, $data['id'] ?? null);
+        $payment = $sync->insertOrReplay(
+            Payment::class,
+            (string) $business->id,
+            $data['id'] ?? null,
+            fn () => Payment::query()->create($sync->withClientId([
+                'business_id' => $business->id,
+                'customer_id' => $customer->id,
+                'customer_job_id' => $data['customer_job_id'] ?? null,
+                'amount' => Money::normalize($data['amount']),
+                'paid_on' => $data['paid_on'],
+                'method' => PaymentMethod::from($data['method']),
+                'reference' => $data['reference'] ?? null,
+                'note' => $data['note'] ?? null,
+            ], $data['id'] ?? null))->load('job'),
+        );
 
-        if ($existing instanceof Payment) {
-            abort_unless($existing->customer_id === $customer->id, 404);
+        abort_unless((string) $payment->customer_id === (string) $customer->id, 404);
 
-            return PaymentResource::make($existing->load('job'))
-                ->response()
-                ->setStatusCode(200);
+        if ($payment->wasRecentlyCreated) {
+            ReceiptText::sendToAccount($payment);
         }
 
-        $payment = Payment::query()->create($sync->withClientId([
-            'business_id' => $business->id,
-            'customer_id' => $customer->id,
-            'customer_job_id' => $data['customer_job_id'] ?? null,
-            'amount' => Money::normalize($data['amount']),
-            'paid_on' => $data['paid_on'],
-            'method' => PaymentMethod::from($data['method']),
-            'reference' => $data['reference'] ?? null,
-            'note' => $data['note'] ?? null,
-        ], $data['id'] ?? null))->load('job');
-
-        ReceiptText::sendToAccount($payment);
-
-        return PaymentResource::make($payment)
+        return PaymentResource::make($payment->load('job'))
             ->response()
-            ->setStatusCode(201);
+            ->setStatusCode($payment->wasRecentlyCreated ? 201 : 200);
     }
 
     public function destroy(Request $request, Customer $customer, Payment $payment): JsonResponse

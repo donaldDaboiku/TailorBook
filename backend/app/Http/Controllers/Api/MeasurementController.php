@@ -49,17 +49,7 @@ class MeasurementController extends Controller
 
         $data = $request->validated();
         $unit = MeasurementUnit::from($data['unit']);
-        $existing = app(SyncRecords::class)->replayCreate(Measurement::class, $business->id, $data['id'] ?? null);
-
-        if ($existing instanceof Measurement) {
-            abort_unless($existing->customer_id === $customer->id, 404);
-            $existing->load(['template', 'values.field']);
-            $resource = new MeasurementResource($existing);
-            $resource->displayUnit = $unit;
-            $resource->previous = $this->previousMeasurement($customer, $existing);
-
-            return $resource->response()->setStatusCode(200);
-        }
+        $sync = app(SyncRecords::class);
 
         $template = MeasurementTemplate::query()
             ->whereNull('business_id')
@@ -76,8 +66,12 @@ class MeasurementController extends Controller
             ]);
         }
 
-        $measurement = DB::transaction(function () use ($business, $customer, $template, $data, $unit, $fieldsByKey) {
-            $measurement = Measurement::query()->create(app(SyncRecords::class)->withClientId([
+        $measurement = $sync->insertOrReplay(
+            Measurement::class,
+            (string) $business->id,
+            $data['id'] ?? null,
+            fn () => DB::transaction(function () use ($business, $customer, $template, $data, $unit, $fieldsByKey, $sync) {
+            $measurement = Measurement::query()->create($sync->withClientId([
                 'business_id' => $business->id,
                 'customer_id' => $customer->id,
                 'measurement_template_id' => $template->id,
@@ -94,13 +88,17 @@ class MeasurementController extends Controller
             }
 
             return $measurement->load(['template', 'values.field']);
-        });
+            }),
+        );
+
+        abort_unless((string) $measurement->customer_id === (string) $customer->id, 404);
+        $measurement->load(['template', 'values.field']);
 
         $resource = new MeasurementResource($measurement);
         $resource->displayUnit = $unit;
         $resource->previous = $this->previousMeasurement($customer, $measurement);
 
-        return $resource->response()->setStatusCode(201);
+        return $resource->response()->setStatusCode($measurement->wasRecentlyCreated ? 201 : 200);
     }
 
     public function show(Request $request, Customer $customer, Measurement $measurement): MeasurementResource

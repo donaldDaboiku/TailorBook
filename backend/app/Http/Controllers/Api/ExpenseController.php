@@ -46,27 +46,24 @@ class ExpenseController extends Controller
     {
         $business = $this->business($request);
         $data = $request->validated();
-        $existing = $sync->replayCreate(Expense::class, $business->id, $data['id'] ?? null);
+        $expense = $sync->insertOrReplay(
+            Expense::class,
+            (string) $business->id,
+            $data['id'] ?? null,
+            fn () => Expense::query()->create($sync->withClientId([
+                'business_id' => $business->id,
+                'expense_category_id' => $data['expense_category_id'],
+                'amount' => Money::normalize($data['amount']),
+                'spent_on' => $data['spent_on'],
+                'description' => $data['description'] ?? null,
+                'method' => PaymentMethod::from($data['method']),
+                'note' => $data['note'] ?? null,
+            ], $data['id'] ?? null))->load('category'),
+        );
 
-        if ($existing instanceof Expense) {
-            return ExpenseResource::make($existing->load('category'))
-                ->response()
-                ->setStatusCode(200);
-        }
-
-        $expense = Expense::query()->create($sync->withClientId([
-            'business_id' => $business->id,
-            'expense_category_id' => $data['expense_category_id'],
-            'amount' => Money::normalize($data['amount']),
-            'spent_on' => $data['spent_on'],
-            'description' => $data['description'] ?? null,
-            'method' => PaymentMethod::from($data['method']),
-            'note' => $data['note'] ?? null,
-        ], $data['id'] ?? null))->load('category');
-
-        return ExpenseResource::make($expense)
+        return ExpenseResource::make($expense->load('category'))
             ->response()
-            ->setStatusCode(201);
+            ->setStatusCode($expense->wasRecentlyCreated ? 201 : 200);
     }
 
     public function destroy(Request $request, Expense $expense): JsonResponse

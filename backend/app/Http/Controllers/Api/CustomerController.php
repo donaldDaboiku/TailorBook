@@ -48,23 +48,20 @@ class CustomerController extends Controller
     {
         $business = $this->business($request);
         $data = $request->validated();
-        $existing = $sync->replayCreate(Customer::class, $business->id, $data['id'] ?? null);
-
-        if ($existing instanceof Customer) {
-            return CustomerResource::make($existing)
-                ->response()
-                ->setStatusCode(200);
-        }
-
-        $customer = Customer::query()->create($sync->withClientId([
-            ...$data,
-            'business_id' => $business->id,
-            'whatsapp_phone' => $data['whatsapp_phone'] ?? $data['phone'],
-        ], $data['id'] ?? null));
+        $customer = $sync->insertOrReplay(
+            Customer::class,
+            (string) $business->id,
+            $data['id'] ?? null,
+            fn () => Customer::query()->create($sync->withClientId([
+                ...$data,
+                'business_id' => $business->id,
+                'whatsapp_phone' => $data['whatsapp_phone'] ?? $data['phone'],
+            ], $data['id'] ?? null)),
+        );
 
         return CustomerResource::make($customer)
             ->response()
-            ->setStatusCode(201);
+            ->setStatusCode($customer->wasRecentlyCreated ? 201 : 200);
     }
 
     public function show(Request $request, Customer $customer): CustomerResource
@@ -82,7 +79,7 @@ class CustomerController extends Controller
         $businessId = (string) $customer->business_id;
         $key = $request->header('Idempotency-Key');
 
-        if ($sync->replayUpdate($businessId, $key, $customer->id)) {
+        if ($sync->replayUpdate($businessId, $key, (string) $customer->id)) {
             return CustomerResource::make($customer->fresh());
         }
 

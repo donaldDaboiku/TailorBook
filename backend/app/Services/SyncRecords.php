@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\RecordRevision;
 use App\Models\SyncAction;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
 
 class SyncRecords
@@ -35,6 +36,31 @@ class SyncRecords
         return $row;
     }
 
+    /**
+     * Insert a new record, or return the existing one when a concurrent
+     * request with the same client id wins the unique key.
+     */
+    public function insertOrReplay(string $class, string $businessId, mixed $id, callable $insert): Model
+    {
+        $existing = $this->replayCreate($class, $businessId, $id);
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        try {
+            return $insert();
+        } catch (UniqueConstraintViolationException $exception) {
+            $existing = $this->replayCreate($class, $businessId, $id);
+
+            if ($existing !== null) {
+                return $existing;
+            }
+
+            throw $exception;
+        }
+    }
+
     public function replayUpdate(string $businessId, mixed $key, string $subjectId): bool
     {
         if (! is_string($key) || ! Str::isUuid($key)) {
@@ -50,7 +76,7 @@ class SyncRecords
             return false;
         }
 
-        abort_unless($prior->subject_id === $subjectId, 409, 'That sync key was already used.');
+        abort_unless((string) $prior->subject_id === (string) $subjectId, 409, 'That sync key was already used.');
 
         return true;
     }

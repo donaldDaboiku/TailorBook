@@ -34,28 +34,25 @@ class CustomerJobController extends Controller
         abort_unless($business !== null, 403, 'Set up your shop first.');
 
         $data = $request->validated();
-        $existing = $sync->replayCreate(CustomerJob::class, $business->id, $data['id'] ?? null);
+        $job = $sync->insertOrReplay(
+            CustomerJob::class,
+            (string) $business->id,
+            $data['id'] ?? null,
+            fn () => CustomerJob::query()->create($sync->withClientId([
+                'business_id' => $business->id,
+                'customer_id' => $customer->id,
+                'title' => $data['title'],
+                'agreed_amount' => Money::normalize($data['agreed_amount']),
+                'service_date' => $data['service_date'],
+                'finish_days' => $data['finish_days'] ?? null,
+            ], $data['id'] ?? null)),
+        );
 
-        if ($existing instanceof CustomerJob) {
-            abort_unless($existing->customer_id === $customer->id, 404);
-
-            return CustomerJobResource::make($existing)
-                ->response()
-                ->setStatusCode(200);
-        }
-
-        $job = CustomerJob::query()->create($sync->withClientId([
-            'business_id' => $business->id,
-            'customer_id' => $customer->id,
-            'title' => $data['title'],
-            'agreed_amount' => Money::normalize($data['agreed_amount']),
-            'service_date' => $data['service_date'],
-            'finish_days' => $data['finish_days'] ?? null,
-        ], $data['id'] ?? null));
+        abort_unless((string) $job->customer_id === (string) $customer->id, 404);
 
         return CustomerJobResource::make($job)
             ->response()
-            ->setStatusCode(201);
+            ->setStatusCode($job->wasRecentlyCreated ? 201 : 200);
     }
 
     public function update(StoreCustomerJobRequest $request, Customer $customer, CustomerJob $job, SyncRecords $sync): CustomerJobResource
@@ -64,7 +61,7 @@ class CustomerJobController extends Controller
 
         $key = $request->header('Idempotency-Key');
 
-        if ($sync->replayUpdate((string) $job->business_id, $key, $job->id)) {
+        if ($sync->replayUpdate((string) $job->business_id, $key, (string) $job->id)) {
             return CustomerJobResource::make($job->fresh());
         }
 

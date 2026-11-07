@@ -135,6 +135,8 @@ export default function MeasurementFormPage({
     try {
       const saved = await createMeasurement(customer.id, {
         template_slug: template.slug,
+        template_id: template.id,
+        template_name: template.name,
         taken_on: takenOn,
         unit,
         values: payloadValues,

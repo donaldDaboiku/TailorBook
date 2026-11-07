@@ -1023,6 +1023,7 @@ async function saveOrQueue<T extends { id: string }>(options: {
   body: Record<string, unknown>
   snapshot: T
   cacheKey?: string
+  recordKey?: string
 }): Promise<T> {
   const queue = async () => {
     await enqueue({
@@ -1033,6 +1034,8 @@ async function saveOrQueue<T extends { id: string }>(options: {
       method: options.method,
       body: options.body,
       snapshot: options.snapshot,
+      cacheKey: options.cacheKey,
+      recordKey: options.recordKey,
       at: Date.now(),
       status: 'pending',
       error: '',
@@ -1117,6 +1120,19 @@ export async function listCustomers(q = ''): Promise<Customer[]> {
   }
 }
 
+function latestPending<T extends { id: string }>(rows: T[], id: string): T | undefined {
+  return rows.reduce<T | undefined>((found, row) => (row.id === id ? row : found), undefined)
+}
+
+async function pendingCustomer(id: string): Promise<Customer | undefined> {
+  const edited = latestPending(await pendingSnapshots<Customer>('customer.update'), id)
+  if (edited) {
+    return edited
+  }
+
+  return latestPending(await pendingSnapshots<Customer>('customer.create'), id)
+}
+
 function matchesCustomer(q: string): (customer: Customer) => boolean {
   const needle = q.trim().toLowerCase()
   return (customer) =>
@@ -1131,33 +1147,26 @@ export async function getCustomer(id: string): Promise<Customer> {
       throw new Error('bad response')
     }
 
+    const pending = await pendingCustomer(id)
+    if (pending) {
+      return pending
+    }
+
     await cachePut(`customer:${id}`, data.data)
-    const edited = (await pendingSnapshots<Customer>('customer.update')).find(
-      (customer) => customer.id === id,
-    )
-    return edited ?? data.data
+    return data.data
   } catch (error) {
     if (!shouldQueue(error)) {
       throw error
     }
 
-    const edited = (await pendingSnapshots<Customer>('customer.update')).find(
-      (customer) => customer.id === id,
-    )
-    if (edited) {
-      return edited
+    const pending = await pendingCustomer(id)
+    if (pending) {
+      return pending
     }
 
     const cached = await cacheGet<Customer>(`customer:${id}`)
     if (isCustomer(cached)) {
       return cached
-    }
-
-    const pending = (await pendingSnapshots<Customer>('customer.create')).find(
-      (customer) => customer.id === id,
-    )
-    if (pending) {
-      return pending
     }
 
     throw error
@@ -1214,6 +1223,7 @@ export async function createCustomer(payload: CustomerInput): Promise<Customer> 
     body: { ...cleanCustomerPayload(payload), id },
     snapshot: localCustomer(id, payload),
     cacheKey: 'customers',
+    recordKey: `customer:${id}`,
   })
   await cachePut(`customer:${saved.id}`, saved)
   return saved
@@ -1233,6 +1243,7 @@ export async function updateCustomer(
     body: cleanCustomerPayload(payload),
     snapshot: localCustomer(id, payload),
     cacheKey: 'customers',
+    recordKey: `customer:${id}`,
   })
   await cachePut(`customer:${id}`, saved)
   return saved
@@ -1387,18 +1398,25 @@ export async function createMeasurement(
   customerId: string,
   payload: {
     template_slug: string
+    template_id?: string
+    template_name?: string
     taken_on: string
     unit: MeasurementUnit
     values: Record<string, number>
   },
 ): Promise<Measurement> {
   const id = crypto.randomUUID()
+  const { template_id: templateId, template_name: templateName, ...fields } = payload
   const snapshot: Measurement = {
     id,
     customer_id: customerId,
     taken_on: payload.taken_on,
     unit: payload.unit,
-    template: { id: '', slug: payload.template_slug, name: payload.template_slug },
+    template: {
+      id: templateId || payload.template_slug,
+      slug: payload.template_slug,
+      name: templateName || payload.template_slug,
+    },
     values: Object.entries(payload.values).map(([key, amount]) => ({
       field_id: key,
       key,
@@ -1414,9 +1432,10 @@ export async function createMeasurement(
     kind: 'measurement.create',
     path: `/api/customers/${customerId}/measurements`,
     method: 'POST',
-    body: { ...payload, id },
+    body: { ...fields, id },
     snapshot,
     cacheKey: `measurements:${customerId}`,
+    recordKey: `measurement:${id}`,
   })
   await cachePut(`measurement:${saved.id}`, saved)
   return saved

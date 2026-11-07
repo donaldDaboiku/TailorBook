@@ -9,10 +9,13 @@ use App\Models\ExpenseCategory;
 use App\Models\Payment;
 use App\Models\RecordRevision;
 use App\Models\User;
+use App\Services\SyncRecords;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use PDOException;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -120,6 +123,38 @@ class SyncReplayTest extends TestCase
 
         $this->assertSame(1, RecordRevision::query()->where('record_id', $jobId)->count());
         $this->assertSame('10000.00', RecordRevision::query()->where('record_id', $jobId)->firstOrFail()->previous['agreed_amount']);
+    }
+
+    public function test_a_lost_insert_race_returns_the_saved_customer(): void
+    {
+        $user = $this->tailor();
+        $id = (string) Str::uuid();
+
+        $saved = app(SyncRecords::class)->insertOrReplay(
+            Customer::class,
+            $user->business->id,
+            $id,
+            function () use ($user, $id) {
+                Customer::factory()->create([
+                    'id' => $id,
+                    'client_uuid' => $id,
+                    'business_id' => $user->business->id,
+                    'name' => 'Bola',
+                    'phone' => '08037777777',
+                ]);
+
+                throw new UniqueConstraintViolationException(
+                    'mysql',
+                    'insert into customers',
+                    [],
+                    new PDOException('Duplicate entry'),
+                );
+            },
+        );
+
+        $this->assertSame($id, (string) $saved->id);
+        $this->assertSame('Bola', $saved->name);
+        $this->assertSame(1, Customer::query()->whereKey($id)->count());
     }
 
     public function test_a_removed_client_id_is_not_created_again(): void

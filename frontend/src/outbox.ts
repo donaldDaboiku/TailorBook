@@ -11,6 +11,8 @@ export type OutboxItem = {
   method: 'POST' | 'PUT'
   body: Record<string, unknown>
   snapshot: unknown
+  cacheKey?: string
+  recordKey?: string
   at: number
   status: OutboxStatus
   error: string
@@ -163,6 +165,10 @@ export async function syncNow(): Promise<void> {
       }
 
       if (response.ok) {
+        const row = await syncedRow(response)
+        if (row) {
+          await adoptSyncedRow(item, row)
+        }
         await removeOutbox(item.id)
         attempt = 0
         continue
@@ -181,6 +187,63 @@ export async function syncNow(): Promise<void> {
     notify()
     schedule()
   }
+}
+
+async function syncedRow(response: Response): Promise<{ id: string } | null> {
+  try {
+    const body = (await response.json()) as { data?: unknown }
+    if (
+      body.data &&
+      typeof body.data === 'object' &&
+      'id' in body.data &&
+      typeof body.data.id === 'string'
+    ) {
+      return body.data as { id: string }
+    }
+  } catch {
+    return null
+  }
+
+  return null
+}
+
+async function adoptSyncedRow(item: OutboxItem, row: { id: string }): Promise<void> {
+  if (item.cacheKey) {
+    const rows = await cacheGet<Array<{ id: string }>>(item.cacheKey)
+    if (Array.isArray(rows)) {
+      const next = rows.some((entry) => entry?.id === row.id)
+        ? rows.map((entry) => (entry?.id === row.id ? row : entry))
+        : [row, ...rows]
+      await cachePut(item.cacheKey, next)
+    }
+  }
+
+  if (item.recordKey) {
+    await cachePut(item.recordKey, row)
+  }
+
+  if (!hasJobShape(row)) {
+    return
+  }
+
+  const shopJobs = await cacheGet<{ upcoming: Array<{ id: string }>; overdue: Array<{ id: string }> }>(
+    'shop-jobs',
+  )
+  if (!shopJobs) {
+    return
+  }
+
+  const patch = (jobs: Array<{ id: string }>) =>
+    jobs.map((job) => (job.id === row.id ? { ...job, ...row } : job))
+
+  await cachePut('shop-jobs', {
+    upcoming: patch(shopJobs.upcoming ?? []),
+    overdue: patch(shopJobs.overdue ?? []),
+  })
+}
+
+function hasJobShape(row: { id: string }): boolean {
+  return 'title' in row && 'service_date' in row && 'customer_id' in row
 }
 
 async function rejectionMessage(response: Response): Promise<string> {

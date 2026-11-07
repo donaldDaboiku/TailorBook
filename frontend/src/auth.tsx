@@ -14,6 +14,7 @@ import {
   setToken,
   type User,
 } from './api'
+import { syncNow } from './outbox'
 import { markTutorialUnseen } from './tutorial'
 
 type AuthContextValue = {
@@ -95,6 +96,7 @@ export function AuthProvider({
   async function login(email: string, password: string) {
     const result = await apiLogin({ email, password })
     setUser(result.user)
+    void syncNow()
   }
 
   async function register(payload: {
@@ -116,6 +118,7 @@ export function AuthProvider({
     const result = await apiRegister(payload)
     markTutorialUnseen(result.user.id)
     setUser(result.user)
+    void syncNow()
   }
 
   async function logout() {

@@ -27,6 +27,7 @@ class StorePaymentRequest extends FormRequest
         $customerId = $customer instanceof Customer ? $customer->id : null;
 
         return [
+            'id' => ['sometimes', 'nullable', 'uuid'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'paid_on' => ['required', 'date'],
             'method' => ['required', Rule::enum(PaymentMethod::class)],

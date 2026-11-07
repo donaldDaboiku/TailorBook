@@ -9,6 +9,7 @@ use App\Http\Resources\MeasurementResource;
 use App\Models\Customer;
 use App\Models\Measurement;
 use App\Models\MeasurementTemplate;
+use App\Services\SyncRecords;
 use App\Services\Units;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,6 +49,17 @@ class MeasurementController extends Controller
 
         $data = $request->validated();
         $unit = MeasurementUnit::from($data['unit']);
+        $existing = app(SyncRecords::class)->replayCreate(Measurement::class, $business->id, $data['id'] ?? null);
+
+        if ($existing instanceof Measurement) {
+            abort_unless($existing->customer_id === $customer->id, 404);
+            $existing->load(['template', 'values.field']);
+            $resource = new MeasurementResource($existing);
+            $resource->displayUnit = $unit;
+            $resource->previous = $this->previousMeasurement($customer, $existing);
+
+            return $resource->response()->setStatusCode(200);
+        }
 
         $template = MeasurementTemplate::query()
             ->whereNull('business_id')
@@ -65,12 +77,12 @@ class MeasurementController extends Controller
         }
 
         $measurement = DB::transaction(function () use ($business, $customer, $template, $data, $unit, $fieldsByKey) {
-            $measurement = Measurement::query()->create([
+            $measurement = Measurement::query()->create(app(SyncRecords::class)->withClientId([
                 'business_id' => $business->id,
                 'customer_id' => $customer->id,
                 'measurement_template_id' => $template->id,
                 'taken_on' => $data['taken_on'],
-            ]);
+            ], $data['id'] ?? null));
 
             foreach ($data['values'] as $key => $value) {
                 $field = $fieldsByKey->get($key);

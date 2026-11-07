@@ -28,6 +28,7 @@ class StoreCustomerJobRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'id' => ['sometimes', 'nullable', 'uuid'],
             'title' => ['required', 'string', 'max:120'],
             'agreed_amount' => ['required', 'numeric', 'gt:0'],
             'service_date' => ['required', 'date'],

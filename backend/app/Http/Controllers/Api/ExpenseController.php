@@ -9,6 +9,7 @@ use App\Http\Resources\ExpenseResource;
 use App\Models\Business;
 use App\Models\Expense;
 use App\Services\Money;
+use App\Services\SyncRecords;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -41,12 +42,19 @@ class ExpenseController extends Controller
         return ExpenseResource::collection($expenses);
     }
 
-    public function store(StoreExpenseRequest $request): JsonResponse
+    public function store(StoreExpenseRequest $request, SyncRecords $sync): JsonResponse
     {
         $business = $this->business($request);
         $data = $request->validated();
+        $existing = $sync->replayCreate(Expense::class, $business->id, $data['id'] ?? null);
 
-        $expense = Expense::query()->create([
+        if ($existing instanceof Expense) {
+            return ExpenseResource::make($existing->load('category'))
+                ->response()
+                ->setStatusCode(200);
+        }
+
+        $expense = Expense::query()->create($sync->withClientId([
             'business_id' => $business->id,
             'expense_category_id' => $data['expense_category_id'],
             'amount' => Money::normalize($data['amount']),
@@ -54,7 +62,7 @@ class ExpenseController extends Controller
             'description' => $data['description'] ?? null,
             'method' => PaymentMethod::from($data['method']),
             'note' => $data['note'] ?? null,
-        ])->load('category');
+        ], $data['id'] ?? null))->load('category');
 
         return ExpenseResource::make($expense)
             ->response()

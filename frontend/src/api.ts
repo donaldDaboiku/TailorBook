@@ -1,3 +1,12 @@
+import {
+  cacheGet,
+  cachePut,
+  enqueue,
+  listOutbox,
+  shouldQueue,
+  type OutboxItem,
+} from './outbox'
+
 export type Health = {
   status: string
   app: string
@@ -976,25 +985,183 @@ export async function logout(): Promise<void> {
   setToken(null)
 }
 
+function mergeById<T extends { id: string }>(incoming: T[], existing: T[]): T[] {
+  const seen = new Set(incoming.map((row) => row.id))
+  return [...incoming, ...existing.filter((row) => !seen.has(row.id))]
+}
+
+function applyUpdates<T extends { id: string }>(rows: T[], updates: T[]): T[] {
+  const latest = new Map(updates.map((row) => [row.id, row]))
+  return rows.map((row) => latest.get(row.id) ?? row)
+}
+
+async function rememberRow<T extends { id: string }>(key: string, row: T): Promise<void> {
+  const rows = (await cacheGet<T[]>(key)) ?? []
+  await cachePut(key, mergeById([row], rows))
+}
+
+async function pendingSnapshots<T extends { id: string }>(
+  kind: string,
+  belongs?: (item: OutboxItem) => boolean,
+): Promise<T[]> {
+  const items = await listOutbox()
+
+  return items
+    .filter((item) => item.kind === kind && (!belongs || belongs(item)))
+    .map((item) => item.snapshot)
+    .filter((row): row is T => {
+      return typeof row === 'object' && row !== null && 'id' in row && typeof row.id === 'string'
+    })
+}
+
+async function saveOrQueue<T extends { id: string }>(options: {
+  id: string
+  recordId: string
+  kind: string
+  path: string
+  method: 'POST' | 'PUT'
+  body: Record<string, unknown>
+  snapshot: T
+  cacheKey?: string
+}): Promise<T> {
+  const queue = async () => {
+    await enqueue({
+      id: options.id,
+      recordId: options.recordId,
+      kind: options.kind,
+      path: options.path,
+      method: options.method,
+      body: options.body,
+      snapshot: options.snapshot,
+      at: Date.now(),
+      status: 'pending',
+      error: '',
+    })
+
+    if (options.cacheKey) {
+      await rememberRow(options.cacheKey, options.snapshot)
+    }
+
+    return options.snapshot
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return queue()
+  }
+
+  try {
+    const data = await apiJson<{ data: T }>(options.path, {
+      method: options.method,
+      headers: { 'Idempotency-Key': options.id },
+      body: JSON.stringify(options.body),
+    })
+
+    if (options.cacheKey) {
+      await rememberRow(options.cacheKey, data.data)
+    }
+
+    return data.data
+  } catch (error) {
+    if (shouldQueue(error)) {
+      return queue()
+    }
+
+    throw error
+  }
+}
+
+function localCustomer(id: string, payload: CustomerInput): Customer {
+  return {
+    id,
+    name: payload.name.trim(),
+    phone: payload.phone.trim(),
+    whatsapp_phone: payload.whatsapp_phone?.trim() || payload.phone.trim(),
+    email: payload.email?.trim() || null,
+    gender: payload.gender || null,
+    address: payload.address?.trim() || null,
+    notes: payload.notes?.trim() || null,
+    whatsapp_url: '',
+    created_at: null,
+    updated_at: null,
+  }
+}
+
 export async function listCustomers(q = ''): Promise<Customer[]> {
   const query = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''
+
+  try {
   const data = await apiJson<{ data: Customer[] }>(`/api/customers${query}`)
 
   if (!Array.isArray(data.data) || !data.data.every(isCustomer)) {
     throw new Error('bad response')
   }
 
-  return data.data
+  if (!q.trim()) {
+    await cachePut('customers', data.data)
+  }
+
+  const pending = await pendingSnapshots<Customer>('customer.create')
+  const updates = await pendingSnapshots<Customer>('customer.update')
+  const rows = applyUpdates(mergeById(pending, data.data), updates)
+  return q.trim() ? rows.filter(matchesCustomer(q)) : rows
+  } catch (error) {
+    if (!shouldQueue(error)) {
+      throw error
+    }
+
+    const cached = (await cacheGet<Customer[]>('customers')) ?? []
+    const pending = await pendingSnapshots<Customer>('customer.create')
+    const updates = await pendingSnapshots<Customer>('customer.update')
+    const rows = applyUpdates(mergeById(pending, cached.filter(isCustomer)), updates)
+    return q.trim() ? rows.filter(matchesCustomer(q)) : rows
+  }
+}
+
+function matchesCustomer(q: string): (customer: Customer) => boolean {
+  const needle = q.trim().toLowerCase()
+  return (customer) =>
+    customer.name.toLowerCase().includes(needle) || customer.phone.includes(needle)
 }
 
 export async function getCustomer(id: string): Promise<Customer> {
-  const data = await apiJson<{ data: Customer }>(`/api/customers/${id}`)
+  try {
+    const data = await apiJson<{ data: Customer }>(`/api/customers/${id}`)
 
-  if (!isCustomer(data.data)) {
-    throw new Error('bad response')
+    if (!isCustomer(data.data)) {
+      throw new Error('bad response')
+    }
+
+    await cachePut(`customer:${id}`, data.data)
+    const edited = (await pendingSnapshots<Customer>('customer.update')).find(
+      (customer) => customer.id === id,
+    )
+    return edited ?? data.data
+  } catch (error) {
+    if (!shouldQueue(error)) {
+      throw error
+    }
+
+    const edited = (await pendingSnapshots<Customer>('customer.update')).find(
+      (customer) => customer.id === id,
+    )
+    if (edited) {
+      return edited
+    }
+
+    const cached = await cacheGet<Customer>(`customer:${id}`)
+    if (isCustomer(cached)) {
+      return cached
+    }
+
+    const pending = (await pendingSnapshots<Customer>('customer.create')).find(
+      (customer) => customer.id === id,
+    )
+    if (pending) {
+      return pending
+    }
+
+    throw error
   }
-
-  return data.data
 }
 
 export type WhatsAppTemplateKey = 'hello' | 'balance_reminder' | 'outfit_ready'
@@ -1037,32 +1204,38 @@ export function whatsappUrlWithText(number: string, text: string): string {
 }
 
 export async function createCustomer(payload: CustomerInput): Promise<Customer> {
-  const data = await apiJson<{ data: Customer }>('/api/customers', {
+  const id = crypto.randomUUID()
+  const saved = await saveOrQueue({
+    id,
+    recordId: id,
+    kind: 'customer.create',
+    path: '/api/customers',
     method: 'POST',
-    body: JSON.stringify(cleanCustomerPayload(payload)),
+    body: { ...cleanCustomerPayload(payload), id },
+    snapshot: localCustomer(id, payload),
+    cacheKey: 'customers',
   })
-
-  if (!isCustomer(data.data)) {
-    throw new Error('bad response')
-  }
-
-  return data.data
+  await cachePut(`customer:${saved.id}`, saved)
+  return saved
 }
 
 export async function updateCustomer(
   id: string,
   payload: CustomerInput,
 ): Promise<Customer> {
-  const data = await apiJson<{ data: Customer }>(`/api/customers/${id}`, {
+  const key = crypto.randomUUID()
+  const saved = await saveOrQueue({
+    id: key,
+    recordId: id,
+    kind: 'customer.update',
+    path: `/api/customers/${id}`,
     method: 'PUT',
-    body: JSON.stringify(cleanCustomerPayload(payload)),
+    body: cleanCustomerPayload(payload),
+    snapshot: localCustomer(id, payload),
+    cacheKey: 'customers',
   })
-
-  if (!isCustomer(data.data)) {
-    throw new Error('bad response')
-  }
-
-  return data.data
+  await cachePut(`customer:${id}`, saved)
+  return saved
 }
 
 export async function archiveCustomer(id: string): Promise<void> {
@@ -1138,15 +1311,37 @@ export async function listMeasurements(
   unit?: MeasurementUnit,
 ): Promise<Measurement[]> {
   const query = unit ? `?unit=${unit}` : ''
-  const data = await apiJson<{ data: Measurement[] }>(
-    `/api/customers/${customerId}/measurements${query}`,
-  )
+  const key = `measurements:${customerId}`
 
-  if (!Array.isArray(data.data)) {
-    throw new Error('bad response')
+  try {
+    const data = await apiJson<{ data: Measurement[] }>(
+      `/api/customers/${customerId}/measurements${query}`,
+    )
+
+    if (!Array.isArray(data.data)) {
+      throw new Error('bad response')
+    }
+
+    await cachePut(key, data.data)
+    return mergeById(
+      await pendingSnapshots<Measurement>('measurement.create', (item) =>
+        item.path.startsWith(`/api/customers/${customerId}/`),
+      ),
+      data.data,
+    )
+  } catch (error) {
+    if (!shouldQueue(error)) {
+      throw error
+    }
+
+    const cached = (await cacheGet<Measurement[]>(key)) ?? []
+    return mergeById(
+      await pendingSnapshots<Measurement>('measurement.create', (item) =>
+        item.path.startsWith(`/api/customers/${customerId}/`),
+      ),
+      cached,
+    )
   }
-
-  return data.data
 }
 
 export async function getMeasurement(
@@ -1155,6 +1350,8 @@ export async function getMeasurement(
   unit?: MeasurementUnit,
 ): Promise<Measurement> {
   const query = unit ? `?unit=${unit}` : ''
+
+  try {
   const data = await apiJson<{ data: Measurement }>(
     `/api/customers/${customerId}/measurements/${measurementId}${query}`,
   )
@@ -1163,7 +1360,27 @@ export async function getMeasurement(
     throw new Error('bad response')
   }
 
+  await cachePut(`measurement:${measurementId}`, data.data)
   return data.data
+  } catch (error) {
+    if (!shouldQueue(error)) {
+      throw error
+    }
+
+    const cached = await cacheGet<Measurement>(`measurement:${measurementId}`)
+    if (isMeasurement(cached)) {
+      return cached
+    }
+
+    const pending = (
+      await pendingSnapshots<Measurement>('measurement.create')
+    ).find((item) => item.id === measurementId)
+    if (pending) {
+      return pending
+    }
+
+    throw error
+  }
 }
 
 export async function createMeasurement(
@@ -1175,31 +1392,66 @@ export async function createMeasurement(
     values: Record<string, number>
   },
 ): Promise<Measurement> {
-  const data = await apiJson<{ data: Measurement }>(
-    `/api/customers/${customerId}/measurements`,
-    {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    },
-  )
-
-  if (!isMeasurement(data.data)) {
-    throw new Error('bad response')
+  const id = crypto.randomUUID()
+  const snapshot: Measurement = {
+    id,
+    customer_id: customerId,
+    taken_on: payload.taken_on,
+    unit: payload.unit,
+    template: { id: '', slug: payload.template_slug, name: payload.template_slug },
+    values: Object.entries(payload.values).map(([key, amount]) => ({
+      field_id: key,
+      key,
+      label: key,
+      value_cm: String(amount),
+      value: String(amount),
+    })),
+    created_at: null,
   }
-
-  return data.data
+  const saved = await saveOrQueue({
+    id,
+    recordId: id,
+    kind: 'measurement.create',
+    path: `/api/customers/${customerId}/measurements`,
+    method: 'POST',
+    body: { ...payload, id },
+    snapshot,
+    cacheKey: `measurements:${customerId}`,
+  })
+  await cachePut(`measurement:${saved.id}`, saved)
+  return saved
 }
 
 export async function listJobs(customerId: string): Promise<CustomerJob[]> {
-  const data = await apiJson<{ data: CustomerJob[] }>(
-    `/api/customers/${customerId}/jobs`,
-  )
+  const key = `jobs:${customerId}`
+  const mine = (item: OutboxItem) =>
+    item.path.startsWith(`/api/customers/${customerId}/jobs`)
 
-  if (!Array.isArray(data.data)) {
-    throw new Error('bad response')
+  try {
+    const data = await apiJson<{ data: CustomerJob[] }>(
+      `/api/customers/${customerId}/jobs`,
+    )
+
+    if (!Array.isArray(data.data)) {
+      throw new Error('bad response')
+    }
+
+    await cachePut(key, data.data)
+    return applyUpdates(
+      mergeById(await pendingSnapshots<CustomerJob>('job.create', mine), data.data),
+      await pendingSnapshots<CustomerJob>('job.update', mine),
+    )
+  } catch (error) {
+    if (!shouldQueue(error)) {
+      throw error
+    }
+
+    const cached = (await cacheGet<CustomerJob[]>(key)) ?? []
+    return applyUpdates(
+      mergeById(await pendingSnapshots<CustomerJob>('job.create', mine), cached),
+      await pendingSnapshots<CustomerJob>('job.update', mine),
+    )
   }
-
-  return data.data
 }
 
 export async function createJob(
@@ -1211,15 +1463,20 @@ export async function createJob(
     finish_days: number
   },
 ): Promise<CustomerJob> {
-  const data = await apiJson<{ data: CustomerJob }>(
-    `/api/customers/${customerId}/jobs`,
-    {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    },
-  )
-
-  return data.data
+  const id = crypto.randomUUID()
+  const snapshot = localJob(id, customerId, payload)
+  const saved = await saveOrQueue({
+    id,
+    recordId: id,
+    kind: 'job.create',
+    path: `/api/customers/${customerId}/jobs`,
+    method: 'POST',
+    body: { ...payload, id },
+    snapshot,
+    cacheKey: `jobs:${customerId}`,
+  })
+  await rememberShopJob(saved)
+  return saved
 }
 
 export async function updateJob(
@@ -1232,15 +1489,65 @@ export async function updateJob(
     finish_days: number
   },
 ): Promise<CustomerJob> {
-  const data = await apiJson<{ data: CustomerJob }>(
-    `/api/customers/${customerId}/jobs/${jobId}`,
-    {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    },
-  )
+  const key = crypto.randomUUID()
+  const snapshot = localJob(jobId, customerId, payload)
+  const saved = await saveOrQueue({
+    id: key,
+    recordId: jobId,
+    kind: 'job.update',
+    path: `/api/customers/${customerId}/jobs/${jobId}`,
+    method: 'PUT',
+    body: payload,
+    snapshot,
+    cacheKey: `jobs:${customerId}`,
+  })
+  await rememberShopJob(saved)
+  return saved
+}
 
-  return data.data
+function localJob(
+  id: string,
+  customerId: string,
+  payload: {
+    title: string
+    agreed_amount: string
+    service_date: string
+    finish_days: number
+  },
+): CustomerJob {
+  return {
+    id,
+    customer_id: customerId,
+    title: payload.title,
+    agreed_amount: payload.agreed_amount,
+    agreed_amount_label: payload.agreed_amount,
+    paid_amount: '0.00',
+    paid_amount_label: '0.00',
+    outstanding: payload.agreed_amount,
+    outstanding_label: payload.agreed_amount,
+    service_date: payload.service_date,
+    finish_days: payload.finish_days,
+    created_at: null,
+  }
+}
+
+async function rememberShopJob(job: CustomerJob): Promise<void> {
+  const cached = (await cacheGet<{ upcoming: ShopJob[]; overdue: ShopJob[] }>('shop-jobs')) ?? {
+    upcoming: [],
+    overdue: [],
+  }
+  const row: ShopJob = {
+    id: job.id,
+    customer_id: job.customer_id,
+    customer_name: null,
+    title: job.title,
+    service_date: job.service_date,
+    outstanding_label: job.outstanding_label,
+  }
+  await cachePut('shop-jobs', {
+    upcoming: mergeById([row], cached.upcoming),
+    overdue: cached.overdue.filter((item) => item.id !== job.id),
+  })
 }
 
 export async function archiveJob(
@@ -1354,13 +1661,13 @@ export async function fetchCatalogue(): Promise<{
   styles: CatalogueStyle[]
   allowance: CatalogueAllowance
 }> {
+  try {
   const data = await apiJson<{
     data: CatalogueStyle[]
     allowance?: CatalogueAllowance
   }>('/api/catalogue')
   const styles = Array.isArray(data.data) ? data.data : []
-
-  return {
+  const catalogue = {
     styles,
     allowance: data.allowance ?? {
       free: 40,
@@ -1371,6 +1678,24 @@ export async function fetchCatalogue(): Promise<{
       pack_label: '₦1,000.00',
       pack_enabled: false,
     },
+  }
+  await cachePut('catalogue', catalogue)
+  return catalogue
+  } catch (error) {
+    if (!shouldQueue(error)) {
+      throw error
+    }
+
+    const cached = await cacheGet<{
+      styles: CatalogueStyle[]
+      allowance: CatalogueAllowance
+    }>('catalogue')
+
+    if (cached) {
+      return cached
+    }
+
+    throw error
   }
 }
 
@@ -1481,15 +1806,29 @@ export async function fetchShopLogo(): Promise<string | null> {
 }
 
 export async function listPayments(customerId: string): Promise<Payment[]> {
-  const data = await apiJson<{ data: Payment[] }>(
-    `/api/customers/${customerId}/payments`,
-  )
+  const key = `payments:${customerId}`
+  const mine = (item: OutboxItem) =>
+    item.path.startsWith(`/api/customers/${customerId}/payments`)
 
-  if (!Array.isArray(data.data)) {
-    throw new Error('bad response')
+  try {
+    const data = await apiJson<{ data: Payment[] }>(
+      `/api/customers/${customerId}/payments`,
+    )
+
+    if (!Array.isArray(data.data)) {
+      throw new Error('bad response')
+    }
+
+    await cachePut(key, data.data)
+    return mergeById(await pendingSnapshots<Payment>('payment.create', mine), data.data)
+  } catch (error) {
+    if (!shouldQueue(error)) {
+      throw error
+    }
+
+    const cached = (await cacheGet<Payment[]>(key)) ?? []
+    return mergeById(await pendingSnapshots<Payment>('payment.create', mine), cached)
   }
-
-  return data.data
 }
 
 export async function createPayment(
@@ -1521,15 +1860,31 @@ export async function createPayment(
     body.note = payload.note.trim()
   }
 
-  const data = await apiJson<{ data: Payment }>(
-    `/api/customers/${customerId}/payments`,
-    {
-      method: 'POST',
-      body: JSON.stringify(body),
-    },
-  )
+  const id = crypto.randomUUID()
+  const snapshot: Payment = {
+    id,
+    customer_id: customerId,
+    customer_job_id: payload.customer_job_id ?? null,
+    amount: payload.amount,
+    amount_label: payload.amount,
+    paid_on: payload.paid_on,
+    method: payload.method,
+    method_label: payload.method,
+    reference: payload.reference?.trim() || null,
+    note: payload.note?.trim() || null,
+    created_at: null,
+  }
 
-  return data.data
+  return saveOrQueue({
+    id,
+    recordId: id,
+    kind: 'payment.create',
+    path: `/api/customers/${customerId}/payments`,
+    method: 'POST',
+    body: { ...body, id },
+    snapshot,
+    cacheKey: `payments:${customerId}`,
+  })
 }
 
 export async function archivePayment(
@@ -1567,26 +1922,49 @@ export type Expense = {
 }
 
 export async function listExpenseCategories(): Promise<ExpenseCategory[]> {
-  const data = await apiJson<{ data: ExpenseCategory[] }>(
-    '/api/expense-categories',
-  )
+  try {
+    const data = await apiJson<{ data: ExpenseCategory[] }>(
+      '/api/expense-categories',
+    )
 
-  if (!Array.isArray(data.data)) {
-    throw new Error('bad response')
+    if (!Array.isArray(data.data)) {
+      throw new Error('bad response')
+    }
+
+    await cachePut('expense-categories', data.data)
+    return data.data
+  } catch (error) {
+    if (!shouldQueue(error)) {
+      throw error
+    }
+
+    return (await cacheGet<ExpenseCategory[]>('expense-categories')) ?? []
   }
-
-  return data.data
 }
 
 export async function listExpenses(month?: string): Promise<Expense[]> {
   const query = month ? `?month=${encodeURIComponent(month)}` : ''
-  const data = await apiJson<{ data: Expense[] }>(`/api/expenses${query}`)
 
-  if (!Array.isArray(data.data)) {
-    throw new Error('bad response')
+  try {
+    const data = await apiJson<{ data: Expense[] }>(`/api/expenses${query}`)
+
+    if (!Array.isArray(data.data)) {
+      throw new Error('bad response')
+    }
+
+    if (!month) {
+      await cachePut('expenses', data.data)
+    }
+
+    return mergeById(await pendingSnapshots<Expense>('expense.create'), data.data)
+  } catch (error) {
+    if (!shouldQueue(error)) {
+      throw error
+    }
+
+    const cached = (await cacheGet<Expense[]>('expenses')) ?? []
+    return mergeById(await pendingSnapshots<Expense>('expense.create'), cached)
   }
-
-  return data.data
 }
 
 export async function createExpense(payload: {
@@ -1612,12 +1990,36 @@ export async function createExpense(payload: {
     body.note = payload.note.trim()
   }
 
-  const data = await apiJson<{ data: Expense }>('/api/expenses', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
+  const id = crypto.randomUUID()
+  const categories = (await cacheGet<ExpenseCategory[]>('expense-categories')) ?? []
+  const category = categories.find((item) => item.id === payload.expense_category_id)
+  const snapshot: Expense = {
+    id,
+    amount: payload.amount,
+    amount_label: payload.amount,
+    spent_on: payload.spent_on,
+    description: payload.description?.trim() || null,
+    method: payload.method,
+    method_label: payload.method,
+    note: payload.note?.trim() || null,
+    category: {
+      id: payload.expense_category_id,
+      slug: category?.slug ?? '',
+      name: category?.name ?? 'Expense',
+    },
+    created_at: null,
+  }
 
-  return data.data
+  return saveOrQueue({
+    id,
+    recordId: id,
+    kind: 'expense.create',
+    path: '/api/expenses',
+    method: 'POST',
+    body: { ...body, id },
+    snapshot,
+    cacheKey: 'expenses',
+  })
 }
 
 export async function archiveExpense(id: string): Promise<void> {
@@ -1640,6 +2042,7 @@ export async function listShopJobs(): Promise<{
   upcoming: ShopJob[]
   overdue: ShopJob[]
 }> {
+  try {
   const data = await apiJson<{
     data: { upcoming: ShopJob[]; overdue: ShopJob[] }
   }>('/api/jobs')
@@ -1648,7 +2051,44 @@ export async function listShopJobs(): Promise<{
     throw new Error('bad response')
   }
 
-  return data.data
+  await cachePut('shop-jobs', data.data)
+  return withPendingShopJobs(data.data)
+  } catch (error) {
+    if (!shouldQueue(error)) {
+      throw error
+    }
+
+    const cached = await cacheGet<{ upcoming: ShopJob[]; overdue: ShopJob[] }>('shop-jobs')
+    return withPendingShopJobs(cached ?? { upcoming: [], overdue: [] })
+  }
+}
+
+async function withPendingShopJobs(groups: {
+  upcoming: ShopJob[]
+  overdue: ShopJob[]
+}): Promise<{ upcoming: ShopJob[]; overdue: ShopJob[] }> {
+  const customers = (await cacheGet<Customer[]>('customers')) ?? []
+  const pending = (await pendingSnapshots<CustomerJob>('job.create'))
+    .concat(await pendingSnapshots<CustomerJob>('job.update'))
+    .map((job) => {
+    const customer = customers.find((item) => item.id === job.customer_id)
+    const row: ShopJob = {
+      id: job.id,
+      customer_id: job.customer_id,
+      customer_name: customer?.name ?? null,
+      title: job.title,
+      service_date: job.service_date,
+      outstanding_label: job.outstanding_label,
+    }
+    return row
+  })
+
+  const pendingIds = new Set(pending.map((row) => row.id))
+
+  return {
+    upcoming: mergeById(pending, groups.upcoming),
+    overdue: groups.overdue.filter((row) => !pendingIds.has(row.id)),
+  }
 }
 
 export type FinancePeriod = {

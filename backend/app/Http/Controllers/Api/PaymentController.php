@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\Payment;
 use App\Services\Money;
 use App\Services\ReceiptText;
+use App\Services\SyncRecords;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -30,14 +31,23 @@ class PaymentController extends Controller
         return PaymentResource::collection($payments);
     }
 
-    public function store(StorePaymentRequest $request, Customer $customer): JsonResponse
+    public function store(StorePaymentRequest $request, Customer $customer, SyncRecords $sync): JsonResponse
     {
         $business = $request->user()?->business;
         abort_unless($business !== null, 403, 'Set up your shop first.');
 
         $data = $request->validated();
+        $existing = $sync->replayCreate(Payment::class, $business->id, $data['id'] ?? null);
 
-        $payment = Payment::query()->create([
+        if ($existing instanceof Payment) {
+            abort_unless($existing->customer_id === $customer->id, 404);
+
+            return PaymentResource::make($existing->load('job'))
+                ->response()
+                ->setStatusCode(200);
+        }
+
+        $payment = Payment::query()->create($sync->withClientId([
             'business_id' => $business->id,
             'customer_id' => $customer->id,
             'customer_job_id' => $data['customer_job_id'] ?? null,
@@ -46,7 +56,7 @@ class PaymentController extends Controller
             'method' => PaymentMethod::from($data['method']),
             'reference' => $data['reference'] ?? null,
             'note' => $data['note'] ?? null,
-        ])->load('job');
+        ], $data['id'] ?? null))->load('job');
 
         ReceiptText::sendToAccount($payment);
 

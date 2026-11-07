@@ -12,6 +12,7 @@ use App\Models\CustomerJob;
 use App\Models\Measurement;
 use App\Models\Payment;
 use App\Services\ShopRecords;
+use App\Services\SyncRecords;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -43,16 +44,23 @@ class CustomerController extends Controller
         return CustomerResource::collection($customers);
     }
 
-    public function store(StoreCustomerRequest $request): JsonResponse
+    public function store(StoreCustomerRequest $request, SyncRecords $sync): JsonResponse
     {
         $business = $this->business($request);
         $data = $request->validated();
+        $existing = $sync->replayCreate(Customer::class, $business->id, $data['id'] ?? null);
 
-        $customer = Customer::query()->create([
+        if ($existing instanceof Customer) {
+            return CustomerResource::make($existing)
+                ->response()
+                ->setStatusCode(200);
+        }
+
+        $customer = Customer::query()->create($sync->withClientId([
             ...$data,
             'business_id' => $business->id,
             'whatsapp_phone' => $data['whatsapp_phone'] ?? $data['phone'],
-        ]);
+        ], $data['id'] ?? null));
 
         return CustomerResource::make($customer)
             ->response()
@@ -69,14 +77,26 @@ class CustomerController extends Controller
         return $resource;
     }
 
-    public function update(UpdateCustomerRequest $request, Customer $customer): CustomerResource
+    public function update(UpdateCustomerRequest $request, Customer $customer, SyncRecords $sync): CustomerResource
     {
+        $businessId = (string) $customer->business_id;
+        $key = $request->header('Idempotency-Key');
+
+        if ($sync->replayUpdate($businessId, $key, $customer->id)) {
+            return CustomerResource::make($customer->fresh());
+        }
+
         $data = $request->validated();
+        $sync->logPrevious($businessId, $customer);
 
         $customer->update([
             ...$data,
             'whatsapp_phone' => $data['whatsapp_phone'] ?? $data['phone'],
         ]);
+
+        if (is_string($key)) {
+            $sync->remember($businessId, $key, $customer);
+        }
 
         return CustomerResource::make($customer->fresh());
     }

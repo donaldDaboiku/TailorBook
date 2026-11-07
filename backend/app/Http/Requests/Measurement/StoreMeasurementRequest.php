@@ -24,6 +24,7 @@ class StoreMeasurementRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'id' => ['sometimes', 'nullable', 'uuid'],
             'template_slug' => ['required', 'string', Rule::exists('measurement_templates', 'slug')->whereNull('business_id')],
             'taken_on' => ['required', 'date'],
             'unit' => ['required', Rule::enum(MeasurementUnit::class)],

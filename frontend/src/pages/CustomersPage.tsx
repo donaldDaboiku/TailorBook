@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { firstError, listCustomers, type Customer } from '../api'
 import { useI18n } from '../i18n'
+import { PendingMark } from '../SyncBanner'
 
 export default function CustomersPage({
   onOpen,
@@ -86,7 +87,9 @@ export default function CustomersPage({
               className="list-item"
               onClick={() => onOpen(customer.id)}
             >
-              <span className="list-title">{customer.name}</span>
+              <span className="list-title">
+                {customer.name} <PendingMark id={customer.id} />
+              </span>
               <span className="list-meta">{customer.phone}</span>
             </button>
           </li>

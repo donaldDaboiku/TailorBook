@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { firstError, listShopJobs, type ShopJob } from '../api'
 import { useI18n } from '../i18n'
+import { PendingMark } from '../SyncBanner'
 
 export default function JobsPage({
   onOpen,
@@ -99,7 +100,9 @@ function JobGroup({
                 onClick={() => onOpen(job)}
               >
                 <span className="admin-list-main">
-                  <strong>{job.title}</strong>
+                  <strong>
+                    {job.title} <PendingMark id={job.id} />
+                  </strong>
                   <span className="status">
                     {job.customer_name ?? 'Customer'} · {job.service_date}
                   </span>

@@ -9,6 +9,7 @@ import {
 } from './api'
 import { AuthProvider, useAuth } from './auth'
 import InstallButton from './InstallButton'
+import SyncBanner from './SyncBanner'
 import AdminShopsPage from './pages/AdminShopsPage'
 import CataloguePage from './pages/CataloguePage'
 import CustomerDetailPage from './pages/CustomerDetailPage'
@@ -602,6 +603,7 @@ function Shell({
         </header>
       )}
 
+      {!signedOut && <SyncBanner />}
       <main>{children}</main>
 
       {!signedOut && (

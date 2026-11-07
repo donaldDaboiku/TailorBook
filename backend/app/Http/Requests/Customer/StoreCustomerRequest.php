@@ -22,13 +22,15 @@ class StoreCustomerRequest extends FormRequest
         $businessId = $this->user()?->business?->id;
 
         return [
+            'id' => ['sometimes', 'nullable', 'uuid'],
             'name' => ['required', 'string', 'max:120'],
             'phone' => [
                 'required',
                 'string',
                 'max:32',
                 Rule::unique('customers', 'phone')
-                    ->where(fn ($query) => $query->where('business_id', $businessId)->whereNull('deleted_at')),
+                    ->where(fn ($query) => $query->where('business_id', $businessId)->whereNull('deleted_at'))
+                    ->ignore($this->input('id')),
             ],
             'whatsapp_phone' => ['nullable', 'string', 'max:32'],
             'email' => ['nullable', 'email', 'max:255'],

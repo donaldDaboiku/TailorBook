@@ -18,6 +18,7 @@ import {
   type Payment,
   type PaymentReceipt,
 } from '../api'
+import { PendingMark } from '../SyncBanner'
 import { useAuth } from '../auth'
 import {
   blobToBase64,
@@ -272,7 +273,9 @@ export default function CustomerDetailPage({
             {jobs.map((job) => (
               <li key={job.id} className="stack-item">
                 <div className="list-item static">
-                  <span className="list-title">{job.title}</span>
+                  <span className="list-title">
+                    {job.title} <PendingMark id={job.id} />
+                  </span>
                   <span className="list-meta">
                     {job.agreed_amount_label} · owes {job.outstanding_label} · due{' '}
                     {job.service_date}
@@ -326,7 +329,9 @@ export default function CustomerDetailPage({
             {payments.map((payment) => (
               <li key={payment.id} className="stack-item">
                 <div className="list-item static">
-                  <span className="list-title">{payment.amount_label}</span>
+                  <span className="list-title">
+                    {payment.amount_label} <PendingMark id={payment.id} />
+                  </span>
                   <span className="list-meta">
                     {payment.paid_on} · {payment.method_label}
                     {payment.job_title ? ` · ${payment.job_title}` : ''}
@@ -399,7 +404,9 @@ export default function CustomerDetailPage({
                   className="list-item"
                   onClick={() => onOpenMeasurement(customer, item.id)}
                 >
-                  <span className="list-title">{item.taken_on}</span>
+                  <span className="list-title">
+                    {item.taken_on} <PendingMark id={item.id} />
+                  </span>
                   <span className="list-meta">{item.template.name}</span>
                 </button>
               </li>

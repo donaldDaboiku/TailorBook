@@ -20,6 +20,7 @@ class StoreExpenseRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'id' => ['sometimes', 'nullable', 'uuid'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'spent_on' => ['required', 'date'],
             'expense_category_id' => [

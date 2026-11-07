@@ -154,6 +154,12 @@ const english: Record<string, string> = {
   'finance.lede': 'Money in, money out, and what customers still owe.',
   'more.title': 'More',
   'more.lede': 'Shop settings, your account, and sign out.',
+  'sync.online': 'Online',
+  'sync.offline': 'Offline',
+  'sync.waiting': '{count} changes waiting to sync',
+  'sync.now': 'Sync now',
+  'sync.attention': 'Needs attention',
+  'sync.pending': 'Pending',
 }
 
 const catalogs: Record<Lang, Record<string, string>> = {

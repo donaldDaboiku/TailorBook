@@ -1367,3 +1367,31 @@ a.primary {
     padding: 0 0.75rem;
   }
 }
+
+.sync-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.75rem 1rem 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--tm-border);
+  border-radius: 12px;
+  background: var(--tm-surface);
+}
+
+.sync-banner p {
+  margin: 0;
+}
+
+.sync-attention {
+  width: 100%;
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--tm-danger);
+}
+
+.pending-mark {
+  margin-left: 0.35rem;
+}

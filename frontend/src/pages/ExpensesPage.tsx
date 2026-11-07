@@ -10,6 +10,7 @@ import {
   type FinanceSummary,
 } from '../api'
 import { useI18n } from '../i18n'
+import { PendingMark } from '../SyncBanner'
 
 export default function ExpensesPage({
   onCreate,
@@ -151,7 +152,9 @@ export default function ExpensesPage({
             {rows.map((expense) => (
               <li key={expense.id} className="stack-item">
                 <div className="list-item static">
-                  <span className="list-title">{expense.amount_label}</span>
+                  <span className="list-title">
+                    {expense.amount_label} <PendingMark id={expense.id} />
+                  </span>
                   <span className="list-meta">
                     {expense.category.name}
                     {expense.description ? ` · ${expense.description}` : ''}

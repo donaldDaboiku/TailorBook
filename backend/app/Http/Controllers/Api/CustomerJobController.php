@@ -8,6 +8,7 @@ use App\Http\Resources\CustomerJobResource;
 use App\Models\Customer;
 use App\Models\CustomerJob;
 use App\Services\Money;
+use App\Services\SyncRecords;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -27,32 +28,49 @@ class CustomerJobController extends Controller
         return CustomerJobResource::collection($jobs);
     }
 
-    public function store(StoreCustomerJobRequest $request, Customer $customer): JsonResponse
+    public function store(StoreCustomerJobRequest $request, Customer $customer, SyncRecords $sync): JsonResponse
     {
         $business = $request->user()?->business;
         abort_unless($business !== null, 403, 'Set up your shop first.');
 
         $data = $request->validated();
+        $existing = $sync->replayCreate(CustomerJob::class, $business->id, $data['id'] ?? null);
 
-        $job = CustomerJob::query()->create([
+        if ($existing instanceof CustomerJob) {
+            abort_unless($existing->customer_id === $customer->id, 404);
+
+            return CustomerJobResource::make($existing)
+                ->response()
+                ->setStatusCode(200);
+        }
+
+        $job = CustomerJob::query()->create($sync->withClientId([
             'business_id' => $business->id,
             'customer_id' => $customer->id,
             'title' => $data['title'],
             'agreed_amount' => Money::normalize($data['agreed_amount']),
             'service_date' => $data['service_date'],
             'finish_days' => $data['finish_days'] ?? null,
-        ]);
+        ], $data['id'] ?? null));
 
         return CustomerJobResource::make($job)
             ->response()
             ->setStatusCode(201);
     }
 
-    public function update(StoreCustomerJobRequest $request, Customer $customer, CustomerJob $job): CustomerJobResource
+    public function update(StoreCustomerJobRequest $request, Customer $customer, CustomerJob $job, SyncRecords $sync): CustomerJobResource
     {
         abort_unless($job->customer_id === $customer->id, 404);
 
+        $key = $request->header('Idempotency-Key');
+
+        if ($sync->replayUpdate((string) $job->business_id, $key, $job->id)) {
+            return CustomerJobResource::make($job->fresh());
+        }
+
         $data = $request->validated();
+        unset($data['id']);
+        $sync->logPrevious((string) $job->business_id, $job);
 
         $job->update([
             'title' => $data['title'],
@@ -60,6 +78,10 @@ class CustomerJobController extends Controller
             'service_date' => $data['service_date'],
             'finish_days' => $data['finish_days'] ?? null,
         ]);
+
+        if (is_string($key)) {
+            $sync->remember((string) $job->business_id, $key, $job);
+        }
 
         return CustomerJobResource::make($job->refresh());
     }

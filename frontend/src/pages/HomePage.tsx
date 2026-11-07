@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchHome, fetchWhatsAppTemplates, firstError, type HomeDashboard, type ShopJob, type User, type WhatsAppTemplateKey } from '../api'
 import { useAuth } from '../auth'
+import InstallButton from '../InstallButton'
 import { useI18n } from '../i18n'
 
 function timeGreeting(t: (key: string) => string, now = new Date()): string {
@@ -116,14 +117,17 @@ export default function HomePage({
           <h1>{timeGreeting(t)}!</h1>
           <p className="status">{t('home.organize')}</p>
         </div>
-        <button
-          type="button"
-          className="avatar"
-          onClick={onOpenMore}
-          aria-label="Account"
-        >
-          {initial}
-        </button>
+        <div className="dash-tools">
+          <InstallButton />
+          <button
+            type="button"
+            className="avatar"
+            onClick={onOpenMore}
+            aria-label="Account"
+          >
+            {initial}
+          </button>
+        </div>
       </header>
 
       {notice && <p className="status">{notice}</p>}

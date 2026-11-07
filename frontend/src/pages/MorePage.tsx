@@ -11,6 +11,7 @@ import {
   uploadShopLogo,
 } from '../api'
 import { useAuth } from '../auth'
+import InstallButton from '../InstallButton'
 import { LanguageSelect, useI18n } from '../i18n'
 import CommunityPanel from './CommunityPanel'
 import ShopReviewCard from './ShopReviewCard'
@@ -650,7 +651,12 @@ export default function MorePage({
       <section className="card muted-card">
         <h2 className="section-title">Install app</h2>
         <p className="status">
-          {appName} is a PWA. It does not install by itself — add it from the
+          The Install button stays on this page and on the top of the app. Use
+          it any time, even after the browser’s first notice is gone.
+        </p>
+        <InstallButton variant="block" />
+        <p className="status">
+          If the button does not open an install box, add {appName} from the
           browser:
         </p>
         <ul className="plain-list">

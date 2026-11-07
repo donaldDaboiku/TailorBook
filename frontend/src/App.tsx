@@ -8,6 +8,7 @@ import {
   type Measurement,
 } from './api'
 import { AuthProvider, useAuth } from './auth'
+import InstallButton from './InstallButton'
 import AdminShopsPage from './pages/AdminShopsPage'
 import CataloguePage from './pages/CataloguePage'
 import CustomerDetailPage from './pages/CustomerDetailPage'
@@ -598,6 +599,7 @@ function Shell({
             <img className="app-mark" src="/icons/icon-192.png" alt="" />
             {appName || 'Shop'}
           </p>
+          <InstallButton />
         </header>
       )}
 

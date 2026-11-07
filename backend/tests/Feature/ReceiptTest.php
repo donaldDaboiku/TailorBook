@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\ShopNoticeMail;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\Payment;
@@ -67,6 +68,40 @@ class ReceiptTest extends TestCase
             'image' => $png,
         ])
             ->assertOk()
-            ->assertJsonPath('message', 'Receipt sent to bola@example.com.');
+            ->assertJsonPath('message', 'Receipt sent to '.$user->email.' and bola@example.com.');
+
+        Mail::assertSent(ShopNoticeMail::class, function (ShopNoticeMail $mail) use ($user) {
+            return $mail->hasTo($user->email)
+                && str_starts_with($mail->subjectLine, 'Receipt RCP-');
+        });
+    }
+
+    public function test_recording_a_payment_emails_the_receipt_to_the_account(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create(['email' => 'shop@example.com']);
+        $business = Business::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'Ada Atelier',
+        ]);
+        $customer = Customer::factory()->create([
+            'business_id' => $business->id,
+            'name' => 'Bola',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/customers/{$customer->id}/payments", [
+            'amount' => '15000',
+            'paid_on' => '2026-10-10',
+            'method' => 'cash',
+        ])->assertCreated();
+
+        Mail::assertSent(ShopNoticeMail::class, function (ShopNoticeMail $mail) {
+            return $mail->hasTo('shop@example.com')
+                && str_contains($mail->bodyText, 'Amount paid')
+                && str_contains($mail->bodyText, 'Bola');
+        });
     }
 }

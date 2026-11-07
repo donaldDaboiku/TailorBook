@@ -3,8 +3,12 @@
 namespace App\Services;
 
 use App\Http\Controllers\Api\BusinessController;
+use App\Mail\ShopNoticeMail;
 use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 class ReceiptText
 {
@@ -78,6 +82,38 @@ class ReceiptText
             'outstanding_label' => $outstanding,
             'caption' => implode(' ', $lines),
         ];
+    }
+
+    public static function sendToAccount(Payment $payment, ?string $image = null): bool
+    {
+        $payment->loadMissing(['business.user']);
+        $email = trim((string) $payment->business?->user?->email);
+
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            return false;
+        }
+
+        $document = self::document($payment);
+        $number = $document['receipt_number'];
+        $shop = $document['shop_name'];
+
+        try {
+            Mail::to($email)->send(new ShopNoticeMail(
+                "Receipt {$number} from {$shop}",
+                (string) $document['caption'],
+                is_string($image) && $image !== '' ? $image : null,
+                is_string($image) && $image !== '' ? "{$number}.png" : null,
+            ));
+        } catch (Throwable $exception) {
+            Log::warning('Receipt email failed.', [
+                'payment_id' => $payment->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 
     public static function ensureNumber(Payment $payment): string

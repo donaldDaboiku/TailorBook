@@ -38,14 +38,6 @@ class ReceiptController extends Controller
     {
         $this->guard($customer, $payment);
 
-        $email = trim((string) $customer->email);
-
-        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return response()->json([
-                'message' => 'Add an email on this customer before sending a receipt.',
-            ], 422);
-        }
-
         $data = $request->validate([
             'image' => ['required', 'string', 'max:1500000'],
         ]);
@@ -59,24 +51,45 @@ class ReceiptController extends Controller
         }
 
         $payment->load(['business.user', 'customer', 'job']);
-        $document = ReceiptText::document($payment);
-        $shop = $document['shop_name'];
-        $number = $document['receipt_number'];
+        $account = trim((string) $payment->business?->user?->email);
+        $customerEmail = trim((string) $customer->email);
+        $sentToAccount = ReceiptText::sendToAccount($payment, $binary);
+        $sentToCustomer = false;
 
-        try {
-            Mail::raw((string) $document['caption'], function ($message) use ($email, $shop, $number, $binary) {
-                $message->to($email)
-                    ->subject("Receipt {$number} from {$shop}")
-                    ->attachData($binary, "{$number}.png", ['mime' => 'image/png']);
-            });
-        } catch (\Throwable) {
+        if (
+            $customerEmail !== ''
+            && filter_var($customerEmail, FILTER_VALIDATE_EMAIL)
+            && strcasecmp($customerEmail, $account) !== 0
+        ) {
+            $document = ReceiptText::document($payment);
+            $shop = $document['shop_name'];
+            $number = $document['receipt_number'];
+
+            try {
+                Mail::raw((string) $document['caption'], function ($message) use ($customerEmail, $shop, $number, $binary) {
+                    $message->to($customerEmail)
+                        ->subject("Receipt {$number} from {$shop}")
+                        ->attachData($binary, "{$number}.png", ['mime' => 'image/png']);
+                });
+                $sentToCustomer = true;
+            } catch (\Throwable) {
+                $sentToCustomer = false;
+            }
+        }
+
+        if (! $sentToAccount && ! $sentToCustomer) {
             return response()->json([
                 'message' => 'Could not send the email. Check the shop mail settings.',
             ], 422);
         }
 
+        $who = $sentToAccount ? $account : $customerEmail;
+        if ($sentToAccount && $sentToCustomer) {
+            $who = "{$account} and {$customerEmail}";
+        }
+
         return response()->json([
-            'message' => "Receipt sent to {$email}.",
+            'message' => "Receipt sent to {$who}.",
         ]);
     }
 

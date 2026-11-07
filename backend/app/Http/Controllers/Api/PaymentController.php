@@ -9,6 +9,7 @@ use App\Http\Resources\PaymentResource;
 use App\Models\Customer;
 use App\Models\Payment;
 use App\Services\Money;
+use App\Services\ReceiptText;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -46,6 +47,8 @@ class PaymentController extends Controller
             'reference' => $data['reference'] ?? null,
             'note' => $data['note'] ?? null,
         ])->load('job');
+
+        ReceiptText::sendToAccount($payment);
 
         return PaymentResource::make($payment)
             ->response()

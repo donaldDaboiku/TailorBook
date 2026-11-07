@@ -21,7 +21,7 @@ class ShopNotices
         $this->send(
             $user,
             'Welcome to TailorMate',
-            "Welcome to TailorMate, {$user->name}.\n\n{$shop} can use TailorMate until {$until}. That is the free trial. After that day, subscribe in the app to keep customers, jobs, and payments open.\n\nOpen the app: {$this->appUrl()}",
+            "Welcome to TailorMate, {$user->name}.\n\n{$shop} can use TailorMate until {$until}. That is the free trial. After that day, subscribe in the app to keep customers, jobs, and payments open.\n\nTerms: {$this->appUrl()}/terms.pdf\nPrivacy notice: {$this->appUrl()}/privacy-notice.pdf\n\nOpen the app: {$this->appUrl()}",
         );
     }
 
@@ -33,7 +33,7 @@ class ShopNotices
         $this->send(
             $user,
             'Welcome. Your TailorMate plan is active',
-            "Welcome, {$user->name}.\n\n{$shop} is on the paid TailorMate plan until {$until}.\n\nOpen the app: {$this->appUrl()}",
+            "Welcome, {$user->name}.\n\n{$shop} is on the paid TailorMate plan until {$until}. A reminder is sent 7 days before that date.\n\nTerms: {$this->appUrl()}/terms.pdf\nPrivacy notice: {$this->appUrl()}/privacy-notice.pdf\n\nOpen the app: {$this->appUrl()}",
         );
     }
 
@@ -52,7 +52,7 @@ class ShopNotices
     public function sendDue(): int
     {
         $today = now()->toDateString();
-        $soon = now()->addDays(3)->toDateString();
+        $soon = now()->addDays(7)->toDateString();
         $sent = 0;
 
         User::query()

@@ -20,9 +20,9 @@ class ShopNoticeTest extends TestCase
     {
         Mail::fake();
 
-        $this->shop('ending@example.com', SubscriptionStatus::Free, now()->addDays(3)->toDateString());
+        $this->shop('ending@example.com', SubscriptionStatus::Free, now()->addDays(7)->toDateString());
         $this->shop('ended@example.com', SubscriptionStatus::Free, now()->subDay()->toDateString());
-        $this->shop('renew@example.com', SubscriptionStatus::Subscribed, now()->addDays(3)->toDateString());
+        $this->shop('renew@example.com', SubscriptionStatus::Subscribed, now()->addDays(7)->toDateString());
         $this->shop('lapsed@example.com', SubscriptionStatus::Subscribed, now()->subDay()->toDateString());
         $this->shop('free@example.com', SubscriptionStatus::Free, null);
 

@@ -596,7 +596,9 @@ function ReceiptSheet({
   }
 
   const clientName = receipt?.customer ?? 'this client'
-  const emailLabel = receipt?.email ? `Email ${receipt.email}` : 'Email receipt image'
+  const emailLabel = receipt?.shop_email
+    ? `Email ${receipt.shop_email}`
+    : 'Email receipt'
 
   return (
     <div
@@ -650,24 +652,24 @@ function ReceiptSheet({
             type="button"
             className="secondary"
             onClick={() => void onEmail()}
-            disabled={busy || !imageBlob || !receipt?.email}
+            disabled={busy || !imageBlob || !receipt?.shop_email}
           >
             {busy ? 'Sending…' : emailLabel}
           </button>
         </div>
         <p className="status">
           WhatsApp opens this client’s chat with the receipt written out.
-          Share the picture when you also want them to receive the image, and
-          choose {clientName} in the share sheet.
+          The email button sends the picture to the address on this account.
+          {receipt?.email ? ` A copy also goes to ${receipt.email}.` : ''}
         </p>
         {receipt && !receipt.whatsapp_url && (
           <p className="status">
             Add a phone number for this client before sending on WhatsApp.
           </p>
         )}
-        {receipt && !receipt.email && (
+        {receipt && !receipt.shop_email && (
           <p className="status">
-            This customer has no email. Add one before sending by email.
+            This account has no email, so the receipt cannot be emailed.
           </p>
         )}
       </div>

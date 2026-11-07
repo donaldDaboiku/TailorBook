@@ -7,6 +7,7 @@
   --line: #e6e4da;
   --accent: #082653;
   --gold: #d99a18;
+  --logo: #6a3de8;
   --danger: #9f1239;
   --font: "Segoe UI", system-ui, sans-serif;
   --radius: 16px;
@@ -57,6 +58,11 @@ body {
 
 .app.signed-out {
   padding-bottom: 0;
+  background: var(--logo);
+}
+
+.app.signed-out .card {
+  background: var(--paper);
 }
 
 .topbar {
@@ -64,7 +70,9 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 1rem 1.25rem 0.5rem;
+  padding: 0.85rem 1.25rem;
+  background: var(--logo);
+  color: #fffef5;
 }
 
 .install-app {
@@ -125,7 +133,7 @@ body {
   font-weight: 650;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #fffef5;
 }
 
 .app-mark {
@@ -206,8 +214,8 @@ p {
 }
 
 .tabbar button[aria-current='page'] {
-  background: color-mix(in srgb, var(--accent) 12%, #fff);
-  color: var(--accent);
+  background: color-mix(in srgb, var(--logo) 14%, #fff);
+  color: var(--logo);
 }
 
 .tabbar button:disabled {
@@ -385,11 +393,26 @@ p {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
+  background: var(--logo);
+  color: #fffef5;
+  margin: -0.5rem -1.25rem 1rem;
+  padding: 1rem 1.25rem 1.15rem;
+  border-radius: 0 0 22px 22px;
+}
+
+.dash-head .status {
+  color: color-mix(in srgb, #fffef5 82%, transparent);
 }
 
 .dash-head h1 {
   margin: 0.15rem 0 0.2rem;
   font-size: 1.7rem;
+  color: #fffef5;
+}
+
+.dash-head .avatar {
+  background: #fffef5;
+  color: var(--logo);
 }
 
 .avatar {

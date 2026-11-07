@@ -2,6 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <script>
+    if (location.hostname.endsWith('.onrender.com')) {
+      var path = location.pathname === '/' ? '/' : location.pathname
+      location.replace('https://gitsystemng.com/tailormate' + path + location.search + location.hash)
+    }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#082653">
   <meta name="description" content="TailorMate helps fashion designers manage customer measurements, tailoring jobs, payments and business records.">

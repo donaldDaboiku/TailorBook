@@ -114,16 +114,17 @@ services:
         value: Monthly shop plan
 
   # Static sites have no compute plan — do not set `plan` here.
+  # These two sites only send old Render visitors to the new addresses.
   - type: web
     name: tailormate-web
     runtime: static
     rootDir: frontend
-    buildCommand: npm ci && npm run build
-    staticPublishPath: ./dist
+    buildCommand: echo moved
+    staticPublishPath: ./render-moved
     routes:
-      - type: rewrite
+      - type: redirect
         source: /*
-        destination: /index.html
+        destination: https://tailormate.gitsystemng.com/*
     headers:
       - path: /*
         name: X-Content-Type-Options
@@ -148,8 +149,12 @@ services:
     name: tailormate-landing
     runtime: static
     rootDir: TailorMate
-    buildCommand: echo TailorMate
-    staticPublishPath: .
+    buildCommand: echo moved
+    staticPublishPath: ./render-moved
+    routes:
+      - type: redirect
+        source: /*
+        destination: https://gitsystemng.com/tailormate/*
     headers:
       - path: /*
         name: X-Content-Type-Options

@@ -6,7 +6,17 @@
     <link rel="icon" type="image/png" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#082653" />
+    <meta name="theme-color" content="#6a3de8" />
+    <script>
+      if (location.hostname.endsWith('.onrender.com')) {
+        location.replace(
+          'https://tailormate.gitsystemng.com' +
+            location.pathname +
+            location.search +
+            location.hash,
+        )
+      }
+    </script>
     <meta
       name="description"
       content="TailorMate helps fashion designers and tailors save customers, measurements, jobs, payments, and expenses, and message clients on WhatsApp."
@@ -17,10 +27,10 @@
       content="Save customers, measurements, jobs, and payments. See what they owe. Message them on WhatsApp."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://tailormate-web.onrender.com" />
+    <meta property="og:url" content="https://tailormate.gitsystemng.com" />
     <meta
       property="og:image"
-      content="https://tailormate-web.onrender.com/ads/tailormate-ad-wide.jpg"
+      content="https://tailormate.gitsystemng.com/ads/tailormate-ad-wide.jpg"
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

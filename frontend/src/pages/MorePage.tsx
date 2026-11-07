@@ -681,11 +681,11 @@ export default function MorePage({
       <section className="card muted-card">
         <h2 className="section-title">Terms and privacy</h2>
         <p className="lede">
-          <a href="/terms.pdf" target="_blank" rel="noreferrer">
+          <a href="/terms.pdf" target="_blank" rel="noreferrer" type="application/pdf">
             Terms
           </a>
           {' · '}
-          <a href="/privacy-notice.pdf" target="_blank" rel="noreferrer">
+          <a href="/privacy-notice.pdf" target="_blank" rel="noreferrer" type="application/pdf">
             Privacy notice
           </a>
         </p>

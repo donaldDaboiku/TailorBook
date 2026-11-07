@@ -82,7 +82,7 @@ export default function LoginPage({
       </p>
 
       <p className="switch">
-        <a className="link" href="/terms.pdf" target="_blank" rel="noreferrer">
+        <a className="link" href="/terms.pdf" target="_blank" rel="noreferrer" type="application/pdf">
           Terms
         </a>
         {' · '}
@@ -91,6 +91,7 @@ export default function LoginPage({
           href="/privacy-notice.pdf"
           target="_blank"
           rel="noreferrer"
+          type="application/pdf"
         >
           Privacy notice
         </a>

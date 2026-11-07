@@ -47,7 +47,7 @@ export default defineConfig({
         // App shell only: HTML/JS/CSS/icons. Never cache API traffic.
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//, /\.pdf$/],
+        navigateFallbackDenylist: [/^\/api\//, /\.pdf$/, /^\/terms\.html$/, /^\/privacy-notice\.html$/],
         runtimeCaching: [
           {
             // Never cache API reads or writes (payments, measurements, etc.).

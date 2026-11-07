@@ -208,6 +208,7 @@ export default function RegisterPage({
             href="/terms.pdf"
             target="_blank"
             rel="noreferrer"
+            type="application/pdf"
           >
             Read the terms
           </a>
@@ -217,6 +218,7 @@ export default function RegisterPage({
             href="/privacy-notice.pdf"
             target="_blank"
             rel="noreferrer"
+            type="application/pdf"
           >
             Read the privacy notice
           </a>

@@ -16,12 +16,12 @@ class ShopNotices
     public function welcomeTrial(User $user): void
     {
         $until = $user->subscribed_until?->toDateString() ?? 'the end of the trial';
-        $shop = $this->shopName($user);
+        $phone = (string) config('services.support.whatsapp');
 
         $this->send(
             $user,
-            'Welcome to TailorMate',
-            "Welcome to TailorMate, {$user->name}.\n\n{$shop} can use TailorMate until {$until}. That is the free trial. After that day, subscribe in the app to keep customers, jobs, and payments open.\n\nTerms: {$this->appUrl()}/terms.pdf\nPrivacy notice: {$this->appUrl()}/privacy-notice.pdf\n\nOpen the app: {$this->appUrl()}",
+            "You're in! Welcome to TailorMate",
+            "Hi {$user->name},\n\nThank you for choosing TailorMate. We built it for tailors and fashion designers like you, so you never lose a measurement, forget a payment or chase a customer again.\n\nWhat you can do with your account:\n- Save customers and their measurements safely\n- Track every job, deposit and balance\n- See exactly who owes you\n- Record your expenses to know your real profit\n- Message customers on WhatsApp when their outfit is ready\n\nYour first steps:\nLog in at tailormate.gitsystemng.com, add one customer, and create their first job. It takes less than 5 minutes.\n\nWe're here for you. If you get stuck or have an idea to make TailorMate better, reply to this email or WhatsApp us on {$phone}. We read every message.\n\nWelcome aboard,\nTailorMate by GITSYSTEM\n\nYour free trial runs until {$until}.\nTerms: {$this->appUrl()}/terms.pdf\nPrivacy notice: {$this->appUrl()}/privacy-notice.pdf",
         );
     }
 

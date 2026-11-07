@@ -46,8 +46,9 @@ class AuthTest extends TestCase
 
         Mail::assertSent(ShopNoticeMail::class, function (ShopNoticeMail $mail) {
             return $mail->hasTo('ada@example.com')
-                && $mail->subjectLine === 'Welcome to TailorMate'
-                && str_contains($mail->bodyText, 'Ada Atelier')
+                && $mail->subjectLine === "You're in! Welcome to TailorMate"
+                && str_contains($mail->bodyText, 'Hi Ada,')
+                && str_contains($mail->bodyText, 'tailormate.gitsystemng.com')
                 && str_contains($mail->bodyText, now()->addDays(7)->toDateString());
         });
     }

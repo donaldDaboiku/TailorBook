@@ -50,7 +50,8 @@
     .metric{position:relative;background:#ffffff0d;border:1px solid #ffffff18;border-radius:16px;padding:17px;margin-bottom:12px}
     .metric small{display:block;color:#c3d4cb;font-size:.8rem}.metric strong{display:block;font-size:1.45rem;margin-top:4px}
     .rows{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mini{background:#fff;color:var(--ink);border-radius:15px;padding:15px}.mini small{color:var(--muted)}.mini strong{display:block;margin-top:7px}
-    .features{width:min(1120px,calc(100% - 40px));margin:0 auto 44px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .features{width:min(1120px,calc(100% - 40px));margin:0 auto 44px;display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+    .preview-note{position:relative;margin:14px 0 0;font-size:.78rem;color:#d5e0da}
     .section{width:min(1120px,calc(100% - 40px));margin:0 auto 58px}
     .section-head{max-width:650px;margin-bottom:20px}.section-head h2{font-size:clamp(1.7rem,3vw,2.4rem);letter-spacing:-.04em;margin:8px 0}.section-head p{color:var(--muted);margin:0}
     .social-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.social{display:flex;align-items:center;gap:12px;padding:17px;background:#fff;border:1px solid var(--line);border-radius:15px;text-decoration:none;font-weight:700}.social:hover{border-color:var(--green2);transform:translateY(-1px)}
@@ -100,19 +101,22 @@
       </div>
       <p class="fine">Sign in or create an account inside the app.</p>
     </section>
-    <aside class="preview" aria-label="TailorMate feature preview">
-      <div class="preview-head"><div class="preview-title">Your tailoring workspace</div><span class="pill">Simple. Organised.</span></div>
-      <div class="metric"><small>Customer records</small><strong>Measurements in one place</strong></div>
+    <aside class="preview" aria-label="Example shop dashboard">
+      <div class="preview-head"><div class="preview-title">Today in the shop</div><span class="pill">Example</span></div>
+      <div class="metric"><small>Outstanding balances</small><strong>₦128,500</strong></div>
       <div class="rows">
-        <div class="mini"><span aria-hidden="true">🧵</span><strong>Job tracking</strong><small>Follow each order</small></div>
-        <div class="mini"><span aria-hidden="true">₦</span><strong>Payments</strong><small>Track what is paid</small></div>
+        <div class="mini"><small>Received this week</small><strong>₦46,000</strong></div>
+        <div class="mini"><small>Active jobs · due soon</small><strong>7 · 3</strong></div>
       </div>
+      <div class="metric"><small>Due today · Ada · Gown</small><strong>Balance ₦20,000</strong></div>
+      <p class="preview-note">Example figures, not a live shop. Your own totals show after you sign in, including when the network drops.</p>
     </aside>
   </main>
   <section class="features" id="features" aria-label="Main features">
     <article class="feature"><div class="ico" aria-hidden="true">📏</div><h2>Customer measurements</h2><p>Keep measurement history accessible when it is time to sew.</p></article>
     <article class="feature"><div class="ico" aria-hidden="true">🪡</div><h2>Jobs and orders</h2><p>Organise customer jobs and service dates in one workspace.</p></article>
     <article class="feature"><div class="ico" aria-hidden="true">📊</div><h2>Business finances</h2><p>Keep an eye on payments, expenses and your business summary.</p></article>
+    <article class="feature"><div class="ico" aria-hidden="true">📶</div><h2>Saves without internet</h2><p>A client, measurement, job, or payment stays on the phone when the network drops, then syncs when it returns. A repeat does not create the payment twice.</p></article>
   </section>
   <section class="section" id="how" aria-labelledby="how-title">
     <div class="section-head">

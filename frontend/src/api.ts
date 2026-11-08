@@ -2,7 +2,10 @@ import {
   cacheGet,
   cachePut,
   enqueue,
+  isNetworkFailure,
+  linkOnline,
   listOutbox,
+  noteReached,
   shouldQueue,
   type OutboxItem,
 } from './outbox'
@@ -273,7 +276,7 @@ async function parseJson(response: Response): Promise<unknown> {
 export async function fetchHealth(): Promise<Health> {
   const response = await fetch(apiUrl('/api/health'), {
     headers: { Accept: 'application/json' },
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.timeout(8000),
   })
 
   if (!response.ok) {
@@ -1048,7 +1051,7 @@ async function saveOrQueue<T extends { id: string }>(options: {
     return options.snapshot
   }
 
-  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+  if (!linkOnline()) {
     return queue()
   }
 
@@ -2048,13 +2051,27 @@ export async function archiveExpense(id: string): Promise<void> {
 }
 
 export async function fetchHome(): Promise<HomeDashboard> {
-  const data = await apiJson<{ data: HomeDashboard }>('/api/home')
+  try {
+    const data = await apiJson<{ data: HomeDashboard }>('/api/home')
 
-  if (!data.data || typeof data.data.active_jobs !== 'number') {
-    throw new Error('bad response')
+    if (!data.data || typeof data.data.active_jobs !== 'number') {
+      throw new Error('bad response')
+    }
+
+    await cachePut('home', data.data)
+    return data.data
+  } catch (error) {
+    if (!shouldQueue(error)) {
+      throw error
+    }
+
+    const cached = await cacheGet<HomeDashboard>('home')
+    if (cached && typeof cached.active_jobs === 'number') {
+      return cached
+    }
+
+    throw error
   }
-
-  return data.data
 }
 
 export async function listShopJobs(): Promise<{
@@ -2208,13 +2225,29 @@ function authHeaders(json = false): HeadersInit {
 }
 
 async function apiJson<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(apiUrl(path), {
-    ...init,
-    headers: {
-      ...authHeaders(Boolean(init.body)),
-      ...(init.headers ?? {}),
-    },
-  })
+  if (!linkOnline()) {
+    throw new TypeError('offline')
+  }
+
+  let response: Response
+
+  try {
+    response = await fetch(apiUrl(path), {
+      ...init,
+      headers: {
+        ...authHeaders(Boolean(init.body)),
+        ...(init.headers ?? {}),
+      },
+      signal: AbortSignal.timeout(8000),
+    })
+  } catch (error) {
+    if (isNetworkFailure(error)) {
+      noteReached(false)
+    }
+    throw error
+  }
+
+  noteReached(true)
 
   if (response.status === 401) {
     setToken(null)

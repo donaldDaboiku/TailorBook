@@ -35,7 +35,7 @@ import WhatsAppComposePage from './pages/WhatsAppComposePage'
 import { useI18n } from './i18n'
 import { hasSeenTutorial, markTutorialSeen } from './tutorial'
 
-type Gate = 'loading' | 'ready' | 'offline'
+type Gate = 'loading' | 'ready'
 type Tab = 'home' | 'customers' | 'jobs' | 'finance' | 'more'
 type Screen =
   | { name: 'home' }
@@ -65,32 +65,25 @@ export default function App() {
     let cancelled = false
 
     async function connect() {
-      for (let attempt = 0; attempt < 4; attempt += 1) {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        setGate('ready')
+        return
+      }
+
+      try {
+        const health = await fetchHealth()
         if (cancelled) {
           return
         }
 
-        try {
-          const health = await fetchHealth()
-          if (cancelled) {
-            return
-          }
-
-          setAppName(health.app)
-          document.title = health.app
-          setGate('ready')
-          return
-        } catch {
-          if (cancelled || attempt === 3) {
-            break
-          }
-
-          await new Promise((resolve) => window.setTimeout(resolve, 3000))
-        }
+        setAppName(health.app)
+        document.title = health.app
+      } catch {
+        // The shop can still open from what is already saved on the phone.
       }
 
       if (!cancelled) {
-        setGate('offline')
+        setGate('ready')
       }
     }
 
@@ -107,17 +100,6 @@ export default function App() {
         <section className="card">
           <h1>{t('gate.waking')}</h1>
           <p className="lede">{t('gate.wakingNote')}</p>
-        </section>
-      </Shell>
-    )
-  }
-
-  if (gate === 'offline') {
-    return (
-      <Shell appName={appName}>
-        <section className="card">
-          <h1>{t('gate.offlineTitle')}</h1>
-          <p>{t('gate.offlineBody')}</p>
         </section>
       </Shell>
     )

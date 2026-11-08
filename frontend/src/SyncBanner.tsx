@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useI18n } from './i18n'
 import {
+  linkOnline,
   listOutbox,
   retryAttention,
   subscribeOutbox,
@@ -52,13 +53,28 @@ export default function SyncBanner() {
   const { t } = useI18n()
   const { items } = useOutbox()
   const [open, setOpen] = useState(false)
-  const online = typeof navigator === 'undefined' ? true : navigator.onLine
+  const [online, setOnline] = useState(linkOnline)
+
+  useEffect(() => {
+    const update = () => setOnline(linkOnline())
+    update()
+    const unsubscribe = subscribeOutbox(update)
+    window.addEventListener('online', update)
+    window.addEventListener('offline', update)
+    return () => {
+      unsubscribe()
+      window.removeEventListener('online', update)
+      window.removeEventListener('offline', update)
+    }
+  }, [])
   const waiting = items.filter((item) => item.status === 'pending')
   const attention = items.filter((item) => item.status === 'attention')
 
   let label = online ? t('sync.online') : t('sync.offline')
   if (waiting.length > 0) {
-    label = t('sync.waiting', { count: String(waiting.length) })
+    label = online
+      ? t('sync.waiting', { count: String(waiting.length) })
+      : `${t('sync.offline')} · ${t('sync.waiting', { count: String(waiting.length) })}`
   }
 
   return (

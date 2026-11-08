@@ -29,11 +29,35 @@ function notify(): void {
   listeners.forEach((listener) => listener())
 }
 
+let reachable = true
+
+export function linkOnline(): boolean {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return false
+  }
+
+  return reachable
+}
+
+export function noteReached(ok: boolean): void {
+  if (reachable === ok) {
+    return
+  }
+
+  reachable = ok
+  notify()
+}
+
+export function isNetworkFailure(error: unknown): boolean {
+  if (error instanceof TypeError) {
+    return true
+  }
+
+  return error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')
+}
+
 export function shouldQueue(error: unknown): boolean {
-  return (
-    error instanceof TypeError ||
-    (error instanceof Error && error.message === 'unauthorized')
-  )
+  return isNetworkFailure(error) || (error instanceof Error && error.message === 'unauthorized')
 }
 
 function database(): Promise<IDBDatabase> {
@@ -128,7 +152,7 @@ export async function retryAttention(): Promise<void> {
 }
 
 export async function syncNow(): Promise<void> {
-  if (syncing || typeof navigator === 'undefined' || navigator.onLine === false) {
+  if (syncing || !linkOnline()) {
     return
   }
 
@@ -155,10 +179,16 @@ export async function syncNow(): Promise<void> {
             'Idempotency-Key': item.id,
           },
           body: JSON.stringify(item.body),
+          signal: AbortSignal.timeout(8000),
         })
-      } catch {
+      } catch (error) {
+        if (isNetworkFailure(error)) {
+          noteReached(false)
+        }
         break
       }
+
+      noteReached(true)
 
       if (response.status === 401) {
         break
@@ -273,11 +303,47 @@ function schedule(): void {
   })
 }
 
+async function probe(): Promise<void> {
+  try {
+    const response = await fetch(apiUrl('/api/health'), {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!response.ok) {
+      return
+    }
+    noteReached(true)
+    void syncNow()
+  } catch (error) {
+    if (isNetworkFailure(error)) {
+      noteReached(false)
+    }
+  }
+}
+
 export function watchConnection(): void {
   window.addEventListener('online', () => {
+    reachable = true
+    notify()
     attempt = 0
     void syncNow()
   })
-  window.addEventListener('offline', () => notify())
+  window.addEventListener('offline', () => {
+    reachable = false
+    notify()
+  })
+  window.setInterval(() => {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      if (reachable) {
+        reachable = false
+        notify()
+      }
+      return
+    }
+
+    if (!reachable) {
+      void probe()
+    }
+  }, 4000)
   void syncNow()
 }

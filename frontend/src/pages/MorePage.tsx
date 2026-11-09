@@ -18,6 +18,25 @@ import ShopReviewCard from './ShopReviewCard'
 import MeasurementFieldsSettings from './MeasurementFieldsSettings'
 import SubscriptionBillingCard from './SubscriptionBillingCard'
 
+type MoreSection =
+  | 'language'
+  | 'about'
+  | 'tutorial'
+  | 'invite'
+  | 'review'
+  | 'shops'
+  | 'contact'
+  | 'shop'
+  | 'catalogue'
+  | 'fields'
+  | 'plan'
+  | 'account'
+  | 'install'
+  | 'terms'
+  | 'records'
+  | 'delete'
+  | 'signout'
+
 function inviteMessage(code: string, link: string): string {
   return `Hello! I use TailorMate to manage my tailoring business. Join me and simplify your measurements, customer records, jobs and finances.
 
@@ -90,6 +109,35 @@ export default function MorePage({
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [exportBusy, setExportBusy] = useState(false)
   const [exportError, setExportError] = useState('')
+  const [section, setSection] = useState<MoreSection>('language')
+
+  const menu: { id: MoreSection; label: string; name: string }[][] = [
+    [
+      { id: 'language', label: t('language'), name: t('language') },
+      { id: 'about', label: 'About', name: 'About the app' },
+      { id: 'tutorial', label: 'Guide', name: 'How to use' },
+      { id: 'install', label: 'Install', name: 'Install app' },
+    ],
+    [
+      { id: 'shop', label: 'Shop', name: 'Shop settings' },
+      { id: 'catalogue', label: 'Designs', name: 'Design catalogue' },
+      { id: 'fields', label: 'Fields', name: 'Measurement fields' },
+      { id: 'plan', label: 'Plan', name: 'Subscription' },
+    ],
+    [
+      { id: 'invite', label: 'Invite', name: 'Invite a shop' },
+      { id: 'review', label: 'Review', name: 'Review TailorMate' },
+      { id: 'shops', label: 'Shops', name: 'Shops on TailorMate' },
+      { id: 'contact', label: 'Contact', name: 'Contact TailorMate' },
+    ],
+    [
+      { id: 'account', label: 'Account', name: 'Account' },
+      { id: 'terms', label: 'Terms', name: 'Terms and privacy' },
+      { id: 'records', label: 'Records', name: 'Your records' },
+      { id: 'delete', label: 'Delete', name: 'Delete account' },
+      { id: 'signout', label: 'Sign out', name: 'Sign out' },
+    ],
+  ]
 
   useEffect(() => {
     let cancelled = false
@@ -269,21 +317,38 @@ export default function MorePage({
   }
 
   return (
-    <>
-      <section className="card">
-        <h1>{t('more.title')}</h1>
-        <p className="lede">{t('more.lede')}</p>
-      </section>
-
-      <section className="card muted-card">
+    <div className="more-layout">
+      <nav className="more-nav" aria-label={t('more.title')}>
+        {menu.map((group) => (
+          <div className="more-nav-group" key={group[0].id}>
+            {group.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-current={section === item.id ? 'page' : undefined}
+                aria-label={item.name}
+                data-tone={item.id === 'delete' ? 'danger' : undefined}
+                onClick={() => {
+                  setSection(item.id)
+                  window.scrollTo({ top: 0 })
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        ))}
+      </nav>
+      <div className="more-panel">
+      {section === 'language' && <section className="card muted-card">
         <h2 className="section-title">{t('language')}</h2>
         <form className="form">
-          <LanguageSelect />
+          <LanguageSelect hideLabel />
         </form>
         <p className="status">{t('language.note')}</p>
-      </section>
+      </section>}
 
-      <section className="card muted-card">
+      {section === 'about' && <section className="card muted-card">
         <h2 className="section-title">About the app</h2>
         <p className="lede">
           TailorMate keeps one shop’s customers, measurements, jobs, payments,
@@ -295,9 +360,9 @@ export default function MorePage({
             gitsystemng
           </a>
         </p>
-      </section>
+      </section>}
 
-      <section className="card muted-card">
+      {section === 'tutorial' && <section className="card muted-card">
         <h2 className="section-title">How to use</h2>
         <p className="status">
           Short walkthrough of customers, measurements, jobs, payments, and
@@ -306,9 +371,9 @@ export default function MorePage({
         <button type="button" className="secondary" onClick={onShowTutorial}>
           Open tutorial
         </button>
-      </section>
+      </section>}
 
-      <section className="card muted-card">
+      {section === 'invite' && <section className="card muted-card">
         <h2 className="section-title">Invite a shop</h2>
         <p className="lede">Bring another tailor onto TailorMate.</p>
         <p className="status">
@@ -429,16 +494,27 @@ export default function MorePage({
             </div>
           </>
         )}
-      </section>
+      </section>}
 
-      <ShopReviewCard />
+      {section === 'review' && <ShopReviewCard />}
 
-      <CommunityPanel
-        defaultName={user?.name ?? ''}
-        defaultContact={user?.email ?? ''}
-      />
+      {section === 'shops' && (
+        <CommunityPanel
+          part="shops"
+          defaultName={user?.name ?? ''}
+          defaultContact={user?.email ?? ''}
+        />
+      )}
 
-      <section className="card muted-card">
+      {section === 'contact' && (
+        <CommunityPanel
+          part="contact"
+          defaultName={user?.name ?? ''}
+          defaultContact={user?.email ?? ''}
+        />
+      )}
+
+      {section === 'shop' && <section className="card muted-card">
         <h2 className="section-title">Shop settings</h2>
         <form className="form" onSubmit={onSaveShop}>
           <label>
@@ -595,9 +671,9 @@ export default function MorePage({
             {shopBusy ? 'Saving…' : 'Save shop'}
           </button>
         </form>
-      </section>
+      </section>}
 
-      <section className="card muted-card">
+      {section === 'catalogue' && <section className="card muted-card">
         <h2 className="section-title">Design catalogue</h2>
         <p className="lede">
           Keep the styles this shop sews, with front, back, and side photos and the usual price.
@@ -605,13 +681,13 @@ export default function MorePage({
         <button type="button" className="secondary" onClick={onOpenCatalogue}>
           Open catalogue
         </button>
-      </section>
+      </section>}
 
-      <MeasurementFieldsSettings />
+      {section === 'fields' && <MeasurementFieldsSettings />}
 
-      <SubscriptionBillingCard />
+      {section === 'plan' && <SubscriptionBillingCard />}
 
-      <section className="card muted-card">
+      {section === 'account' && <section className="card muted-card">
         <h2 className="section-title">Account</h2>
         <form className="form" onSubmit={onSaveAccount}>
           <label>
@@ -646,9 +722,9 @@ export default function MorePage({
             {accountBusy ? 'Saving…' : 'Save account'}
           </button>
         </form>
-      </section>
+      </section>}
 
-      <section className="card muted-card">
+      {section === 'install' && <section className="card muted-card">
         <h2 className="section-title">Install app</h2>
         <p className="status">
           The Install button stays on this page and on the top of the app. Use
@@ -671,9 +747,10 @@ export default function MorePage({
         <p className="status">
           After that it opens like an app. Saving still needs internet.
         </p>
-      </section>
+      </section>}
 
-      <section className="card muted-card">
+      {section === 'signout' && <section className="card muted-card">
+        <h2 className="section-title">Sign out</h2>
         <button
           type="button"
           className="secondary danger"
@@ -682,9 +759,9 @@ export default function MorePage({
         >
           {logoutBusy ? 'Signing out…' : 'Sign out'}
         </button>
-      </section>
+      </section>}
 
-      <section className="card muted-card">
+      {section === 'terms' && <section className="card muted-card">
         <h2 className="section-title">Terms and privacy</h2>
         <p className="lede">
           <a href="/terms.pdf" target="_blank" rel="noreferrer" type="application/pdf">
@@ -695,9 +772,9 @@ export default function MorePage({
             Privacy notice
           </a>
         </p>
-      </section>
+      </section>}
 
-      <section className="card muted-card">
+      {section === 'records' && <section className="card muted-card">
         <h2 className="section-title">Your records</h2>
         <p className="lede">
           Download every client, measurement, job, payment, and expense as a
@@ -717,9 +794,9 @@ export default function MorePage({
         >
           {exportBusy ? 'Preparing…' : 'Download my records'}
         </button>
-      </section>
+      </section>}
 
-      <section className="card muted-card">
+      {section === 'delete' && <section className="card muted-card">
         <h2 className="section-title">Delete account</h2>
         <p className="lede">
           This permanently removes your login, shop, clients, measurements,
@@ -752,7 +829,8 @@ export default function MorePage({
             {deleteBusy ? 'Deleting…' : 'Delete my account'}
           </button>
         </form>
-      </section>
-    </>
+      </section>}
+      </div>
+    </div>
   )
 }

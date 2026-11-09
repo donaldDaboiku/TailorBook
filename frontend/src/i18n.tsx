@@ -818,22 +818,30 @@ export function translatedTemplateName(
   return t(`measure.template.${slug}`)
 }
 
-export function LanguageSelect() {
+export function LanguageSelect({ hideLabel = false }: { hideLabel?: boolean }) {
   const { lang, setLang, t } = useI18n()
+  const select = (
+    <select
+      value={lang}
+      aria-label={hideLabel ? t('language') : undefined}
+      onChange={(event) => setLang(event.target.value as Lang)}
+    >
+      {languages.map((item) => (
+        <option key={item.id} value={item.id}>
+          {item.name}
+        </option>
+      ))}
+    </select>
+  )
+
+  if (hideLabel) {
+    return select
+  }
 
   return (
     <label>
       {t('language')}
-      <select
-        value={lang}
-        onChange={(event) => setLang(event.target.value as Lang)}
-      >
-        {languages.map((item) => (
-          <option key={item.id} value={item.id}>
-            {item.name}
-          </option>
-        ))}
-      </select>
+      {select}
     </label>
   )
 }

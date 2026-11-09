@@ -9,9 +9,11 @@ import {
 export default function CommunityPanel({
   defaultName = '',
   defaultContact = '',
+  part = 'all',
 }: {
   defaultName?: string
   defaultContact?: string
+  part?: 'all' | 'shops' | 'contact'
 }) {
   const [presence, setPresence] = useState<PublicPresence | null>(null)
   const [unavailable, setUnavailable] = useState(false)
@@ -73,7 +75,7 @@ export default function CommunityPanel({
 
   return (
     <>
-    <section className="card muted-card">
+    {part !== 'contact' && <section className="card muted-card">
       <h2 className="section-title">Shops on TailorMate</h2>
       {presence ? (
         <>
@@ -102,9 +104,9 @@ export default function CommunityPanel({
             : 'Loading subscriber numbers…'}
         </p>
       )}
-    </section>
+    </section>}
 
-      <section className="card muted-card">
+      {part !== 'shops' && <section className="card muted-card">
           <h2 className="section-title">Contact TailorMate</h2>
           <p className="lede">
             Reach the admin about the app. Messages here go to TailorMate.
@@ -180,7 +182,7 @@ export default function CommunityPanel({
               {busy ? 'Sending…' : 'Send to the admin'}
             </button>
           </form>
-        </section>
+        </section>}
     </>
   )
 }

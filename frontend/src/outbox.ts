@@ -274,23 +274,44 @@ async function adoptSyncedRow(item: OutboxItem, row: { id: string }): Promise<vo
     return
   }
 
-  const patch = (jobs: Array<{ id: string }>) =>
-    jobs.map((job) => (job.id === row.id ? { ...job, ...row } : job))
   const remove = (jobs: Array<{ id: string }>) =>
     jobs.filter((job) => job.id !== row.id)
-  const completed = shopJobs.completed ?? []
+  const upcoming = remove(shopJobs.upcoming ?? [])
+  const overdue = remove(shopJobs.overdue ?? [])
+  const completed = remove(shopJobs.completed ?? [])
+
+  if (hasJobStatus(row) && row.status === 'completed') {
+    await cachePut('shop-jobs', {
+      upcoming,
+      overdue,
+      completed: [row, ...completed],
+    })
+    return
+  }
+
+  const today = localTodayDate()
+  if (row.service_date < today) {
+    await cachePut('shop-jobs', {
+      upcoming,
+      overdue: [row, ...overdue],
+      completed,
+    })
+    return
+  }
 
   await cachePut('shop-jobs', {
-    upcoming: hasJobStatus(row) && row.status === 'completed'
-      ? remove(shopJobs.upcoming ?? [])
-      : patch(remove(shopJobs.upcoming ?? [])),
-    overdue: hasJobStatus(row) && row.status === 'completed'
-      ? remove(shopJobs.overdue ?? [])
-      : patch(remove(shopJobs.overdue ?? [])),
-    completed: hasJobStatus(row) && row.status === 'completed'
-      ? [...patch(remove(completed)), row]
-      : remove(completed),
+    upcoming: [row, ...upcoming],
+    overdue,
+    completed,
   })
+}
+
+function localTodayDate(): string {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+
+  return `${now.getFullYear()}-${month}-${day}`
 }
 
 function hasJobShape(

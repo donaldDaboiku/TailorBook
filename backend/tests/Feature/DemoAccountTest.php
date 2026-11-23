@@ -102,6 +102,12 @@ class DemoAccountTest extends TestCase
             $demoBusiness->customerJobs()->orderBy('status')->pluck('status')->all(),
         );
         $this->assertSame(3, $demoBusiness->payments()->count());
+        $this->assertSame(
+            '950.00',
+            (string) $demoBusiness->payments()
+                ->whereHas('job', fn ($query) => $query->where('title', 'Ceremony dress'))
+                ->value('amount'),
+        );
         $this->assertSame(3, $demoBusiness->expenses()->count());
         $this->assertNotSame($realBusiness->id, $demoBusiness->id);
 

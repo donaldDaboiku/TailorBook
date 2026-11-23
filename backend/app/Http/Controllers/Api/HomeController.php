@@ -88,22 +88,31 @@ class HomeController extends Controller
         $business = $this->business($request);
         $today = now()->toDateString();
 
-        $jobs = CustomerJob::query()
+        $active = CustomerJob::query()
             ->where('business_id', $business->id)
+            ->where('status', '!=', 'completed')
             ->with('customer')
             ->withSum('payments', 'amount')
             ->orderBy('service_date')
             ->limit(100)
-            ->get();
+            ->get()
+            ->map(fn (CustomerJob $job) => $this->jobRow($job, $business->currency));
 
-        $rows = $jobs->map(fn (CustomerJob $job) => $this->jobRow($job, $business->currency));
-        $activeRows = $rows->reject(fn (array $row) => $row['status'] === 'completed');
+        $completed = CustomerJob::query()
+            ->where('business_id', $business->id)
+            ->where('status', 'completed')
+            ->with('customer')
+            ->withSum('payments', 'amount')
+            ->orderByDesc('service_date')
+            ->limit(100)
+            ->get()
+            ->map(fn (CustomerJob $job) => $this->jobRow($job, $business->currency));
 
         return response()->json([
             'data' => [
-                'upcoming' => $activeRows->filter(fn (array $row) => $row['service_date'] >= $today)->values(),
-                'overdue' => $activeRows->filter(fn (array $row) => $row['service_date'] < $today)->values(),
-                'completed' => $rows->filter(fn (array $row) => $row['status'] === 'completed')->values(),
+                'upcoming' => $active->filter(fn (array $row) => $row['service_date'] >= $today)->values(),
+                'overdue' => $active->filter(fn (array $row) => $row['service_date'] < $today)->values(),
+                'completed' => $completed->values(),
             ],
         ]);
     }

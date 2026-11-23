@@ -205,7 +205,7 @@ class ResetDemoAccount extends Command
                     'business_id' => $business->id,
                     'customer_id' => $customers[$sample['customer']]->id,
                     'customer_job_id' => $job->id,
-                    'amount' => $sample['title'] === 'Completed - Ceremony dress' ? $sample['amount'] : 200,
+                    'amount' => $sample['status'] === 'completed' ? $sample['amount'] : 200,
                     'paid_on' => now()->subDays(1)->toDateString(),
                     'method' => 'cash',
                     'reference' => null,

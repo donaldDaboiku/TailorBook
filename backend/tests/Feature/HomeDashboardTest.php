@@ -130,4 +130,37 @@ class HomeDashboardTest extends TestCase
             ->assertJsonCount(1, 'data.completed')
             ->assertJsonPath('data.completed.0.status', 'completed');
     }
+
+    public function test_job_lists_keep_active_orders_when_many_completed_orders_exist(): void
+    {
+        $user = User::factory()->create();
+        $business = Business::factory()->create(['user_id' => $user->id]);
+        $customer = Customer::factory()->create(['business_id' => $business->id]);
+
+        CustomerJob::factory()->count(100)->create([
+            'business_id' => $business->id,
+            'customer_id' => $customer->id,
+            'status' => 'completed',
+            'service_date' => now()->subDay()->toDateString(),
+        ]);
+        CustomerJob::factory()->create([
+            'business_id' => $business->id,
+            'customer_id' => $customer->id,
+            'title' => 'Still open',
+            'status' => 'pending',
+            'service_date' => now()->addDay()->toDateString(),
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/jobs')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.upcoming')
+            ->assertJsonPath('data.upcoming.0.title', 'Still open')
+            ->assertJsonCount(100, 'data.completed');
+
+        $this->getJson('/api/home')
+            ->assertOk()
+            ->assertJsonPath('data.active_jobs', 1);
+    }
 }

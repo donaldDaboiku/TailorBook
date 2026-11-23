@@ -152,6 +152,8 @@ class AuthController extends Controller
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
         // Always the same message so emails cannot be probed.
+        // Missing emails still call sendResetLink; Laravel returns INVALID_USER and does not mail.
+        // Demo accounts are skipped so the sample login cannot be reset.
         $user = User::query()->where('email', $request->validated('email'))->first();
 
         if (! $user?->isDemoAccount()) {

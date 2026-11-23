@@ -818,7 +818,7 @@ export default function AdminShopsPage() {
                         {subscriptionLabel(shop.subscription_access)}
                       </span>
                       <span className="badge">
-                        {shop.catalogue_used ?? 0}/{shop.catalogue_limit ?? 40} styles
+                        {shop.catalogue_used ?? 0}/{shop.catalogue_limit ?? 40}
                       </span>
                     </span>
                   </button>

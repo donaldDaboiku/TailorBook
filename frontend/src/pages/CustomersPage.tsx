@@ -6,9 +6,11 @@ import { PendingMark } from '../SyncBanner'
 export default function CustomersPage({
   onOpen,
   onCreate,
+  readOnly = false,
 }: {
   onOpen: (id: string) => void
   onCreate: () => void
+  readOnly?: boolean
 }) {
   const { t } = useI18n()
   const [query, setQuery] = useState('')
@@ -50,9 +52,11 @@ export default function CustomersPage({
       <section className="card">
         <div className="row-between">
           <h1>{t('customers.title')}</h1>
-          <button type="button" className="primary compact" onClick={onCreate}>
-            {t('customers.add')}
-          </button>
+          {!readOnly && (
+            <button type="button" className="primary compact" onClick={onCreate}>
+              {t('customers.add')}
+            </button>
+          )}
         </div>
         <label className="search-label">
           {t('customers.search')}
@@ -75,7 +79,11 @@ export default function CustomersPage({
 
       {!loading && customers.length === 0 && (
         <section className="card muted-card">
-          <p>No customers yet. Tap Add to save the first one.</p>
+          <p>
+            {readOnly
+              ? 'No customers are available in this demo.'
+              : 'No customers yet. Tap Add to save the first one.'}
+          </p>
         </section>
       )}
 

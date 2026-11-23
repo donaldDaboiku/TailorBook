@@ -23,16 +23,19 @@ class HomeController extends Controller
 
         $activeJobs = CustomerJob::query()
             ->where('business_id', $business->id)
+            ->where('status', '!=', 'completed')
             ->count();
 
         $dueSoon = CustomerJob::query()
             ->where('business_id', $business->id)
+            ->where('status', '!=', 'completed')
             ->whereDate('service_date', '>=', $todayDate)
             ->whereDate('service_date', '<=', $weekEnd)
             ->count();
 
         $dueToday = CustomerJob::query()
             ->where('business_id', $business->id)
+            ->where('status', '!=', 'completed')
             ->whereDate('service_date', $todayDate)
             ->with('customer')
             ->withSum('payments', 'amount')
@@ -42,6 +45,7 @@ class HomeController extends Controller
 
         $upcoming = CustomerJob::query()
             ->where('business_id', $business->id)
+            ->where('status', '!=', 'completed')
             ->whereDate('service_date', '>=', $todayDate)
             ->whereDate('service_date', '<=', $weekEnd)
             ->with('customer')
@@ -93,11 +97,13 @@ class HomeController extends Controller
             ->get();
 
         $rows = $jobs->map(fn (CustomerJob $job) => $this->jobRow($job, $business->currency));
+        $activeRows = $rows->reject(fn (array $row) => $row['status'] === 'completed');
 
         return response()->json([
             'data' => [
-                'upcoming' => $rows->filter(fn (array $row) => $row['service_date'] >= $today)->values(),
-                'overdue' => $rows->filter(fn (array $row) => $row['service_date'] < $today)->values(),
+                'upcoming' => $activeRows->filter(fn (array $row) => $row['service_date'] >= $today)->values(),
+                'overdue' => $activeRows->filter(fn (array $row) => $row['service_date'] < $today)->values(),
+                'completed' => $rows->filter(fn (array $row) => $row['status'] === 'completed')->values(),
             ],
         ]);
     }
@@ -117,6 +123,7 @@ class HomeController extends Controller
             'customer_name' => $job->customer?->name,
             'title' => $job->title,
             'service_date' => $job->service_date?->toDateString(),
+            'status' => $job->status,
             'outstanding_label' => Money::format($outstanding, $currency),
         ];
     }

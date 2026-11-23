@@ -138,6 +138,15 @@ export default function MorePage({
       { id: 'signout', label: 'Sign out', name: 'Sign out' },
     ],
   ]
+  const visibleMenu = user?.is_demo_account
+    ? menu
+        .map((group) =>
+          group.filter((item) =>
+            ['language', 'about', 'tutorial', 'shops', 'contact', 'install', 'records', 'signout'].includes(item.id),
+          ),
+        )
+        .filter((group) => group.length > 0)
+    : menu
 
   useEffect(() => {
     let cancelled = false
@@ -156,6 +165,10 @@ export default function MorePage({
   }, [])
 
   useEffect(() => {
+    if (user?.is_demo_account) {
+      return
+    }
+
     let cancelled = false
 
     fetchReferral()
@@ -183,7 +196,7 @@ export default function MorePage({
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [user?.is_demo_account])
 
   useEffect(() => {
     if (!business?.has_logo) {
@@ -319,7 +332,7 @@ export default function MorePage({
   return (
     <div className="more-layout">
       <nav className="more-nav" aria-label={t('more.title')}>
-        {menu.map((group) => (
+        {visibleMenu.map((group) => (
           <div className="more-nav-group" key={group[0].id}>
             {group.map((item) => (
               <button
@@ -501,6 +514,7 @@ export default function MorePage({
       {section === 'shops' && (
         <CommunityPanel
           part="shops"
+          readOnly={user?.is_demo_account}
           defaultName={user?.name ?? ''}
           defaultContact={user?.email ?? ''}
         />
@@ -509,6 +523,7 @@ export default function MorePage({
       {section === 'contact' && (
         <CommunityPanel
           part="contact"
+          readOnly={user?.is_demo_account}
           defaultName={user?.name ?? ''}
           defaultContact={user?.email ?? ''}
         />

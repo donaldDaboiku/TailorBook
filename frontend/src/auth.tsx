@@ -11,6 +11,7 @@ import {
   login as apiLogin,
   logout as apiLogout,
   register as apiRegister,
+  setDemoAccount,
   setToken,
   type User,
 } from './api'
@@ -72,10 +73,12 @@ export function AuthProvider({
       try {
         const me = await fetchMe()
         if (!cancelled) {
+          setDemoAccount(me.is_demo_account)
           setUser(me)
         }
       } catch {
         if (!cancelled) {
+          setDemoAccount(false)
           setToken(null)
           setUser(null)
         }
@@ -95,8 +98,11 @@ export function AuthProvider({
 
   async function login(email: string, password: string) {
     const result = await apiLogin({ email, password })
+    setDemoAccount(result.user.is_demo_account)
     setUser(result.user)
-    void syncNow()
+    if (!result.user.is_demo_account) {
+      void syncNow()
+    }
   }
 
   async function register(payload: {
@@ -117,16 +123,21 @@ export function AuthProvider({
   }) {
     const result = await apiRegister(payload)
     markTutorialUnseen(result.user.id)
+    setDemoAccount(result.user.is_demo_account)
     setUser(result.user)
-    void syncNow()
+    if (!result.user.is_demo_account) {
+      void syncNow()
+    }
   }
 
   async function logout() {
     await apiLogout()
+    setDemoAccount(false)
     setUser(null)
   }
 
   function clearUser() {
+    setDemoAccount(false)
     setToken(null)
     setUser(null)
   }

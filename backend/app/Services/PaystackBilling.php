@@ -41,6 +41,10 @@ class PaystackBilling
      */
     public function initialize(User $user): array
     {
+        if ($user->isDemoAccount()) {
+            throw new RuntimeException('Demo accounts cannot make payments.');
+        }
+
         if (! $this->configured()) {
             throw new RuntimeException('Paystack is not configured.');
         }
@@ -101,6 +105,10 @@ class PaystackBilling
      */
     public function initializeCatalogue(User $user): array
     {
+        if ($user->isDemoAccount()) {
+            throw new RuntimeException('Demo accounts cannot make payments.');
+        }
+
         if (! $this->configured()) {
             throw new RuntimeException('Paystack is not configured.');
         }
@@ -221,6 +229,10 @@ class PaystackBilling
 
         if ($payment === null) {
             throw new RuntimeException('Unknown payment reference.');
+        }
+
+        if (User::query()->whereKey($payment->user_id)->value('is_demo_account')) {
+            throw new RuntimeException('Demo accounts cannot make payments.');
         }
 
         if ($expectedUser !== null && (int) $payment->user_id !== (int) $expectedUser->id) {

@@ -159,10 +159,12 @@ class JobPaymentTest extends TestCase
             'agreed_amount' => '20000',
             'service_date' => $due,
             'finish_days' => 7,
+            'status' => 'in_progress',
         ])
             ->assertCreated()
             ->assertJsonPath('data.service_date', $due)
             ->assertJsonPath('data.finish_days', 7)
+            ->assertJsonPath('data.status', 'in_progress')
             ->json('data.id');
 
         $edited = now()->addDays(3)->toDateString();
@@ -172,10 +174,12 @@ class JobPaymentTest extends TestCase
             'agreed_amount' => '25000',
             'service_date' => $edited,
             'finish_days' => 3,
+            'status' => 'completed',
         ])
             ->assertOk()
             ->assertJsonPath('data.service_date', $edited)
             ->assertJsonPath('data.finish_days', 3)
+            ->assertJsonPath('data.status', 'completed')
             ->assertJsonPath('data.agreed_amount', '25000.00');
 
         $this->putJson("/api/customers/{$customer->id}/jobs/{$jobId}", [
@@ -193,6 +197,21 @@ class JobPaymentTest extends TestCase
             'service_date' => $edited,
             'finish_days' => 1,
         ])->assertForbidden();
+    }
+
+    public function test_order_status_only_accepts_supported_values(): void
+    {
+        $user = $this->tailor();
+        $customer = Customer::factory()->create(['business_id' => $user->business->id]);
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/customers/{$customer->id}/jobs", [
+            'title' => 'Custom suit',
+            'agreed_amount' => '25000',
+            'service_date' => now()->addDays(3)->toDateString(),
+            'status' => 'shipped',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['status']);
     }
 
     private function tailor(string $email = 'ada@example.com'): User

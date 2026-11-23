@@ -39,7 +39,9 @@ class CustomerResource extends JsonResource
             'gender' => $this->gender?->value,
             'address' => $this->address,
             'notes' => $this->notes,
-            'whatsapp_url' => PhoneNormalizer::whatsappUrl($whatsappPhone, $country),
+            'whatsapp_url' => $request->user()?->isDemoAccount()
+                ? null
+                : PhoneNormalizer::whatsappUrl($whatsappPhone, $country),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

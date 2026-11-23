@@ -44,6 +44,7 @@ class CustomerJobController extends Controller
                 'title' => $data['title'],
                 'agreed_amount' => Money::normalize($data['agreed_amount']),
                 'service_date' => $data['service_date'],
+                'status' => $data['status'] ?? 'pending',
                 'finish_days' => $data['finish_days'] ?? null,
             ], $data['id'] ?? null)),
         );
@@ -73,6 +74,7 @@ class CustomerJobController extends Controller
             'title' => $data['title'],
             'agreed_amount' => Money::normalize($data['agreed_amount']),
             'service_date' => $data['service_date'],
+            'status' => $data['status'] ?? $job->status,
             'finish_days' => $data['finish_days'] ?? null,
         ]);
 

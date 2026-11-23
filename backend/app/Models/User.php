@@ -45,6 +45,7 @@ class User extends Authenticatable implements CanResetPasswordContract
             'suspended_at' => 'datetime',
             'subscription_status' => SubscriptionStatus::class,
             'subscribed_until' => 'date',
+            'is_demo_account' => 'boolean',
             'privacy_accepted_at' => 'datetime',
         ];
     }
@@ -67,6 +68,11 @@ class User extends Authenticatable implements CanResetPasswordContract
     public function isSuspended(): bool
     {
         return $this->suspended_at !== null;
+    }
+
+    public function isDemoAccount(): bool
+    {
+        return (bool) $this->is_demo_account;
     }
 
     /**

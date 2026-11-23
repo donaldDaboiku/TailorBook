@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureDemoAccountIsReadOnly;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserNotSuspended;
 use App\Http\Middleware\SecurityHeaders;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
             'active' => EnsureUserNotSuspended::class,
+            'demo.readonly' => EnsureDemoAccountIsReadOnly::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Mail;
 
 class ReceiptController extends Controller
 {
-    public function show(Customer $customer, Payment $payment): JsonResponse
+    public function show(Request $request, Customer $customer, Payment $payment): JsonResponse
     {
         $this->guard($customer, $payment);
 
@@ -27,7 +27,7 @@ class ReceiptController extends Controller
             'data' => [
                 ...$document,
                 'email' => $customer->email,
-                'whatsapp_url' => $number === ''
+                'whatsapp_url' => $request->user()?->isDemoAccount() || $number === ''
                     ? null
                     : PhoneNormalizer::whatsappUrl((string) $phone, $country, (string) $document['caption']),
             ],

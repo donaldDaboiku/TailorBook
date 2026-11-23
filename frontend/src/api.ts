@@ -1,14 +1,36 @@
 import {
-  cacheGet,
-  cachePut,
+  cacheGet as readCache,
+  cachePut as writeCache,
   enqueue,
   isNetworkFailure,
   linkOnline,
   listOutbox,
   noteReached,
-  shouldQueue,
+  setOutboxReadOnly,
+  shouldQueue as shouldQueueOffline,
   type OutboxItem,
 } from './outbox'
+
+let isDemoAccount = false
+
+export function setDemoAccount(value: boolean): void {
+  isDemoAccount = value
+  setOutboxReadOnly(value)
+}
+
+async function cacheGet<T>(key: string): Promise<T | undefined> {
+  return isDemoAccount ? undefined : (await readCache<T>(key)) ?? undefined
+}
+
+async function cachePut<T>(key: string, value: T): Promise<void> {
+  if (!isDemoAccount) {
+    await writeCache(key, value)
+  }
+}
+
+function shouldQueue(error: unknown): boolean {
+  return !isDemoAccount && shouldQueueOffline(error)
+}
 
 export type Health = {
   status: string
@@ -37,6 +59,7 @@ export type User = {
   id: number
   name: string
   email: string
+  is_demo_account: boolean
   role: UserRole
   subscription_status?: SubscriptionStatus
   subscription_access?: SubscriptionAccess
@@ -140,13 +163,14 @@ export type Customer = {
   gender: 'male' | 'female' | null
   address: string | null
   notes: string | null
-  whatsapp_url: string
+  whatsapp_url: string | null
   finance?: CustomerFinance
   created_at: string | null
   updated_at: string | null
 }
 
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'pos' | 'other'
+export type OrderStatus = 'pending' | 'in_progress' | 'completed'
 
 export type ShopJob = {
   id: string
@@ -154,6 +178,7 @@ export type ShopJob = {
   customer_name: string | null
   title: string
   service_date: string
+  status: OrderStatus
   outstanding_label: string
 }
 
@@ -179,6 +204,7 @@ export type CustomerJob = {
   outstanding: string
   outstanding_label: string
   service_date: string
+  status: OrderStatus
   finish_days: number | null
   created_at: string | null
 }
@@ -1007,6 +1033,10 @@ async function pendingSnapshots<T extends { id: string }>(
   kind: string,
   belongs?: (item: OutboxItem) => boolean,
 ): Promise<T[]> {
+  if (isDemoAccount) {
+    return []
+  }
+
   const items = await listOutbox()
 
   return items
@@ -1482,6 +1512,7 @@ export async function createJob(
     title: string
     agreed_amount: string
     service_date: string
+    status: OrderStatus
     finish_days: number
   },
 ): Promise<CustomerJob> {
@@ -1508,6 +1539,7 @@ export async function updateJob(
     title: string
     agreed_amount: string
     service_date: string
+    status: OrderStatus
     finish_days: number
   },
 ): Promise<CustomerJob> {
@@ -1534,6 +1566,7 @@ function localJob(
     title: string
     agreed_amount: string
     service_date: string
+    status: OrderStatus
     finish_days: number
   },
 ): CustomerJob {
@@ -1548,15 +1581,21 @@ function localJob(
     outstanding: payload.agreed_amount,
     outstanding_label: payload.agreed_amount,
     service_date: payload.service_date,
+    status: payload.status,
     finish_days: payload.finish_days,
     created_at: null,
   }
 }
 
 async function rememberShopJob(job: CustomerJob): Promise<void> {
-  const cached = (await cacheGet<{ upcoming: ShopJob[]; overdue: ShopJob[] }>('shop-jobs')) ?? {
+  const cached = (await cacheGet<{
+    upcoming?: ShopJob[]
+    overdue?: ShopJob[]
+    completed?: ShopJob[]
+  }>('shop-jobs')) ?? {
     upcoming: [],
     overdue: [],
+    completed: [],
   }
   const row: ShopJob = {
     id: job.id,
@@ -1564,11 +1603,26 @@ async function rememberShopJob(job: CustomerJob): Promise<void> {
     customer_name: null,
     title: job.title,
     service_date: job.service_date,
+    status: job.status,
     outstanding_label: job.outstanding_label,
   }
+  const removeJob = (rows: ShopJob[]) => rows.filter((item) => item.id !== job.id)
+  const upcoming = removeJob(cached.upcoming ?? [])
+  const overdue = removeJob(cached.overdue ?? [])
+  const completed = removeJob(cached.completed ?? [])
+
+  if (job.status === 'completed') {
+    completed.push(row)
+  } else if (job.service_date < todayDate()) {
+    overdue.push(row)
+  } else {
+    upcoming.push(row)
+  }
+
   await cachePut('shop-jobs', {
-    upcoming: mergeById([row], cached.upcoming),
-    overdue: cached.overdue.filter((item) => item.id !== job.id),
+    upcoming: mergeById([row], upcoming),
+    overdue,
+    completed,
   })
 }
 
@@ -2077,13 +2131,18 @@ export async function fetchHome(): Promise<HomeDashboard> {
 export async function listShopJobs(): Promise<{
   upcoming: ShopJob[]
   overdue: ShopJob[]
+  completed: ShopJob[]
 }> {
   try {
   const data = await apiJson<{
-    data: { upcoming: ShopJob[]; overdue: ShopJob[] }
+    data: { upcoming: ShopJob[]; overdue: ShopJob[]; completed: ShopJob[] }
   }>('/api/jobs')
 
-  if (!Array.isArray(data.data?.upcoming) || !Array.isArray(data.data?.overdue)) {
+  if (
+    !Array.isArray(data.data?.upcoming)
+    || !Array.isArray(data.data?.overdue)
+    || !Array.isArray(data.data?.completed)
+  ) {
     throw new Error('bad response')
   }
 
@@ -2094,15 +2153,16 @@ export async function listShopJobs(): Promise<{
       throw error
     }
 
-    const cached = await cacheGet<{ upcoming: ShopJob[]; overdue: ShopJob[] }>('shop-jobs')
-    return withPendingShopJobs(cached ?? { upcoming: [], overdue: [] })
+    const cached = await cacheGet<{ upcoming: ShopJob[]; overdue: ShopJob[]; completed: ShopJob[] }>('shop-jobs')
+    return withPendingShopJobs(cached ?? { upcoming: [], overdue: [], completed: [] })
   }
 }
 
 async function withPendingShopJobs(groups: {
   upcoming: ShopJob[]
   overdue: ShopJob[]
-}): Promise<{ upcoming: ShopJob[]; overdue: ShopJob[] }> {
+  completed: ShopJob[]
+}): Promise<{ upcoming: ShopJob[]; overdue: ShopJob[]; completed: ShopJob[] }> {
   const customers = (await cacheGet<Customer[]>('customers')) ?? []
   const pending = (await pendingSnapshots<CustomerJob>('job.create'))
     .concat(await pendingSnapshots<CustomerJob>('job.update'))
@@ -2114,16 +2174,20 @@ async function withPendingShopJobs(groups: {
       customer_name: customer?.name ?? null,
       title: job.title,
       service_date: job.service_date,
+      status: job.status,
       outstanding_label: job.outstanding_label,
     }
     return row
   })
 
   const pendingIds = new Set(pending.map((row) => row.id))
+  const activePending = pending.filter((row) => row.status !== 'completed')
+  const completedPending = pending.filter((row) => row.status === 'completed')
 
   return {
-    upcoming: mergeById(pending, groups.upcoming),
-    overdue: groups.overdue.filter((row) => !pendingIds.has(row.id)),
+    upcoming: mergeById(activePending.filter((row) => row.service_date >= todayDate()), groups.upcoming),
+    overdue: mergeById(activePending.filter((row) => row.service_date < todayDate()), groups.overdue.filter((row) => !pendingIds.has(row.id))),
+    completed: mergeById(completedPending, groups.completed.filter((row) => !pendingIds.has(row.id))),
   }
 }
 
@@ -2350,8 +2414,10 @@ function isUser(data: unknown): data is User {
     'id' in data &&
     'name' in data &&
     'email' in data &&
+    'is_demo_account' in data &&
     typeof data.name === 'string' &&
-    typeof data.email === 'string'
+    typeof data.email === 'string' &&
+    typeof data.is_demo_account === 'boolean'
   )
 }
 
@@ -2366,7 +2432,7 @@ function isCustomer(data: unknown): data is Customer {
     typeof data.id === 'string' &&
     typeof data.name === 'string' &&
     typeof data.phone === 'string' &&
-    typeof data.whatsapp_url === 'string'
+    (typeof data.whatsapp_url === 'string' || data.whatsapp_url === null)
   )
 }
 

@@ -1381,6 +1381,27 @@ a.primary {
   background: var(--tm-surface);
 }
 
+.demo-banner {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.75rem 1.25rem 0;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #d6a64e;
+  border-radius: 12px;
+  background: #fff3d8;
+  color: #59400e;
+  font-size: 0.88rem;
+}
+
+.demo-banner strong {
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+}
+
+.badge.success {
+  color: var(--tm-success);
+}
+
 .sync-banner p {
   margin: 0;
 }

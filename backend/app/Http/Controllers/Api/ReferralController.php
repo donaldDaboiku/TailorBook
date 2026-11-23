@@ -12,6 +12,8 @@ class ReferralController extends Controller
 {
     public function show(Request $request, Referrals $referrals): JsonResponse
     {
+        abort_if($request->user()?->isDemoAccount(), 403, 'Referrals are disabled in demo accounts.');
+
         $business = $request->user()->business;
         abort_unless($business instanceof Business, 422, 'This account has no shop yet.');
 

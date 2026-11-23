@@ -23,6 +23,7 @@ class PublicController extends Controller
     {
         $subscribers = User::query()
             ->where('role', UserRole::Tailor)
+            ->where('is_demo_account', false)
             ->whereNull('suspended_at')
             ->where(function ($query) {
                 $today = now()->toDateString();
@@ -99,7 +100,10 @@ class PublicController extends Controller
             'message' => ['required', 'string', 'max:2000'],
         ]);
 
-        $userId = $this->optionalUserId($request);
+        $user = $this->optionalUser($request);
+        abort_if($user?->isDemoAccount(), 403, 'Demo accounts cannot submit feedback.');
+
+        $userId = $user?->id;
         $name = trim($data['name']);
         $contact = trim($data['contact']);
         $body = trim($data['message']);
@@ -194,7 +198,7 @@ class PublicController extends Controller
         return is_string($value) && trim($value) !== '' ? trim($value) : null;
     }
 
-    private function optionalUserId(Request $request): ?int
+    private function optionalUser(Request $request): ?User
     {
         $bearer = $request->bearerToken();
 
@@ -205,6 +209,6 @@ class PublicController extends Controller
         $token = PersonalAccessToken::findToken($bearer);
         $user = $token?->tokenable;
 
-        return $user instanceof User ? $user->id : null;
+        return $user instanceof User ? $user : null;
     }
 }

@@ -14,8 +14,10 @@ import { PendingMark } from '../SyncBanner'
 
 export default function ExpensesPage({
   onCreate,
+  readOnly = false,
 }: {
   onCreate: () => void
+  readOnly?: boolean
 }) {
   const { t } = useI18n()
   const [month, setMonth] = useState(currentMonth())
@@ -79,9 +81,11 @@ export default function ExpensesPage({
       <section className="card">
         <div className="row-between">
           <h1>{t('finance.title')}</h1>
-          <button type="button" className="primary compact" onClick={onCreate}>
-            {t('finance.add')}
-          </button>
+          {!readOnly && (
+            <button type="button" className="primary compact" onClick={onCreate}>
+              {t('finance.add')}
+            </button>
+          )}
         </div>
         <p className="lede">{t('finance.lede')}</p>
       </section>
@@ -161,13 +165,13 @@ export default function ExpensesPage({
                     {` · ${expense.method_label}`}
                   </span>
                 </div>
-                <button
+                {!readOnly && <button
                   type="button"
                   className="secondary danger"
                   onClick={() => onArchive(expense)}
                 >
                   Archive
-                </button>
+                </button>}
               </li>
             ))}
           </ul>

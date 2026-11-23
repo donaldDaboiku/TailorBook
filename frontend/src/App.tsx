@@ -157,7 +157,7 @@ function AuthenticatedApp() {
   }, [user])
 
   useEffect(() => {
-    if (!user || user.role === 'admin') {
+    if (!user || (user.role === 'admin' && !user.is_demo_account)) {
       setShowTutorial(false)
       return
     }
@@ -178,7 +178,11 @@ function AuthenticatedApp() {
   }, [])
 
   useEffect(() => {
-    if (!user || user.role === 'admin') {
+    if (
+      !user
+      || user.role === 'admin'
+      || user.is_demo_account
+    ) {
       return
     }
 
@@ -228,7 +232,7 @@ function AuthenticatedApp() {
     return () => {
       cancelled = true
     }
-  }, [user?.id, user?.role, setUser])
+  }, [user?.id, user?.role, user?.is_demo_account, setUser])
 
   if (loading) {
     return (
@@ -261,7 +265,7 @@ function AuthenticatedApp() {
     )
   }
 
-  if (user.role === 'admin') {
+  if (user.role === 'admin' && !user.is_demo_account) {
     return (
       <Shell appName={appName} signedOut wide>
         <AdminShopsPage />
@@ -271,7 +275,7 @@ function AuthenticatedApp() {
 
   if (showTutorial) {
     return (
-      <Shell appName={appName} signedOut>
+      <Shell appName={appName} signedOut demoMode={user.is_demo_account}>
         <HowToUseTutorial
           onDone={() => {
             markTutorialSeen(user.id)
@@ -284,7 +288,7 @@ function AuthenticatedApp() {
 
   if (user.subscription_access === 'expired') {
     return (
-      <Shell appName={appName} signedOut>
+      <Shell appName={appName} signedOut demoMode={user.is_demo_account}>
         <section className="card">
           <h1>
             {user.subscription_status === 'free'
@@ -330,6 +334,7 @@ function AuthenticatedApp() {
   return (
     <Shell
       appName={appName}
+      demoMode={user.is_demo_account}
       tab={tab}
       onTabChange={(next) => {
         if (next === 'home') {
@@ -403,6 +408,7 @@ function AuthenticatedApp() {
         <CustomersPage
           onOpen={(id) => setScreen({ name: 'customer-detail', id })}
           onCreate={() => setScreen({ name: 'customer-create' })}
+          readOnly={user.is_demo_account}
         />
       )}
 
@@ -446,12 +452,27 @@ function AuthenticatedApp() {
       )}
 
       {screen.name === 'whatsapp' && (
-        <WhatsAppComposePage
-          customer={screen.customer}
-          onBack={() =>
-            setScreen({ name: 'customer-detail', id: screen.customer.id })
-          }
-        />
+        user.is_demo_account ? (
+          <section className="card">
+            <p className="status">WhatsApp messaging is disabled in demo accounts.</p>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() =>
+                setScreen({ name: 'customer-detail', id: screen.customer.id })
+              }
+            >
+              Back
+            </button>
+          </section>
+        ) : (
+          <WhatsAppComposePage
+            customer={screen.customer}
+            onBack={() =>
+              setScreen({ name: 'customer-detail', id: screen.customer.id })
+            }
+          />
+        )
       )}
 
       {screen.name === 'customer-edit' && (
@@ -527,7 +548,10 @@ function AuthenticatedApp() {
       )}
 
       {screen.name === 'expenses' && (
-        <ExpensesPage onCreate={() => setScreen({ name: 'expense-create' })} />
+        <ExpensesPage
+          onCreate={() => setScreen({ name: 'expense-create' })}
+          readOnly={user.is_demo_account}
+        />
       )}
 
       {screen.name === 'expense-create' && (
@@ -557,6 +581,7 @@ function Shell({
   signedOut = false,
   hideHeader = false,
   wide = false,
+  demoMode = false,
   tab = 'home',
   onTabChange,
 }: {
@@ -565,6 +590,7 @@ function Shell({
   signedOut?: boolean
   hideHeader?: boolean
   wide?: boolean
+  demoMode?: boolean
   tab?: Tab
   onTabChange?: (tab: Tab) => void
 }) {
@@ -585,7 +611,17 @@ function Shell({
         </header>
       )}
 
-      {!signedOut && <SyncBanner />}
+      {demoMode && (
+        <aside className="demo-banner" role="status">
+          <strong>DEMO ACCOUNT</strong>
+          <span>
+            Read-only sample data. Changes, purchases, and WhatsApp messages
+            are disabled.
+          </span>
+        </aside>
+      )}
+
+      {!signedOut && !demoMode && <SyncBanner />}
       <main>{children}</main>
 
       {!signedOut && (

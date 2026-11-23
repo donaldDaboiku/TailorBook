@@ -93,4 +93,41 @@ class HomeDashboardTest extends TestCase
             ->assertJsonPath('data.due_today.0.customer_name', 'Bola')
             ->assertJsonPath('data.due_today.0.customer_id', $customer->id);
     }
+
+    public function test_job_lists_separate_completed_orders_from_upcoming_and_overdue_orders(): void
+    {
+        $user = User::factory()->create();
+        $business = Business::factory()->create(['user_id' => $user->id]);
+        $customer = Customer::factory()->create(['business_id' => $business->id]);
+
+        CustomerJob::factory()->create([
+            'business_id' => $business->id,
+            'customer_id' => $customer->id,
+            'status' => 'pending',
+            'service_date' => now()->addDay()->toDateString(),
+        ]);
+        CustomerJob::factory()->create([
+            'business_id' => $business->id,
+            'customer_id' => $customer->id,
+            'status' => 'in_progress',
+            'service_date' => now()->subDay()->toDateString(),
+        ]);
+        CustomerJob::factory()->create([
+            'business_id' => $business->id,
+            'customer_id' => $customer->id,
+            'status' => 'completed',
+            'service_date' => now()->subDay()->toDateString(),
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/jobs')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.upcoming')
+            ->assertJsonPath('data.upcoming.0.status', 'pending')
+            ->assertJsonCount(1, 'data.overdue')
+            ->assertJsonPath('data.overdue.0.status', 'in_progress')
+            ->assertJsonCount(1, 'data.completed')
+            ->assertJsonPath('data.completed.0.status', 'completed');
+    }
 }

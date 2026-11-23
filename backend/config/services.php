@@ -58,4 +58,9 @@ return [
         'callback_url' => rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/').'/?billing=1',
     ],
 
+    'demo' => [
+        'email' => env('DEMO_ACCOUNT_EMAIL'),
+        'password' => env('DEMO_ACCOUNT_PASSWORD'),
+    ],
+
 ];

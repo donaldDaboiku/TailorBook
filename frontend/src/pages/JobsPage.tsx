@@ -13,6 +13,7 @@ export default function JobsPage({
   const { t } = useI18n()
   const [upcoming, setUpcoming] = useState<ShopJob[]>([])
   const [overdue, setOverdue] = useState<ShopJob[]>([])
+  const [completed, setCompleted] = useState<ShopJob[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -26,6 +27,7 @@ export default function JobsPage({
         }
         setUpcoming(next.upcoming)
         setOverdue(next.overdue)
+        setCompleted(next.completed)
       })
       .catch((err) => {
         if (!cancelled) {
@@ -66,6 +68,9 @@ export default function JobsPage({
       {!loading && overdue.length > 0 && (
         <JobGroup title="Past due" jobs={overdue} onOpen={onOpen} empty="" mark="Past due" tone="danger" />
       )}
+      {!loading && completed.length > 0 && (
+        <JobGroup title="Completed" jobs={completed} onOpen={onOpen} empty="" mark="Completed" tone="success" />
+      )}
     </>
   )
 }
@@ -83,7 +88,7 @@ function JobGroup({
   empty: string
   onOpen: (job: ShopJob) => void
   mark: string
-  tone?: 'warn' | 'danger'
+  tone?: 'warn' | 'danger' | 'success'
 }) {
   return (
     <section className="card muted-card">
@@ -104,11 +109,14 @@ function JobGroup({
                     {job.title} <PendingMark id={job.id} />
                   </strong>
                   <span className="status">
-                    {job.customer_name ?? 'Customer'} · {job.service_date}
+                    {job.customer_name ?? 'Customer'} · {job.service_date} ·{' '}
+                    {orderStatusLabel(job.status)}
                   </span>
                 </span>
                 <span className="admin-list-main">
-                  <span className={tone === 'danger' ? 'badge danger' : 'badge warn'}>{mark}</span>
+                  <span className={`badge ${tone === 'warn' ? 'warn' : tone}`}>
+                    {mark}
+                  </span>
                   <span className="status">{job.outstanding_label}</span>
                 </span>
               </button>
@@ -118,4 +126,15 @@ function JobGroup({
       )}
     </section>
   )
+}
+
+function orderStatusLabel(status: ShopJob['status']): string {
+  switch (status) {
+    case 'in_progress':
+      return 'In progress'
+    case 'completed':
+      return 'Completed'
+    default:
+      return 'Pending'
+  }
 }

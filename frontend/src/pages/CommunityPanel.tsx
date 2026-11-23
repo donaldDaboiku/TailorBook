@@ -10,10 +10,12 @@ export default function CommunityPanel({
   defaultName = '',
   defaultContact = '',
   part = 'all',
+  readOnly = false,
 }: {
   defaultName?: string
   defaultContact?: string
   part?: 'all' | 'shops' | 'contact'
+  readOnly?: boolean
 }) {
   const [presence, setPresence] = useState<PublicPresence | null>(null)
   const [unavailable, setUnavailable] = useState(false)
@@ -70,7 +72,7 @@ export default function CommunityPanel({
     count === 1 ? '1 shop' : `${count} shops`
   const contactLinks = presence?.contact
   const hasContact = Boolean(
-    contactLinks?.email || contactLinks?.whatsapp_url,
+    contactLinks?.email || (!readOnly && contactLinks?.whatsapp_url),
   )
 
   return (
@@ -113,7 +115,7 @@ export default function CommunityPanel({
           </p>
           {hasContact ? (
             <div className="social-links">
-              {contactLinks?.whatsapp_url && (
+              {!readOnly && contactLinks?.whatsapp_url && (
                 <a href={contactLinks.whatsapp_url} target="_blank" rel="noreferrer">
                   WhatsApp the admin
                 </a>
@@ -141,47 +143,55 @@ export default function CommunityPanel({
             </>
           )}
 
-          <h3 className="section-title">Feedback for the admin</h3>
-          <form className="form" onSubmit={onSubmit}>
-            <label>
-              Your name
-              <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                required
-                maxLength={120}
-              />
-            </label>
-            <label>
-              Email or phone
-              <input
-                value={contact}
-                onChange={(event) => setContact(event.target.value)}
-                required
-                maxLength={160}
-              />
-            </label>
-            <label>
-              Message about the app
-              <textarea
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                placeholder="What should the admin know about TailorMate?"
-                required
-                maxLength={2000}
-                rows={4}
-              />
-            </label>
-            {error && (
-              <p className="form-error" role="alert">
-                {error}
-              </p>
-            )}
-            {sent && <p className="status">{sent}</p>}
-            <button type="submit" className="secondary" disabled={busy}>
-              {busy ? 'Sending…' : 'Send to the admin'}
-            </button>
-          </form>
+          {readOnly ? (
+            <p className="status">
+              Messaging and feedback submissions are disabled in demo mode.
+            </p>
+          ) : (
+            <>
+              <h3 className="section-title">Feedback for the admin</h3>
+              <form className="form" onSubmit={onSubmit}>
+                <label>
+                  Your name
+                  <input
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    required
+                    maxLength={120}
+                  />
+                </label>
+                <label>
+                  Email or phone
+                  <input
+                    value={contact}
+                    onChange={(event) => setContact(event.target.value)}
+                    required
+                    maxLength={160}
+                  />
+                </label>
+                <label>
+                  Message about the app
+                  <textarea
+                    value={message}
+                    onChange={(event) => setMessage(event.target.value)}
+                    placeholder="What should the admin know about TailorMate?"
+                    required
+                    maxLength={2000}
+                    rows={4}
+                  />
+                </label>
+                {error && (
+                  <p className="form-error" role="alert">
+                    {error}
+                  </p>
+                )}
+                {sent && <p className="status">{sent}</p>}
+                <button type="submit" className="secondary" disabled={busy}>
+                  {busy ? 'Sending…' : 'Send to the admin'}
+                </button>
+              </form>
+            </>
+          )}
         </section>}
     </>
   )

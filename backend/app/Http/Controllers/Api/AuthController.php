@@ -152,7 +152,11 @@ class AuthController extends Controller
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
         // Always the same message so emails cannot be probed.
-        Password::sendResetLink($request->only('email'));
+        $user = User::query()->where('email', $request->validated('email'))->first();
+
+        if (! $user?->isDemoAccount()) {
+            Password::sendResetLink($request->only('email'));
+        }
 
         return response()->json([
             'message' => 'If that email is registered, a reset link was sent.',
@@ -164,6 +168,12 @@ class AuthController extends Controller
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password) {
+                if ($user->isDemoAccount()) {
+                    throw ValidationException::withMessages([
+                        'email' => ['Demo account passwords cannot be changed.'],
+                    ]);
+                }
+
                 $user->forceFill([
                     'password' => $password,
                     'remember_token' => Str::random(60),

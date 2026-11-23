@@ -8,6 +8,7 @@ import {
   type CatalogueStyle,
   type Customer,
   type CustomerJob,
+  type OrderStatus,
 } from '../api'
 import { useI18n } from '../i18n'
 import StylePhoto from '../StylePhoto'
@@ -29,6 +30,10 @@ function daysFromToday(iso: string): number {
   target.setHours(0, 0, 0, 0)
 
   return Math.round((target.getTime() - today.getTime()) / 86400000)
+}
+
+function isOrderStatus(value: string): value is OrderStatus {
+  return value === 'pending' || value === 'in_progress' || value === 'completed'
 }
 
 function startingDays(job?: CustomerJob): string {
@@ -61,6 +66,7 @@ export default function JobFormPage({
   const [agreedAmount, setAgreedAmount] = useState(job?.agreed_amount ?? '')
   const [days, setDays] = useState(startingDays(job))
   const [serviceDate, setServiceDate] = useState(job?.service_date ?? todayDate())
+  const [status, setStatus] = useState<OrderStatus>(job?.status ?? 'pending')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [styles, setStyles] = useState<CatalogueStyle[]>([])
@@ -108,6 +114,7 @@ export default function JobFormPage({
       agreed_amount: agreedAmount,
       service_date: serviceDate,
       finish_days: finishDays,
+      status,
     }
 
     try {
@@ -218,6 +225,22 @@ export default function JobFormPage({
             }}
             required
           />
+        </label>
+
+        <label>
+          Order status
+          <select
+            value={status}
+            onChange={(event) => {
+              if (isOrderStatus(event.target.value)) {
+                setStatus(event.target.value)
+              }
+            }}
+          >
+            <option value="pending">Pending</option>
+            <option value="in_progress">In progress</option>
+            <option value="completed">Completed</option>
+          </select>
         </label>
 
         {error && (

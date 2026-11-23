@@ -32,6 +32,7 @@ class StoreCustomerJobRequest extends FormRequest
             'title' => ['required', 'string', 'max:120'],
             'agreed_amount' => ['required', 'numeric', 'gt:0'],
             'service_date' => ['required', 'date'],
+            'status' => ['sometimes', 'required', 'string', 'in:pending,in_progress,completed'],
             'finish_days' => ['nullable', 'integer', 'min:0', 'max:365'],
         ];
     }

@@ -29,7 +29,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
-    // ponytail: Render has no cron. The daily health ping is the clock. shop_notices stops a second email the same day.
+    // ponytail: Render has no cron. The daily health ping is the clock for shop notices.
+    // shop_notices stops a second email the same day. Demo data is never wiped from this public route.
     if (Cache::add('shop-notices:'.now()->toDateString(), true, now()->endOfDay())) {
         try {
             Artisan::call('shops:notify');
@@ -44,7 +45,7 @@ Route::get('/health', function () {
         'status' => 'ok',
         'app' => config('app.name'),
     ]);
-});
+})->middleware('throttle:60,1');
 
 Route::middleware('throttle:20,1')->group(function () {
     Route::post('/auth/register', [AuthController::class, 'register']);
@@ -56,12 +57,14 @@ Route::middleware('throttle:20,1')->group(function () {
 Route::post('/billing/webhook', [BillingController::class, 'webhook'])
     ->middleware('throttle:60,1');
 
-Route::get('/public/presence', [PublicController::class, 'presence']);
-Route::get('/public/reviews', [PublicController::class, 'reviews']);
+Route::middleware('throttle:30,1')->group(function () {
+    Route::get('/public/presence', [PublicController::class, 'presence']);
+    Route::get('/public/reviews', [PublicController::class, 'reviews']);
+});
 Route::post('/public/feedback', [PublicController::class, 'feedback'])
     ->middleware('throttle:5,1');
 
-Route::middleware(['auth:sanctum', 'active'])->group(function () {
+Route::middleware(['auth:sanctum', 'active', 'demo.readonly'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);

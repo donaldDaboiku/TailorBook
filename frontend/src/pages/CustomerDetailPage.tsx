@@ -52,6 +52,7 @@ export default function CustomerDetailPage({
   onWhatsApp: (customer: Customer) => void
 }) {
   const { user } = useAuth()
+  const readOnly = user?.is_demo_account ?? false
   const unit = user?.business?.measurement_unit ?? 'in'
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [measurements, setMeasurements] = useState<Measurement[]>([])
@@ -208,13 +209,15 @@ export default function CustomerDetailPage({
           <a className="primary compact" href={`tel:${customer.phone}`}>
             Call
           </a>
-          <button
-            type="button"
-            className="primary compact"
-            onClick={() => onWhatsApp(customer)}
-          >
-            WhatsApp
-          </button>
+          {!user?.is_demo_account && (
+            <button
+              type="button"
+              className="primary compact"
+              onClick={() => onWhatsApp(customer)}
+            >
+              WhatsApp
+            </button>
+          )}
         </div>
       </section>
 
@@ -235,7 +238,7 @@ export default function CustomerDetailPage({
               <dd className="outstanding">{finance.outstanding_label}</dd>
             </div>
           </dl>
-          <div className="action-row tight">
+          {!readOnly && <div className="action-row tight">
             <button
               type="button"
               className="secondary"
@@ -250,20 +253,20 @@ export default function CustomerDetailPage({
             >
               Record payment
             </button>
-          </div>
+          </div>}
         </section>
       )}
 
       <section className="card muted-card">
         <div className="row-between">
           <h2 className="section-title">Jobs</h2>
-          <button
+          {!readOnly && <button
             type="button"
             className="primary compact"
             onClick={() => onAddJob(customer)}
           >
             Add
-          </button>
+          </button>}
         </div>
 
         {jobs.length === 0 ? (
@@ -278,10 +281,10 @@ export default function CustomerDetailPage({
                   </span>
                   <span className="list-meta">
                     {job.agreed_amount_label} · owes {job.outstanding_label} · due{' '}
-                    {job.service_date}
+                    {job.service_date} · {orderStatusLabel(job.status)}
                   </span>
                 </div>
-                <div className="action-row tight">
+                {!readOnly && <div className="action-row tight">
                   <button
                     type="button"
                     className="secondary"
@@ -303,7 +306,7 @@ export default function CustomerDetailPage({
                   >
                     Archive
                   </button>
-                </div>
+                </div>}
               </li>
             ))}
           </ul>
@@ -313,13 +316,13 @@ export default function CustomerDetailPage({
       <section className="card muted-card">
         <div className="row-between">
           <h2 className="section-title">Payments</h2>
-          <button
+          {!readOnly && <button
             type="button"
             className="primary compact"
             onClick={() => onAddPayment(customer)}
           >
             Add
-          </button>
+          </button>}
         </div>
 
         {payments.length === 0 ? (
@@ -345,13 +348,13 @@ export default function CustomerDetailPage({
                   >
                     Receipt
                   </button>
-                  <button
+                  {!readOnly && <button
                     type="button"
                     className="secondary danger"
                     onClick={() => onArchivePayment(payment)}
                   >
                     Archive
-                  </button>
+                  </button>}
                 </div>
               </li>
             ))}
@@ -362,13 +365,13 @@ export default function CustomerDetailPage({
       <section className="card muted-card">
         <div className="row-between">
           <h2 className="section-title">Measurements</h2>
-          <button
+          {!readOnly && <button
             type="button"
             className="primary compact"
             onClick={() => onTakeMeasurements(customer)}
           >
             Take
-          </button>
+          </button>}
         </div>
 
         {latest ? (
@@ -382,13 +385,13 @@ export default function CustomerDetailPage({
               >
                 View latest
               </button>
-              <button
+              {!readOnly && <button
                 type="button"
                 className="secondary"
                 onClick={() => onDuplicateMeasurement(customer, latest)}
               >
                 Duplicate
-              </button>
+              </button>}
             </div>
           </>
         ) : (
@@ -447,18 +450,22 @@ export default function CustomerDetailPage({
           )}
         </dl>
 
-        <p className="status">
-          If this client asks for a copy, correct the details or download their
-          record. If they ask to be deleted, erase them. Archive only hides the
-          record.
-        </p>
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => onEdit(customer)}
-        >
-          Edit customer
-        </button>
+        {!readOnly && (
+          <>
+            <p className="status">
+              If this client asks for a copy, correct the details or download their
+              record. If they ask to be deleted, erase them. Archive only hides the
+              record.
+            </p>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => onEdit(customer)}
+            >
+              Edit customer
+            </button>
+          </>
+        )}
         <button
           type="button"
           className="secondary"
@@ -467,22 +474,22 @@ export default function CustomerDetailPage({
         >
           {recordBusy ? 'Preparing…' : "Download this client's record"}
         </button>
-        <button
+        {!readOnly && <button
           type="button"
           className="secondary danger"
           onClick={onArchive}
           disabled={busy}
         >
           {busy ? 'Working…' : 'Archive customer'}
-        </button>
-        <button
+        </button>}
+        {!readOnly && <button
           type="button"
           className="secondary danger"
           onClick={() => void onErase()}
           disabled={busy}
         >
           Erase this client
-        </button>
+        </button>}
         {error && (
           <p className="form-error" role="alert">
             {error}
@@ -494,6 +501,7 @@ export default function CustomerDetailPage({
         <ReceiptSheet
           customerId={customer.id}
           payment={receiptPayment}
+          readOnly={readOnly}
           onClose={() => setReceiptPayment(null)}
         />
       )}
@@ -501,13 +509,26 @@ export default function CustomerDetailPage({
   )
 }
 
+function orderStatusLabel(status: CustomerJob['status']): string {
+  switch (status) {
+    case 'in_progress':
+      return 'In progress'
+    case 'completed':
+      return 'Completed'
+    default:
+      return 'Pending'
+  }
+}
+
 function ReceiptSheet({
   customerId,
   payment,
+  readOnly = false,
   onClose,
 }: {
   customerId: string
   payment: Payment
+  readOnly?: boolean
   onClose: () => void
 }) {
   const [receipt, setReceipt] = useState<PaymentReceipt | null>(null)
@@ -638,7 +659,7 @@ function ReceiptSheet({
           </p>
         )}
 
-        <div className="home-actions">
+        {!readOnly && <div className="home-actions">
           <button
             type="button"
             className="primary"
@@ -663,12 +684,12 @@ function ReceiptSheet({
           >
             {busy ? 'Sending…' : emailLabel}
           </button>
-        </div>
-        <p className="status">
+        </div>}
+        {!readOnly && <p className="status">
           WhatsApp opens this client’s chat with the receipt written out.
           The email button sends the picture to the address on this account.
           {receipt?.email ? ` A copy also goes to ${receipt.email}.` : ''}
-        </p>
+        </p>}
         {receipt && !receipt.whatsapp_url && (
           <p className="status">
             Add a phone number for this client before sending on WhatsApp.

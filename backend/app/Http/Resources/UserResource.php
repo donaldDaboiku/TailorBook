@@ -20,6 +20,7 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
+            'is_demo_account' => $this->isDemoAccount(),
             'role' => $this->role?->value ?? 'tailor',
             'subscription_status' => $this->subscription_status?->value ?? 'free',
             'subscription_access' => $this->subscriptionAccessStatus(),

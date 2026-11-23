@@ -19,6 +19,11 @@ export type OutboxItem = {
 }
 
 const listeners = new Set<() => void>()
+let outboxReadOnly = false
+
+export function setOutboxReadOnly(value: boolean): void {
+  outboxReadOnly = value
+}
 
 export function subscribeOutbox(listener: () => void): () => void {
   listeners.add(listener)
@@ -139,6 +144,10 @@ let attempt = 0
 let timer = 0
 
 export async function retryAttention(): Promise<void> {
+  if (outboxReadOnly) {
+    return
+  }
+
   const items = await listOutbox()
 
   for (const item of items) {
@@ -152,7 +161,7 @@ export async function retryAttention(): Promise<void> {
 }
 
 export async function syncNow(): Promise<void> {
-  if (syncing || !linkOnline()) {
+  if (outboxReadOnly || syncing || !linkOnline()) {
     return
   }
 
@@ -256,24 +265,63 @@ async function adoptSyncedRow(item: OutboxItem, row: { id: string }): Promise<vo
     return
   }
 
-  const shopJobs = await cacheGet<{ upcoming: Array<{ id: string }>; overdue: Array<{ id: string }> }>(
-    'shop-jobs',
-  )
+  const shopJobs = await cacheGet<{
+    upcoming: Array<{ id: string }>
+    overdue: Array<{ id: string }>
+    completed?: Array<{ id: string }>
+  }>('shop-jobs')
   if (!shopJobs) {
     return
   }
 
   const patch = (jobs: Array<{ id: string }>) =>
     jobs.map((job) => (job.id === row.id ? { ...job, ...row } : job))
+  const remove = (jobs: Array<{ id: string }>) =>
+    jobs.filter((job) => job.id !== row.id)
+  const completed = shopJobs.completed ?? []
 
   await cachePut('shop-jobs', {
-    upcoming: patch(shopJobs.upcoming ?? []),
-    overdue: patch(shopJobs.overdue ?? []),
+    upcoming: hasJobStatus(row) && row.status === 'completed'
+      ? remove(shopJobs.upcoming ?? [])
+      : patch(remove(shopJobs.upcoming ?? [])),
+    overdue: hasJobStatus(row) && row.status === 'completed'
+      ? remove(shopJobs.overdue ?? [])
+      : patch(remove(shopJobs.overdue ?? [])),
+    completed: hasJobStatus(row) && row.status === 'completed'
+      ? [...patch(remove(completed)), row]
+      : remove(completed),
   })
 }
 
-function hasJobShape(row: { id: string }): boolean {
-  return 'title' in row && 'service_date' in row && 'customer_id' in row
+function hasJobShape(
+  row: { id: string },
+): row is {
+  id: string
+  title: string
+  service_date: string
+  customer_id: string
+  status: string
+} {
+  return (
+    'title' in row
+    && 'service_date' in row
+    && 'customer_id' in row
+    && 'status' in row
+    && typeof row.status === 'string'
+  )
+}
+
+function hasJobStatus(
+  row: { id: string },
+): row is {
+  id: string
+  title: string
+  service_date: string
+  customer_id: string
+  status: 'pending' | 'in_progress' | 'completed'
+} {
+  return hasJobShape(row)
+    && ['pending', 'in_progress', 'completed'].includes(row.status)
 }
 
 async function rejectionMessage(response: Response): Promise<string> {

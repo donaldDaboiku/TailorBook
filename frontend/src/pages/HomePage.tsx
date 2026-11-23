@@ -85,6 +85,10 @@ export default function HomePage({
   }, [])
 
   async function openMessage(job: ShopJob, key: WhatsAppTemplateKey) {
+    if (demoMode) {
+      return
+    }
+
     setError('')
     setOpening(`${job.id}:${key}`)
 
@@ -107,6 +111,7 @@ export default function HomePage({
 
   const dueToday = home?.due_today ?? []
   const notice = planNotice(user)
+  const demoMode = user?.is_demo_account ?? false
 
   return (
     <div className="dash">
@@ -158,7 +163,7 @@ export default function HomePage({
         </p>
       )}
 
-      <div className="dash-grid">
+      {!demoMode && <div className="dash-grid">
         <button type="button" className="dash-tile accent" onClick={onAddCustomer}>
           <TileIcon name="person" />
           <span className="dash-tile-title">{t('home.newCustomer')}</span>
@@ -179,7 +184,7 @@ export default function HomePage({
           <span className="dash-tile-title">{t('home.expense')}</span>
           <span className="dash-tile-note">{t('home.expenseNote')}</span>
         </button>
-      </div>
+      </div>}
 
       <section className="card dash-upcoming">
         <h2 className="section-title">{t('home.dueToday')}</h2>
@@ -198,7 +203,7 @@ export default function HomePage({
                     {job.title} · {job.outstanding_label}
                   </span>
                 </div>
-                <div className="due-actions">
+                {!demoMode && <div className="due-actions">
                   <button
                     type="button"
                     className="secondary"
@@ -215,7 +220,7 @@ export default function HomePage({
                   >
                     {t('home.ready')}
                   </button>
-                </div>
+                </div>}
               </li>
             ))}
           </ul>

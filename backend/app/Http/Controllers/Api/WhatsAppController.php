@@ -14,6 +14,8 @@ class WhatsAppController extends Controller
 {
     public function templates(Request $request, Customer $customer): JsonResponse
     {
+        abort_if($request->user()?->isDemoAccount(), 403, 'WhatsApp messaging is disabled in demo accounts.');
+
         $this->authorize('view', $customer);
 
         $business = $this->business($request);

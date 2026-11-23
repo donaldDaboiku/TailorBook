@@ -1,3 +1,5 @@
+import { isServiceDate, todayDate } from './dates'
+
 const TOKEN_KEY = 'tailormate_token'
 const DB_NAME = 'tailormate-sync'
 
@@ -289,8 +291,8 @@ async function adoptSyncedRow(item: OutboxItem, row: { id: string }): Promise<vo
     return
   }
 
-  const today = localTodayDate()
-  if (row.service_date < today) {
+  // service_date is a date-only Y-m-d from the API; compare to the Lagos shop day.
+  if (row.service_date < todayDate()) {
     await cachePut('shop-jobs', {
       upcoming,
       overdue: [row, ...overdue],
@@ -306,14 +308,6 @@ async function adoptSyncedRow(item: OutboxItem, row: { id: string }): Promise<vo
   })
 }
 
-function localTodayDate(): string {
-  const now = new Date()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-
-  return `${now.getFullYear()}-${month}-${day}`
-}
-
 function hasJobShape(
   row: { id: string },
 ): row is {
@@ -325,8 +319,9 @@ function hasJobShape(
 } {
   return (
     'title' in row
-    && 'service_date' in row
+    && isServiceDate(row.service_date)
     && 'customer_id' in row
+    && typeof row.customer_id === 'string'
     && 'status' in row
     && typeof row.status === 'string'
   )

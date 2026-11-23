@@ -2449,13 +2449,7 @@ function isMeasurement(data: unknown): data is Measurement {
   )
 }
 
-export function todayDate(): string {
-  const now = new Date()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-
-  return `${now.getFullYear()}-${month}-${day}`
-}
+export { todayDate } from './dates'
 
 export function stepForUnit(unit: MeasurementUnit): number {
   return unit === 'in' ? 0.25 : 0.5

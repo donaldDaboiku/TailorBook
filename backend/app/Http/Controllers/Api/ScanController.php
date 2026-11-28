@@ -66,18 +66,38 @@ class ScanController extends Controller
 
         $needle = $this->phoneTail($phone);
 
+        // Empty needle must not match blank customer phone/WhatsApp tails ('' === '').
+        if ($needle === '') {
+            return null;
+        }
+
         return Customer::query()
             ->where('business_id', $business->id)
             ->get(['id', 'name', 'phone', 'whatsapp_phone'])
             ->first(function (Customer $customer) use ($needle) {
-                return $this->phoneTail($customer->phone) === $needle
-                    || $this->phoneTail((string) $customer->whatsapp_phone) === $needle;
+                $phoneTail = $this->phoneTail((string) $customer->phone);
+                if ($phoneTail !== '' && $phoneTail === $needle) {
+                    return true;
+                }
+
+                $whatsapp = trim((string) $customer->whatsapp_phone);
+                if ($whatsapp === '') {
+                    return false;
+                }
+
+                $whatsappTail = $this->phoneTail($whatsapp);
+
+                return $whatsappTail !== '' && $whatsappTail === $needle;
             });
     }
 
     private function phoneTail(string $phone): string
     {
         $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+        if ($digits === '') {
+            return '';
+        }
 
         return strlen($digits) > 10 ? substr($digits, -10) : $digits;
     }

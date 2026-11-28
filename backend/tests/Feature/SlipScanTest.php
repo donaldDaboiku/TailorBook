@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Api\ScanController;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\User;
@@ -10,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
+use ReflectionMethod;
 use Tests\TestCase;
 
 class SlipScanTest extends TestCase
@@ -119,5 +121,29 @@ class SlipScanTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.name', 'Ada Okafor')
             ->assertJsonPath('data.phone', '08031234567');
+    }
+
+    public function test_blank_whatsapp_numbers_do_not_match_an_empty_phone_needle(): void
+    {
+        $user = User::factory()->create();
+        $business = Business::factory()->create(['user_id' => $user->id]);
+        Customer::factory()->create([
+            'business_id' => $business->id,
+            'name' => 'Blank WhatsApp',
+            'phone' => '08039990000',
+            'whatsapp_phone' => null,
+        ]);
+        Customer::factory()->create([
+            'business_id' => $business->id,
+            'name' => 'Empty WhatsApp',
+            'phone' => '08038880000',
+            'whatsapp_phone' => '',
+        ]);
+
+        $method = new ReflectionMethod(ScanController::class, 'matchCustomer');
+
+        $matched = $method->invoke(app(ScanController::class), $business, '---');
+
+        $this->assertNull($matched);
     }
 }

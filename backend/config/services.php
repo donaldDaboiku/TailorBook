@@ -63,4 +63,12 @@ return [
         'password' => env('DEMO_ACCOUNT_PASSWORD'),
     ],
 
+    'slip_ocr' => [
+        'driver' => env('SLIP_OCR_DRIVER', 'openai'),
+        'api_key' => env('SLIP_OCR_API_KEY', env('OPENAI_API_KEY')),
+        'base_url' => rtrim((string) env('SLIP_OCR_BASE_URL', 'https://api.openai.com/v1'), '/'),
+        'model' => env('SLIP_OCR_MODEL', 'gpt-4o-mini'),
+        'timeout' => (int) env('SLIP_OCR_TIMEOUT', 60),
+    ],
+
 ];

@@ -1,0 +1,93 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Business;
+use App\Models\Customer;
+use App\Services\MeasurementTemplates;
+use App\Services\SlipOcr;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use RuntimeException;
+
+class ScanController extends Controller
+{
+    public function slip(Request $request, SlipOcr $ocr): JsonResponse
+    {
+        $business = $this->business($request);
+
+        $validated = $request->validate([
+            'image' => ['required', 'file', 'image', 'max:4096'],
+        ]);
+
+        try {
+            $draft = $ocr->read($validated['image']);
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+
+        $matched = $this->matchCustomer($business, $draft['phone']);
+        $templates = MeasurementTemplates::forBusiness($business, true);
+        $template = $templates->firstWhere('slug', $draft['template_slug'])
+            ?? $templates->first();
+
+        $allowedKeys = collect($template['fields'] ?? [])->pluck('key')->all();
+        $measurements = collect($draft['measurements'])
+            ->only($allowedKeys)
+            ->all();
+
+        return response()->json([
+            'data' => [
+                'name' => $draft['name'],
+                'phone' => $draft['phone'],
+                'gender' => $draft['gender'],
+                'style' => $draft['style'],
+                'note' => $draft['note'],
+                'template_slug' => $template['slug'] ?? $draft['template_slug'],
+                'unit' => $draft['unit'],
+                'measurements' => $measurements,
+                'matched_customer' => $matched === null ? null : [
+                    'id' => $matched->id,
+                    'name' => $matched->name,
+                    'phone' => $matched->phone,
+                ],
+            ],
+        ]);
+    }
+
+    private function matchCustomer(Business $business, ?string $phone): ?Customer
+    {
+        if ($phone === null || $phone === '') {
+            return null;
+        }
+
+        $needle = $this->phoneTail($phone);
+
+        return Customer::query()
+            ->where('business_id', $business->id)
+            ->get(['id', 'name', 'phone', 'whatsapp_phone'])
+            ->first(function (Customer $customer) use ($needle) {
+                return $this->phoneTail($customer->phone) === $needle
+                    || $this->phoneTail((string) $customer->whatsapp_phone) === $needle;
+            });
+    }
+
+    private function phoneTail(string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+        return strlen($digits) > 10 ? substr($digits, -10) : $digits;
+    }
+
+    private function business(Request $request): Business
+    {
+        $business = $request->user()?->business;
+
+        abort_unless($business instanceof Business, 403, 'Set up your shop first.');
+
+        return $business;
+    }
+}

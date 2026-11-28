@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\ReferralController;
+use App\Http\Controllers\Api\ScanController;
 use App\Http\Controllers\Api\ShopReviewController;
 use App\Http\Controllers\Api\WhatsAppController;
 use Illuminate\Support\Facades\Artisan;
@@ -81,6 +82,9 @@ Route::middleware(['auth:sanctum', 'active', 'demo.readonly'])->group(function (
         ->middleware('throttle:10,1');
     Route::post('/billing/verify', [BillingController::class, 'verify'])
         ->middleware('throttle:20,1');
+
+    Route::post('/scan/slip', [ScanController::class, 'slip'])
+        ->middleware('throttle:10,1');
 
     Route::get('/customers', [CustomerController::class, 'index']);
     Route::post('/customers', [CustomerController::class, 'store']);

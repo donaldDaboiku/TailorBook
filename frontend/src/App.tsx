@@ -30,6 +30,7 @@ import PaymentFormPage from './pages/PaymentFormPage'
 import PickCustomerPage from './pages/PickCustomerPage'
 import RegisterPage from './pages/RegisterPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import ScanSlipPage from './pages/ScanSlipPage'
 import SubscriptionBillingCard from './pages/SubscriptionBillingCard'
 import WhatsAppComposePage from './pages/WhatsAppComposePage'
 import { useI18n } from './i18n'
@@ -43,6 +44,7 @@ type Screen =
   | { name: 'pick-customer'; purpose: 'job' | 'payment' }
   | { name: 'customers' }
   | { name: 'customer-create' }
+  | { name: 'scan-slip' }
   | { name: 'customer-detail'; id: string }
   | { name: 'customer-edit'; customer: Customer }
   | { name: 'measurement-create'; customer: Customer; seed?: Measurement | null }
@@ -408,12 +410,26 @@ function AuthenticatedApp() {
         <CustomersPage
           onOpen={(id) => setScreen({ name: 'customer-detail', id })}
           onCreate={() => setScreen({ name: 'customer-create' })}
+          onScan={
+            user.is_demo_account
+              ? undefined
+              : () => setScreen({ name: 'scan-slip' })
+          }
           readOnly={user.is_demo_account}
         />
       )}
 
       {screen.name === 'customer-create' && (
         <CustomerFormPage
+          onCancel={() => setScreen({ name: 'customers' })}
+          onSaved={(customer) =>
+            setScreen({ name: 'customer-detail', id: customer.id })
+          }
+        />
+      )}
+
+      {screen.name === 'scan-slip' && (
+        <ScanSlipPage
           onCancel={() => setScreen({ name: 'customers' })}
           onSaved={(customer) =>
             setScreen({ name: 'customer-detail', id: customer.id })

@@ -317,13 +317,13 @@ function hasJobShape(
   customer_id: string
   status: string
 } {
+  const data = row as Record<string, unknown>
+
   return (
-    'title' in row
-    && isServiceDate(row.service_date)
-    && 'customer_id' in row
-    && typeof row.customer_id === 'string'
-    && 'status' in row
-    && typeof row.status === 'string'
+    typeof data.title === 'string'
+    && isServiceDate(data.service_date)
+    && typeof data.customer_id === 'string'
+    && typeof data.status === 'string'
   )
 }
 

@@ -1,3 +1,4 @@
+import { todayDate } from './dates'
 import {
   cacheGet as readCache,
   cachePut as writeCache,
@@ -10,6 +11,8 @@ import {
   shouldQueue as shouldQueueOffline,
   type OutboxItem,
 } from './outbox'
+
+export { todayDate }
 
 let isDemoAccount = false
 
@@ -1427,6 +1430,62 @@ export async function getMeasurement(
   }
 }
 
+export type SlipScanDraft = {
+  name: string | null
+  phone: string | null
+  gender: 'male' | 'female' | null
+  style: string | null
+  note: string | null
+  template_slug: string
+  unit: MeasurementUnit
+  measurements: Record<string, number>
+  matched_customer: { id: string; name: string; phone: string } | null
+}
+
+export async function scanSlipPhoto(file: File): Promise<SlipScanDraft> {
+  if (!linkOnline()) {
+    throw new TypeError('offline')
+  }
+
+  const body = new FormData()
+  body.append('image', file)
+
+  let response: Response
+
+  try {
+    response = await fetch(apiUrl('/api/scan/slip'), {
+      method: 'POST',
+      headers: authHeaders(),
+      body,
+      signal: AbortSignal.timeout(60000),
+    })
+  } catch (error) {
+    if (isNetworkFailure(error)) {
+      noteReached(false)
+    }
+    throw error
+  }
+
+  noteReached(true)
+
+  if (response.status === 401) {
+    setToken(null)
+    throw new Error('unauthorized')
+  }
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+
+  const data = (await parseJson(response)) as { data?: SlipScanDraft }
+
+  if (!data.data || typeof data.data !== 'object') {
+    throw new Error('bad response')
+  }
+
+  return data.data
+}
+
 export async function createMeasurement(
   customerId: string,
   payload: {
@@ -2448,8 +2507,6 @@ function isMeasurement(data: unknown): data is Measurement {
     Array.isArray(data.values)
   )
 }
-
-export { todayDate } from './dates'
 
 export function stepForUnit(unit: MeasurementUnit): number {
   return unit === 'in' ? 0.25 : 0.5

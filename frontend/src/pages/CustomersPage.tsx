@@ -6,10 +6,12 @@ import { PendingMark } from '../SyncBanner'
 export default function CustomersPage({
   onOpen,
   onCreate,
+  onScan,
   readOnly = false,
 }: {
   onOpen: (id: string) => void
   onCreate: () => void
+  onScan?: () => void
   readOnly?: boolean
 }) {
   const { t } = useI18n()
@@ -53,9 +55,16 @@ export default function CustomersPage({
         <div className="row-between">
           <h1>{t('customers.title')}</h1>
           {!readOnly && (
-            <button type="button" className="primary compact" onClick={onCreate}>
-              {t('customers.add')}
-            </button>
+            <div className="row-between">
+              {onScan && (
+                <button type="button" className="secondary compact" onClick={onScan}>
+                  Scan slip
+                </button>
+              )}
+              <button type="button" className="primary compact" onClick={onCreate}>
+                {t('customers.add')}
+              </button>
+            </div>
           )}
         </div>
         <label className="search-label">
